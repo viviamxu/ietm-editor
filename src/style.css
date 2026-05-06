@@ -1,0 +1,639 @@
+/*
+ * @ccengine/ietm-editor SDK styles
+ * 自包含的默认主题：消费方可以通过更高优先级选择器覆盖。
+ */
+
+/* ========== 应用壳（全视口布局） ========== */
+.ietm-editor-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: #f3f4f6;
+  color: #1f2330;
+  font:
+    14px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.ietm-app-header {
+  flex-shrink: 0;
+  height: 56px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-sizing: border-box;
+}
+
+.ietm-app-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ietm-menu {
+  position: relative;
+}
+
+.ietm-menu-trigger {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ietm-menu-trigger:hover,
+.ietm-menu-trigger.is-open {
+  background: #f3f4f6;
+}
+
+.ietm-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  z-index: 50;
+}
+
+.ietm-menu-dropdown--wide {
+  min-width: 240px;
+  padding: 10px 12px;
+}
+
+.ietm-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ietm-menu-item:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.ietm-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ietm-menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+
+.ietm-menu-field:last-child {
+  margin-bottom: 0;
+}
+
+.ietm-menu-field select {
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.ietm-menu-field--check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.ietm-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.ietm-app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ietm-doc-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(420px, 36vw);
+}
+
+.ietm-share-btn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.ietm-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== 二级格式工具栏 ========== */
+.ietm-format-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 8px 20px 10px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ietm-format-toolbar__cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ietm-format-toolbar__divider {
+  width: 1px;
+  height: 22px;
+  background: #e5e7eb;
+  margin: 0 4px;
+}
+
+.ietm-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #374151;
+}
+
+.ietm-icon-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.ietm-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ietm-toggle-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+}
+
+.ietm-toggle-btn:hover {
+  background: #f3f4f6;
+}
+
+.ietm-toggle-btn.is-active {
+  background: #e5edff;
+  color: #1d4ed8;
+}
+
+.ietm-underline-label {
+  text-decoration: underline;
+}
+
+.ietm-toolbar-select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #374151;
+  max-width: 140px;
+}
+
+.ietm-toolbar-select--narrow {
+  max-width: 72px;
+}
+
+.ietm-color-swatch {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.ietm-color-swatch input[type='color'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ietm-color-swatch__glyph {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.ietm-highlight-icon {
+  font-size: 12px;
+  color: #ca8a04;
+}
+
+/* ========== 主栏 ========== */
+.ietm-app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+}
+
+.ietm-editor-pane {
+  flex: 0 0 70%;
+  max-width: 70%;
+  background: #ffffff;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.ietm-editor-surface {
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.ietm-right-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+  box-sizing: border-box;
+  background: #f9fafb;
+  border-left: 1px solid #e5e7eb;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ietm-preview-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ietm-preview-placeholder p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.ietm-property-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  margin-left: -1px;
+  min-height: 0;
+}
+
+.ietm-property-panel__head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ietm-property-panel__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ietm-property-panel__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.ietm-property-panel__close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.ietm-property-panel__body {
+  padding: 16px;
+  overflow: auto;
+  flex: 1;
+}
+
+.ietm-prop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.ietm-prop-field span:first-child {
+  font-weight: 500;
+}
+
+.ietm-prop-field input,
+.ietm-prop-field select {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.ietm-prop-readonly {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+}
+
+.ietm-prop-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.ietm-app-footer {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ietm-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.ietm-save-status__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #fff;
+  font-size: 11px;
+}
+
+/* ==== Tiptap 文档排版 ==== */
+.ietm-editor-surface .tiptap {
+  min-height: min(480px, 100%);
+  padding: 24px 40px 48px;
+  outline: none;
+  color: #1f2330;
+  font-size: 16px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.ietm-editor-surface .tiptap > * + * {
+  margin-top: 0.85em;
+}
+
+.ietm-editor-surface .tiptap h1 {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0 0 0.4em;
+  color: #1f2330;
+  border-bottom: 1px solid #e3e6ec;
+  padding-bottom: 8px;
+}
+
+.ietm-editor-surface .tiptap h2 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.2em 0 0.4em;
+  color: #1f2330;
+}
+
+.ietm-editor-surface .tiptap p {
+  margin: 0;
+}
+
+.ietm-editor-surface .tiptap strong {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap em {
+  font-style: italic;
+}
+
+.ietm-editor-surface .tiptap blockquote {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 4px solid #f59e0b;
+  background: #fffaf0;
+  color: #6b4a05;
+  border-radius: 4px;
+}
+
+.ietm-editor-surface .tiptap ol,
+.ietm-editor-surface .tiptap ul {
+  padding-left: 1.6em;
+  margin: 0;
+}
+
+.ietm-editor-surface .tiptap ol li,
+.ietm-editor-surface .tiptap ul li {
+  margin: 0.25em 0;
+}
+
+.ietm-editor-surface .tiptap li > p {
+  margin: 0;
+}
+
+.ietm-editor-surface .tiptap img {
+  max-width: 100%;
+  display: block;
+  margin: 12px 0 6px;
+  border: 1px solid #e3e6ec;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.ietm-editor-surface .tiptap img.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.ietm-editor-surface .tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.ietm-editor-surface .tiptap th,
+.ietm-editor-surface .tiptap td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.ietm-editor-surface .tiptap th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: '';
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(37, 99, 235, 0.08);
+  pointer-events: none;
+}
+
+.ietm-editor-surface .tiptap td,
+.ietm-editor-surface .tiptap th {
+  position: relative;
+}
+
+.ietm-editor-surface .tiptap code {
+  font-family: ui-monospace, Consolas, 'Courier New', monospace;
+  font-size: 0.92em;
+  padding: 2px 6px;
+  background: #f1f3f8;
+  border-radius: 4px;
+}
+
+/* ==== S1000D 适用性块 ==== */
+.s1000d-applicability {
+  border: 1px solid #c4d0e8;
+  border-radius: 8px;
+  margin: 14px 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+  background: #f6f9ff;
+}
+
+.s1000d-applicability[data-applicable='false'] {
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+
+.s1000d-applicability__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #c4d0e8;
+  background: #eaf1ff;
+  color: #1f3a73;
+  font-size: 14px;
+}
+
+.s1000d-applicability__header label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.s1000d-applicability__header input {
+  width: 170px;
+  padding: 4px 6px;
+  border: 1px solid #c4d0e8;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.s1000d-applicability__title {
+  font-weight: 600;
+}
+
+.s1000d-applicability__content {
+  padding: 10px 14px;
+}
+
+.s1000d-applicability.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

@@ -1,0 +1,80 @@
+{
+  "name": "@ccengine/ietm-editor",
+  "version": "0.1.1",
+  "type": "module",
+  "description": "S1000D IETM editor SDK (React island, Vanilla shell). Framework-agnostic mount API for Vue / React / vanilla hosts.",
+  "license": "UNLICENSED",
+  "author": "ccengine",
+  "keywords": [
+    "s1000d",
+    "ietm",
+    "tiptap",
+    "editor",
+    "react",
+    "vue"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "publishConfig": {
+    "registry": "https://nexus.ccengine.com/repository/cc-npm/",
+    "access": "restricted"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build:demo": "tsc -b && vite build --outDir dist-demo",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "prepublishOnly": "pnpm build",
+    "release:patch": "pnpm version patch && pnpm publish",
+    "release:minor": "pnpm version minor && pnpm publish",
+    "release:major": "pnpm version major && pnpm publish"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.22.5",
+    "@tiptap/extension-highlight": "3.22.5",
+    "@tiptap/extension-image": "^3.22.5",
+    "@tiptap/extension-table": "3.22.5",
+    "@tiptap/extension-table-cell": "3.22.5",
+    "@tiptap/extension-table-header": "3.22.5",
+    "@tiptap/extension-table-row": "3.22.5",
+    "@tiptap/extension-text-align": "3.22.5",
+    "@tiptap/extension-text-style": "3.22.5",
+    "@tiptap/extension-underline": "3.22.5",
+    "@tiptap/pm": "^3.22.5",
+    "@tiptap/react": "^3.22.5",
+    "@tiptap/starter-kit": "^3.22.5",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.58.2",
+    "vite": "^8.0.10"
+  }
+}

@@ -1,0 +1,65 @@
+import type { JSONContent } from '@tiptap/core'
+
+export const s1000dContent: JSONContent = {
+  type: 'doc',
+  content: [
+    {
+      type: 'heading',
+      attrs: { level: 1 },
+      content: [{ type: 'text', text: '数据模块标题：燃油泵卸装操作' }],
+    },
+    {
+      type: 'blockquote',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', marks: [{ type: 'bold' }], text: '警告：' },
+            { type: 'text', text: '在进行任何操作前，请确保系统已完全泄压。' },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'heading',
+      attrs: { level: 2 },
+      content: [{ type: 'text', text: '1. 概述 (Description)' }],
+    },
+    {
+      type: 'paragraph',
+      content: [
+        { type: 'text', text: '本章节详细描述了 ' },
+        { type: 'text', marks: [{ type: 'italic' }], text: 'ABC-123' },
+        { type: 'text', text: ' 型号燃油泵的物理结构和功能定位。' },
+      ],
+    },
+    {
+      type: 'heading',
+      attrs: { level: 2 },
+      content: [{ type: 'text', text: '2. 维护程序 (Procedural Steps)' }],
+    },
+    {
+      type: 'orderedList',
+      content: [
+        {
+          type: 'listItem',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: '断开电源插头 (P/N: E12345)。' }],
+            },
+          ],
+        },
+        {
+          type: 'listItem',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: '拧松四个固定螺栓，按对角线顺序操作。' }],
+            },
+          ],
+        },
+      ],
+    }
+  ],
+}
