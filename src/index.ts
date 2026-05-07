@@ -6,9 +6,12 @@ import {
   type IETMEditorRootHandle,
 } from './react/IETMEditorRoot'
 import type { ApplicabilityState } from './react/context/ApplicabilityContext'
+import type { InsertTableOptions } from './react/IETMEditor'
 import './style.css'
 
-export type { ApplicabilityState, JSONContent }
+export type { JSONContent } from '@tiptap/core'
+export type { ApplicabilityState } from './react/context/ApplicabilityContext'
+export type { InsertTableOptions } from './react/IETMEditor'
 
 export interface IETMEditorOptions {
   element: HTMLElement
@@ -35,6 +38,16 @@ export interface IETMEditorInstance {
   setEditable(value: boolean): void
   getJSON(): JSONContent
   focus(): void
+  /** 光标处插入表格；默认 3×3 且带表头。须在编辑器就绪后调用，否则返回 false。 */
+  insertTable(options?: InsertTableOptions): boolean
+  /** 相对当前单元格在其上方插入一行；失败（如不在表格内）时返回 false。 */
+  addTableRowBefore(): boolean
+  /** 相对当前单元格在其下方插入一行。 */
+  addTableRowAfter(): boolean
+  /** 相对当前单元格在其左侧插入一列。 */
+  addTableColumnBefore(): boolean
+  /** 相对当前单元格在其右侧插入一列。 */
+  addTableColumnAfter(): boolean
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -136,6 +149,18 @@ export function createIETMEditor(
     getJSON: () =>
       handleRef.current?.getJSON() ?? { type: 'doc', content: [] },
     focus: () => withHandle((h) => h.focus()),
+    insertTable: (options) =>
+      disposed || !handleRef.current ? false : handleRef.current.insertTable(options),
+    addTableRowBefore: () =>
+      disposed || !handleRef.current ? false : handleRef.current.addTableRowBefore(),
+    addTableRowAfter: () =>
+      disposed || !handleRef.current ? false : handleRef.current.addTableRowAfter(),
+    addTableColumnBefore: () =>
+      disposed || !handleRef.current
+        ? false
+        : handleRef.current.addTableColumnBefore(),
+    addTableColumnAfter: () =>
+      disposed || !handleRef.current ? false : handleRef.current.addTableColumnAfter(),
     on: emitter.on,
     off: emitter.off,
     destroy: () => {

@@ -10,7 +10,11 @@ import {
   ApplicabilityProvider,
   type ApplicabilityState,
 } from './context/ApplicabilityContext'
-import { IETMEditor, type IETMEditorRefValue } from './IETMEditor'
+import {
+  IETMEditor,
+  type IETMEditorRefValue,
+  type InsertTableOptions,
+} from './IETMEditor'
 
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void
@@ -18,6 +22,11 @@ export interface IETMEditorRootHandle {
   setEditable: (value: boolean) => void
   getJSON: () => JSONContent
   focus: () => void
+  insertTable: (options?: InsertTableOptions) => boolean
+  addTableRowBefore: () => boolean
+  addTableRowAfter: () => boolean
+  addTableColumnBefore: () => boolean
+  addTableColumnAfter: () => boolean
 }
 
 interface IETMEditorRootProps {
@@ -52,6 +61,16 @@ export const IETMEditorRoot = forwardRef<IETMEditorRootHandle, IETMEditorRootPro
         getJSON: () =>
           editorRef.current?.getJSON() ?? { type: 'doc', content: [] },
         focus: () => editorRef.current?.focus(),
+        insertTable: (options) =>
+          editorRef.current?.insertTable(options) ?? false,
+        addTableRowBefore: () =>
+          editorRef.current?.addTableRowBefore() ?? false,
+        addTableRowAfter: () =>
+          editorRef.current?.addTableRowAfter() ?? false,
+        addTableColumnBefore: () =>
+          editorRef.current?.addTableColumnBefore() ?? false,
+        addTableColumnAfter: () =>
+          editorRef.current?.addTableColumnAfter() ?? false,
       }),
       [],
     )

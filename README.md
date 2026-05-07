@@ -51,6 +51,11 @@ onMounted(() => {
     },
   })
   instance.on('update', ({ json }) => console.log('changed', json))
+  instance.on('ready', () => {
+    // 表格 API 需在编辑器就绪后调用；光标须在表格单元格内时增行/增列才会成功
+    // instance.insertTable({ rows: 4, cols: 5, withHeaderRow: true })
+    // instance.addTableRowAfter()
+  })
 })
 
 watch([platform, showOnlyApplicable], () => {
@@ -105,6 +110,12 @@ onBeforeUnmount(() => instance?.destroy())
   setEditable(value): void
   getJSON(): JSONContent
   focus(): void
+  // 表格（均返回 boolean：成功为 true；未就绪或 Tiptap 拒绝则为 false）
+  insertTable(options?: { rows?: number; cols?: number; withHeaderRow?: boolean }): boolean
+  addTableRowBefore(): boolean
+  addTableRowAfter(): boolean
+  addTableColumnBefore(): boolean
+  addTableColumnAfter(): boolean
   on(event, handler): () => void   // 返回 off 函数
   off(event, handler): void
   destroy(): void
@@ -112,6 +123,8 @@ onBeforeUnmount(() => instance?.destroy())
 ```
 
 事件：`update` / `selectionChange` / `ready`。
+
+**表格说明**：`insertTable` 在**当前选区/光标**处插入新表。`addTableRow*` / `addTableColumn*` 依赖 Tiptap 表格命令：用户光标需处于**某个单元格内**，否则会返回 `false`。请在 `ready` 之后再调用上述方法；若在挂载瞬间调用，`insertTable` 等可能尚未绑定成功而返回 `false`。
 
 ---
 
