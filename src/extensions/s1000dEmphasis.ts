@@ -8,6 +8,7 @@ import { Mark, mergeAttributes } from '@tiptap/core'
  */
 export const S1000DEmphasis = Mark.create({
   name: 's1000dEmphasis',
+  group: 'textElemGroup attentionTextGroup',
   inclusive: true,
 
   addAttributes() {

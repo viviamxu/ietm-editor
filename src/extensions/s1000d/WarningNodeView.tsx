@@ -4,7 +4,7 @@ import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 function WarningTriangleIcon() {
   return (
     <svg
-      className="s1000d-warning__icon-svg"
+      className="s1000d-attention-block__icon-svg"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -31,24 +31,36 @@ function WarningTriangleIcon() {
 }
 
 /**
- * `warning` 的外壳：内部仍为可编辑的 `warningAndCautionPara+` 结构。
+ * `warning` / `caution` 共用外壳：通过 `node.type.name` 区分皮肤与 `data-s1000d-node`。
  */
 export function WarningNodeView(props: NodeViewProps) {
-  void props
+  const kind = props.node.type.name === 'caution' ? 'caution' : 'warning'
   return (
     <NodeViewWrapper
       as="aside"
-      className="s1000d-warning"
-      data-s1000d-node="warning"
+      className={`s1000d-attention-block s1000d-attention-block--${kind}`}
+      data-s1000d-node={kind}
       role="note"
     >
-      <header className="s1000d-warning__header" contentEditable={false}>
-        <span className="s1000d-warning__icon-wrap" aria-hidden>
+      {/* <header className="s1000d-attention-block__header" contentEditable={false}>
+        <span className="s1000d-attention-block__icon-wrap" aria-hidden>
           <WarningTriangleIcon />
         </span>
-        <span className="s1000d-warning__title">警告文本</span>
-      </header>
-      <NodeViewContent className="s1000d-warning__body" />
+      </header> */}
+      <NodeViewContent className="s1000d-attention-block__body" />
+    </NodeViewWrapper>
+  )
+}
+
+/**
+ * 每个 `warningAndCautionPara` 对应正文区的一块（与 S1000D 一致：同壳内前导与 attention 列表为同级块流，不用 ol/li）。
+ * `caution` 与 `warning` 共用同一节点类型时也会使用该视图（可用父节点区分后加样式）。
+ */
+export function WarningAndCautionParaNodeView(props: NodeViewProps) {
+  void props
+  return (
+    <NodeViewWrapper as="div" className="s1000d-attention-block__body-item">
+      <NodeViewContent className="s1000d-attention-block__body-item__content" />
     </NodeViewWrapper>
   )
 }

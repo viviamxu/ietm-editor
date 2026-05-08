@@ -4,7 +4,10 @@ import { ReactNodeViewRenderer } from '@tiptap/react'
 import { InternalRefNodeView } from './s1000d/InternalRefNodeView'
 import { S1000DEmphasis } from './s1000dEmphasis'
 import { LevelledParaNodeView } from './s1000d/LevelledParaNodeView'
-import { WarningNodeView } from './s1000d/WarningNodeView'
+import {
+  WarningAndCautionParaNodeView,
+  WarningNodeView,
+} from './s1000d/WarningNodeView'
 import type { ParaAttrs } from './s1000d/types'
 
 export type { ParaAttrs, S1000DEditorJSON } from './s1000d/types'
@@ -28,16 +31,109 @@ function isS1000DTitleParent(parent: Element | null): boolean {
   )
 }
 
+/** 编辑器内部块：承接 `warningAndCautionPara` 内、位于 `attentionRandomList` 之前的行内与前导内容（原装 XML 无此外壳，导入时写入）。 */
+export const WarningAndCautionLead = Node.create({
+  name: 'warningAndCautionLead',
+  group: 'block',
+
+  content: 'inline*',
+
+  parseHTML() {
+    return [
+      { tag: 'warningAndCautionLead' },
+      { tag: 'warningandcautionlead' },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'warningAndCautionLead',
+      mergeAttributes(HTMLAttributes),
+      0,
+    ]
+  },
+})
+
+/** S1000D `attentionListItemPara`，位于 `attentionRandomListItem` 内。 */
+export const AttentionListItemPara = Node.create({
+  name: 'attentionListItemPara',
+  group: 'block',
+
+  content: 'inline*',
+
+  parseHTML() {
+    return [
+      { tag: 'attentionListItemPara' },
+      { tag: 'attentionlistitempara' },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'attentionListItemPara',
+      mergeAttributes(HTMLAttributes),
+      0,
+    ]
+  },
+})
+
+/** S1000D `attentionRandomListItem`。 */
+export const AttentionRandomListItem = Node.create({
+  name: 'attentionRandomListItem',
+  group: 'block',
+
+  content: 'attentionListItemPara+',
+
+  parseHTML() {
+    return [
+      { tag: 'attentionRandomListItem' },
+      { tag: 'attentionrandomlistitem' },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'attentionRandomListItem',
+      mergeAttributes(HTMLAttributes),
+      0,
+    ]
+  },
+})
+
+/** S1000D `attentionRandomList`（attention 无序列表容器）。 */
+export const AttentionRandomList = Node.create({
+  name: 'attentionRandomList',
+  group: 'block',
+
+  content: 'attentionRandomListItem+',
+
+  defining: true,
+
+  parseHTML() {
+    return [
+      { tag: 'attentionRandomList' },
+      { tag: 'attentionrandomlist' },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'attentionRandomList',
+      mergeAttributes(HTMLAttributes),
+      0,
+    ]
+  },
+})
+
 /**
- * `warningAndCautionPara`：警告块内的段落式行块，内容为行内片段（对齐 Schema：`text*` 的占位实现）。
- *
- * Phase 1 使用 `inline*`，便于与 Tiptap 默认 `text` 协同；后续可替换为专有 inline 集合（internalRef 等）。
+ * `warningAndCautionPara`：与样例 XML 一致，先有可选前导正文（`warningAndCautionLead`），后有可选 `attentionRandomList`。
+ * 原装 XML 中前导文字为裸文本，由 `normalizeS1000dDescriptionInnerXmlForEditor` 包入 `warningAndCautionLead` 后再喂给 Tiptap。
  */
 export const WarningAndCautionPara = Node.create({
   name: 'warningAndCautionPara',
   group: 'block',
 
-  content: 'inline*',
+  content: 'warningAndCautionLead? attentionRandomList?',
 
   parseHTML() {
     return [
@@ -55,6 +151,10 @@ export const WarningAndCautionPara = Node.create({
       0,
     ]
   },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(WarningAndCautionParaNodeView)
+  },
 })
 
 /**
@@ -63,7 +163,7 @@ export const WarningAndCautionPara = Node.create({
  */
 export const S1000DWarning = Node.create({
   name: 'warning',
-  group: 'block',
+  group: 'block attentionElemGroup warningAndCautionElemGroup',
   content: 'warningAndCautionPara+',
   defining: true,
   isolating: true,
@@ -78,6 +178,63 @@ export const S1000DWarning = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(WarningNodeView)
+  },
+})
+
+/**
+ * S1000D `caution`：与 `warning` 同形（`warningAndCautionPara+`）；样例 DM 中使用。
+ */
+export const S1000DCaution = Node.create({
+  name: 'caution',
+  group: 'block attentionElemGroup warningAndCautionElemGroup',
+  content: 'warningAndCautionPara+',
+  defining: true,
+  isolating: true,
+
+  parseHTML() {
+    return [{ tag: 'caution' }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['caution', mergeAttributes(HTMLAttributes), 0]
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(WarningNodeView)
+  },
+})
+
+/** S1000D `notePara`（位于 `note` 内）。 */
+export const NotePara = Node.create({
+  name: 'notePara',
+  group: 'block',
+  content: 'inline*',
+
+  parseHTML() {
+    return [{ tag: 'notePara' }, { tag: 'notepara' }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['notePara', mergeAttributes(HTMLAttributes), 0]
+  },
+})
+
+/**
+ * S1000D `note`：与描述类 Schema 一致，`group` 含 `attentionElemGroup`。
+ */
+export const S1000DNote = Node.create({
+  name: 'note',
+  group: 'block attentionElemGroup',
+  content: 'notePara+',
+  defining: true,
+  isolating: true,
+
+  parseHTML() {
+    return [{ tag: 'note' }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['note', mergeAttributes(HTMLAttributes), 0]
   },
 })
 
@@ -166,7 +323,7 @@ function readInternalRefAttrsFromDom(el: Element) {
 /** `dmRef` 行内占位：段落内整块 DM 引用若按块解析会破坏 `para` — 先吞成原子占位，后续可换完整 Node。 */
 export const S1000DDmRef = Node.create({
   name: 'dmRef',
-  group: 'inline',
+  group: 'inline textElemGroup',
   inline: true,
   atom: true,
 
@@ -190,7 +347,7 @@ export const S1000DDmRef = Node.create({
  */
 export const S1000DInternalRef = Node.create({
   name: 'internalRef',
-  group: 'inline',
+  group: 'inline textElemGroup attentionTextGroup',
   inline: true,
   atom: true,
   draggable: false,
@@ -292,7 +449,7 @@ export const S1000DGraphic = Node.create({
  */
 export const S1000DFigure = Node.create({
   name: 'figure',
-  group: 'block',
+  group: 'block fmftElemGroup',
   content: '(title?) graphic+',
   defining: true,
 
@@ -320,14 +477,14 @@ export const S1000DFigure = Node.create({
 })
 
 /**
- * S1000D `levelledPara`：可嵌套的结构化段落容器。
- * Schema：`title (warning|note|para|fmft|table)* levelledPara*`
- * 当前实现含 Bike 示例所需：`para | warning | levelledPara | figure`。
+ * S1000D `levelledPara`：与描述类 Schema 一致。
+ * `title (warningAndCautionElemGroup|note|para|fmftElemGroup|table)* levelledPara*`
  */
 export const LevelledPara = Node.create({
   name: 'levelledPara',
   group: 'block',
-  content: '(title?) (para | warning | levelledPara | figure)*',
+  content:
+    '(title?) (warningAndCautionElemGroup | note | para | fmftElemGroup | table)* levelledPara*',
   defining: true,
   isolating: true,
 
@@ -347,8 +504,15 @@ export const LevelledPara = Node.create({
 /** S1000D 描述类节点注册顺序（子类型先于引用它们的容器）。 */
 export const s1000dPhase1Nodes = [
   S1000DEmphasis,
+  AttentionListItemPara,
+  AttentionRandomListItem,
+  AttentionRandomList,
+  WarningAndCautionLead,
   WarningAndCautionPara,
   S1000DWarning,
+  S1000DCaution,
+  NotePara,
+  S1000DNote,
   S1000DTitle,
   S1000DPara,
   S1000DDmRef,
@@ -387,6 +551,55 @@ export function extractContentElementFromDmXml(xmlString: string): Element | nul
 }
 
 /**
+ * `warningAndCautionPara` 在 XML 里常将前导正文与 `<attentionRandomList>` 并排；
+ * TipTap 需块级子节点，故在无 `warningAndCautionLead` 时把前一段包进该元素。
+ * 仅处理已解析的描述类 DOM（如 `extractContentElementFromDmXml` 的产物），不写回源 XML 文件。
+ */
+function normalizeWarningAndCautionParasForEditor(descriptionRoot: Element) {
+  const paras = Array.from(
+    descriptionRoot.querySelectorAll('warningAndCautionPara'),
+  )
+  const DOM_ELEMENT = globalThis.Node.ELEMENT_NODE
+  const DOM_TEXT = globalThis.Node.TEXT_NODE
+
+  for (const para of paras) {
+    if (para.querySelector(':scope > warningAndCautionLead')) continue
+    if (para.querySelector(':scope > warningandcautionlead')) continue
+
+    const toWrap: globalThis.ChildNode[] = []
+    let ref: globalThis.ChildNode | null = para.firstChild
+    while (ref) {
+      if (
+        ref.nodeType === DOM_ELEMENT &&
+        ((ref as Element).localName === 'attentionRandomList' ||
+          (ref as Element).localName === 'attentionrandomlist')
+      ) {
+        break
+      }
+      const next = ref.nextSibling
+      toWrap.push(ref)
+      ref = next
+    }
+
+    const hasSubstance = toWrap.some((n) => {
+      if (n.nodeType === DOM_TEXT) {
+        return !!(n.textContent && n.textContent.trim())
+      }
+      return n.nodeType === DOM_ELEMENT
+    })
+    if (!hasSubstance) continue
+
+    const owner = para.ownerDocument
+    const ns = para.namespaceURI
+    const lead = ns
+      ? owner.createElementNS(ns, 'warningAndCautionLead')
+      : owner.createElement('warningAndCautionLead')
+    for (const n of toWrap) lead.appendChild(n)
+    para.insertBefore(lead, para.firstChild)
+  }
+}
+
+/**
  * 从 DM 正文字符串中取出可用于 `editor.setContent` 的片段：
  * 截取 `<content>` → `<description>` 的**直接子节点**，序列化为连续 XML 字符串（无 `<description>` 外壳）。
  * Tiptap 将按各扩展的 `parseHTML` 导入；**不向编辑器注入** `identAndStatusSection`。
@@ -398,6 +611,7 @@ export function getDescriptionInnerXmlFromDmXml(xmlString: string): string | nul
     (c) => c.localName === 'description',
   )
   if (!description) return null
+  normalizeWarningAndCautionParasForEditor(description)
   const serializer = new XMLSerializer()
   const parts: string[] = []
   for (const child of Array.from(description.children)) {

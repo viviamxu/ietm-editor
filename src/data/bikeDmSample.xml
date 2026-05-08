@@ -227,14 +227,16 @@
          <levelledPara>
             <title>层级段落标题 (一级)</title>
             <warning>
-               <warningAndCautionPara>警告文本<attentionRandomList>
+               <warningAndCautionPara>警告文本
+                  <attentionRandomList>
                      <attentionRandomListItem>
                         <attentionListItemPara>警示无序列表1：执行此操作将永久删除关联数据，请在操作前务必进行完整备份。</attentionListItemPara>
                      </attentionRandomListItem>
                      <attentionRandomListItem>
                         <attentionListItemPara>警示无序列表2：系统重启期间，所有进行中的任务将被强制中断。</attentionListItemPara>
                      </attentionRandomListItem>
-                  </attentionRandomList></warningAndCautionPara>
+                  </attentionRandomList>
+               </warningAndCautionPara>
             </warning>
             <caution>
                <warningAndCautionPara>注意文本<attentionRandomList>
