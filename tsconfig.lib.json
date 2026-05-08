@@ -12,12 +12,16 @@
   },
   "include": [
     "src/index.ts",
-    "src/react/**/*",
-    "src/style.css"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.xml",
+    "src/style.css",
+    "src/vite-env.d.ts"
   ],
   "exclude": [
     "src/main.tsx",
     "src/App.tsx",
-    "src/App.css"
+    "src/App.css",
+    "src/index.css"
   ]
 }

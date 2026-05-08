@@ -4,8 +4,8 @@ import type { JSONContent } from '@tiptap/core'
 import {
   IETMEditorRoot,
   type IETMEditorRootHandle,
-} from './react/IETMEditorRoot'
-import type { ApplicabilityState } from './react/context/ApplicabilityContext'
+} from './components/editor/IETMEditorRoot'
+import type { ApplicabilityState } from './context/ApplicabilityContext'
 import './style.css'
 
 export type { ApplicabilityState, JSONContent }

@@ -9,7 +9,7 @@ import type { JSONContent } from '@tiptap/core'
 import {
   ApplicabilityProvider,
   type ApplicabilityState,
-} from './context/ApplicabilityContext'
+} from '../../context/ApplicabilityContext'
 import { IETMEditor, type IETMEditorRefValue } from './IETMEditor'
 
 export interface IETMEditorRootHandle {

@@ -16,16 +16,20 @@ import type { JSONContent } from '@tiptap/core'
 import {
   defaultApplicabilityAttributes,
   S1000DApplicability,
-} from './extensions/S1000DApplicability/extension'
-import { IETMImage } from './extensions/IETMImage'
-import { s1000dContent } from './data/s1000dContent'
+} from '../../extensions/S1000DApplicability/extension'
+import { IETMImage } from '../../extensions/IETMImage'
+import {
+  getDescriptionInnerXmlFromDmXml,
+  s1000dPhase1Nodes,
+} from '../../extensions/S1000DNodes'
+import bikeDmSampleXml from '../../data/bikeDmSample.xml?raw'
 import { FormatToolbar } from './FormatToolbar'
 import {
   resolveInspectable,
   tableDimensions,
   type InspectTarget,
-} from './editor/resolveInspectable'
-import type { ApplicabilityState } from './context/ApplicabilityContext'
+} from '../../lib/editor/resolveInspectable'
+import type { ApplicabilityState } from '../../context/ApplicabilityContext'
 
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void
@@ -42,6 +46,24 @@ interface IETMEditorProps {
   onUpdate: (json: JSONContent) => void
   onSelectionChange: (range: { from: number; to: number }) => void
   onReady: () => void
+}
+
+const DEFAULT_CONTENT_FROM_BIKE_DM_XML =
+  getDescriptionInnerXmlFromDmXml(bikeDmSampleXml)
+
+const FALLBACK_DOCUMENT: JSONContent = {
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: '（未能从 Bike DM XML 解析出 description，请检查 data/bikeDmSample.xml）',
+        },
+      ],
+    },
+  ],
 }
 
 const DOC_TITLE_PLACEHOLDER = '数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D'
@@ -87,9 +109,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         TableKit.configure({
           table: { resizable: false },
         }),
+        ...s1000dPhase1Nodes,
         S1000DApplicability,
       ],
-      content: props.initialContent ?? s1000dContent,
+      content:
+        props.initialContent ??
+        DEFAULT_CONTENT_FROM_BIKE_DM_XML ??
+        FALLBACK_DOCUMENT,
       editorProps: {
         attributes: {
           class: 'ietm-tiptap-root',
