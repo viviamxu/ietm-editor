@@ -1,0 +1,115 @@
+﻿.ietm-editor-surface .tiptap {
+  min-height: min(480px, 100%);
+  padding: 24px 40px 48px;
+  outline: none;
+  color: #1f2330;
+  font-size: 16px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.ietm-editor-surface .tiptap > * + * {
+  margin-top: 0.85em;
+}
+
+.ietm-editor-surface .tiptap h1 {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0 0 0.4em;
+  color: #1f2330;
+  border-bottom: 1px solid #e3e6ec;
+  padding-bottom: 8px;
+}
+
+.ietm-editor-surface .tiptap h2 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.2em 0 0.4em;
+  color: #1f2330;
+}
+
+.ietm-editor-surface .tiptap p {
+  margin: 0;
+}
+
+.ietm-editor-surface .tiptap strong {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap em {
+  font-style: italic;
+}
+
+.ietm-editor-surface .tiptap blockquote {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 4px solid #f59e0b;
+  background: #fffaf0;
+  color: #6b4a05;
+  border-radius: 4px;
+}
+
+.ietm-editor-surface .tiptap ol,
+.ietm-editor-surface .tiptap ul {
+  padding-left: 1.6em;
+  margin: 0;
+}
+
+.ietm-editor-surface .tiptap ol li,
+.ietm-editor-surface .tiptap ul li {
+  margin: 0.25em 0;
+}
+
+.ietm-editor-surface .tiptap li > p {
+  margin: 0;
+}
+
+.ietm-editor-surface .tiptap img {
+  max-width: 100%;
+  display: block;
+  margin: 12px 0 6px;
+  border: 1px solid #e3e6ec;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.ietm-editor-surface .tiptap img.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-table-wrap {
+  margin: 12px 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table .s1000d-entry,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table td,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table th {
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table thead td,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table thead th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap code {
+  font-family: ui-monospace, Consolas, 'Courier New', monospace;
+  font-size: 0.92em;
+  padding: 2px 6px;
+  background: #f1f3f8;
+  border-radius: 4px;
+}

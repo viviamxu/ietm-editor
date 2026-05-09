@@ -1,0 +1,229 @@
+{
+  "dmodule": {
+    "content": "rdfDescription? identAndStatusSection content"
+  },
+  "rdfDescription": {
+    "content": "(dctitle|dccreator|dcsubject|dcpublisher|dccontributor|dcsource|dcdate)? dctype (dcformat| dcidentifier|dclanguage|dcrights)?"
+  },
+  "dctitle": {
+    "content": "text*"
+  },
+  "dccreator": {
+    "content": "text*"
+  },
+  "dcsubject": {
+    "content": "text*"
+  },
+  "dcpublisher": {
+    "content": "text*"
+  },
+  "dccontributor": {
+    "content": "text*"
+  },
+  "dcsource": {
+    "content": "text*"
+  },
+  "dcdate": {
+    "content": "text*"
+  },
+  "dctype": {
+    "content": "text*"
+  },
+  "dcformat": {
+    "content": "text*"
+  },
+  "dcidentifier": {
+    "content": "text*"
+  },
+  "dclanguage": {
+    "content": "text*"
+  },
+  "dcrights": {
+    "content": "text*"
+  },
+  "title": {
+    "content": "(text)*"
+  },
+  "identAndStatusSection": {
+    "content": "dmAddress dmStatus"
+  },
+  "dmAddress": {
+    "content": "dmIdent dmAddressItems"
+  },
+  "dmIdent": {
+    "content": "dmCode language issueInfo"
+  },
+  "identExtension": {
+    "content": "text*"
+  },
+  "dmCode": {},
+  "language": {
+    "content": ""
+  },
+  "issueInfo": {
+    "content": ""
+  },
+  "dmAddressItems": {
+    "content": "issueDate dmTitle"
+  },
+  "issueDate": {},
+  "dmTitle": {
+    "content": "techName infoName"
+  },
+  "techName": {
+    "content": "text*"
+  },
+  "infoName": {
+    "content": "text*"
+  },
+  "dmStatus": {
+    "content": "security responsiblePartnerCompany originator applic brexDmRef qualityAssurance"
+  },
+  "security": {
+    "content": ""
+  },
+  "responsiblePartnerCompany": {
+    "content": "enterpriseName"
+  },
+  "originator": {
+    "content": "enterpriseName"
+  },
+  "enterpriseName": {
+    "content": "text*"
+  },
+  "applic": {
+    "content": "displayText"
+  },
+  "brexDmRef": {
+    "content": "dmRef"
+  },
+  "displayText": {
+    "content": "simplePara*"
+  },
+  "qualityAssurance": {
+    "content": "unverified|(firstVerification secondVerification?)"
+  },
+  "symbol": {
+    "group": "textElemGroup attentionTextGroup"
+  },
+  "table": {
+    "group": "fmftElemGroup",
+    "content": "title? tgroup+"
+  },
+  "tgroup": {
+    "content": "thead? tbody tfoot?"
+  },
+  "thead": {
+    "content": "row+"
+  },
+  "tfoot": {
+    "content": "row+"
+  },
+  "tbody": {
+    "content": "row+"
+  },
+  "row": {
+    "content": "entry+"
+  },
+  "entry": {
+    "content": "(para|warning|caution)+"
+  },
+  "figure": {
+    "group": "fmftElemGroup",
+    "content": "title graphic+"
+  },
+  "graphic": {
+    "content": "hotspot*"
+  },
+  "hotspot": {},
+  "multimedia": {
+    "group": "fmftElemGroup",
+    "content": "title? multimediaObject+"
+  },
+  "multimediaObject": {},
+  "para": {
+    "content": "(text|internalRef|symbol|dmRef|listElemGroup)*"
+  },
+  "simplePara": {
+    "content": "text*"
+  },
+  "internalRef": {
+    "group": "textElemGroup attentionTextGroup",
+    "content": "text*"
+  },
+  "emphasis": {
+    "group": "textElemGroup attentionTextGroup"
+  },
+  "subScript": {
+    "group": "textElemGroup attentionTextGroup"
+  },
+  "superScript": {
+    "group": "textElemGroup attentionTextGroup"
+  },
+  "dmRef": {
+    "group": "textElemGroup",
+    "content": "dmRefIdent dmRefAddressItems"
+  },
+  "dmRefIdent": {
+    "content": "dmCode issueInfo language"
+  },
+  "dmRefAddressItems": {
+    "content": "dmTitle issueDate"
+  },
+  "pmRef": {
+    "group": "textElemGroup"
+  },
+  "acronym": {
+    "group": "textElemGroup"
+  },
+  "acronymTerm": {
+    "group": "textElemGroup"
+  },
+  "sequentialList": {
+    "group": "listElemGroup",
+    "content": "title? listItem+"
+  },
+  "randomList": {
+    "group": "listElemGroup",
+    "content": "title? listItem+"
+  },
+  "listItem": {
+    "content": "para+"
+  },
+  "levelledPara": {
+    "content": "title (warningAndCautionElemGroup|note|para|fmftElemGroup|table)* levelledPara*"
+  },
+  "warning": {
+    "group": "attentionElemGroup warningAndCautionElemGroup",
+    "content": "warningAndCautionPara+"
+  },
+  "caution": {
+    "group": "attentionElemGroup warningAndCautionElemGroup",
+    "content": "warningAndCautionPara+"
+  },
+  "warningAndCautionPara": {
+    "content": "text*"
+  },
+  "note": {
+    "group": "attentionElemGroup",
+    "content": "notePara+"
+  },
+  "notePara": {
+    "content": "text*"
+  },
+  "attentionRandomList": {
+    "content": "attentionRandomListItem+"
+  },
+  "attentionRandomListItem": {
+    "content": "attentionListItemPara+"
+  },
+  "attentionListItemPara": {
+    "content": "(text|attentionTextGroup)*"
+  },
+  "content": {
+    "content": "description"
+  },
+  "description": {
+    "content": "(para|attentionElemGroup|fmftElemGroup)+ levelledPara*"
+  }
+}

@@ -1,6 +1,9 @@
 import type { Editor } from '@tiptap/core'
 import { useEffect, useReducer } from 'react'
 
+import { createMinimalS1000dTableInsertJson } from '../../extensions/s1000d/s1000dTableNodes'
+import { List,ListOrdered,Table,Undo2 ,Redo2   } from 'lucide-react';
+
 const FONT_CHOICES: { label: string; value: string }[] = [
   { label: 'Inter', value: 'Inter, ui-sans-serif, system-ui, sans-serif' },
   {
@@ -15,6 +18,65 @@ const FONT_SIZES = ['11px', '12px', '14px', '16px', '18px', '24px']
 
 interface FormatToolbarProps {
   editor: Editor
+}
+
+function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
+  const $from = editor.state.selection.$from
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === nodeTypeName) return true
+  }
+  return false
+}
+
+function insertSequentialListBySchema(editor: Editor) {
+  // Schema: sequentialList -> listItem+（在编辑器映射为 orderedList -> listItem -> paragraph）
+  return editor
+    .chain()
+    .focus()
+    .insertContent({
+      type: 'orderedList',
+      content: [
+        {
+          type: 'listItem',
+          content: [{ type: 'paragraph', content: [] }],
+        },
+      ],
+    })
+    .run()
+}
+
+function insertRandomOrAttentionListBySchema(editor: Editor) {
+  if (isInsideNodeType(editor, 'warningAndCautionPara')) {
+    // Schema: attentionRandomList -> attentionRandomListItem+ -> attentionListItemPara+
+    return editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'attentionRandomList',
+        content: [
+          {
+            type: 'attentionRandomListItem',
+            content: [{ type: 'attentionListItemPara', content: [] }],
+          },
+        ],
+      })
+      .run()
+  }
+
+  // Schema: randomList -> listItem+（在编辑器映射为 bulletList -> listItem -> paragraph）
+  return editor
+    .chain()
+    .focus()
+    .insertContent({
+      type: 'bulletList',
+      content: [
+        {
+          type: 'listItem',
+          content: [{ type: 'paragraph', content: [] }],
+        },
+      ],
+    })
+    .run()
 }
 
 export function FormatToolbar({ editor }: FormatToolbarProps) {
@@ -57,7 +119,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           onClick={() => editor.chain().focus().undo().run()}
           title="撤销"
         >
-          ↺
+          <Undo2 size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
@@ -66,7 +128,46 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           onClick={() => editor.chain().focus().redo().run()}
           title="重做"
         >
-          ↻
+          <Redo2 size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertContent(
+                createMinimalS1000dTableInsertJson(
+                  4,
+                  1,
+                  3,
+                  true,
+                ),
+              )
+              .run()
+          }
+          title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
+        >
+          <Table size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => insertSequentialListBySchema(editor)}
+          title="插入有序列表（sequentialList）"
+          aria-label="插入有序列表"
+        >
+          <ListOrdered size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => insertRandomOrAttentionListBySchema(editor)}
+          title="插入无序列表（randomList / attentionRandomList）"
+          aria-label="插入无序列表"
+        >
+          <List size={16} aria-hidden className="shrink-0" />
         </button>
       </div>
 

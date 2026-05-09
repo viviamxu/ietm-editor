@@ -3,11 +3,19 @@ import type { JSONContent } from '@tiptap/core'
 
 const emptyPara: JSONContent = { type: 'para', content: [] }
 
-/** 插入菜单用：创建一个含表头行的 S1000D 风格 table 节点 JSON */
+/**
+ * 生成符合 `src/data/描述类Schema.json` 中表格定义的 JSON，供 `insertContent` 使用：
+ * - `table`: `title? tgroup+`
+ * - `tgroup`: `thead? tbody`（编辑器侧 `tbody+`，插入时仅一个 `tbody`；`tfoot` 未建模）
+ * - `thead`/`tbody`: `row+`；`row`: `entry+`；`entry`: `(para|warning|caution)+`（此处用 `para+`）
+ *
+ * @param includeEmptyTitle 是否与常见 DM 一致插入空 `title`（对应 schema 可选 `title?`）
+ */
 export function createMinimalS1000dTableInsertJson(
   cols: number,
   headerRowCount: number,
   bodyRows: number,
+  includeEmptyTitle = true,
 ): JSONContent {
   const safeCols = Math.max(1, Math.min(cols, 32))
   const safeHead = Math.max(0, headerRowCount)
@@ -40,15 +48,19 @@ export function createMinimalS1000dTableInsertJson(
   }
   tgroupContent.push({ type: 'tbody', content: bodyRowNodes })
 
+  const tableChildren: JSONContent[] = []
+  if (includeEmptyTitle) {
+    tableChildren.push({ type: 'title', content: [] })
+  }
+  tableChildren.push({
+    type: 'tgroup',
+    attrs: { cols: String(safeCols) },
+    content: tgroupContent,
+  })
+
   return {
     type: 'table',
-    content: [
-      {
-        type: 'tgroup',
-        attrs: { cols: String(safeCols) },
-        content: tgroupContent,
-      },
-    ],
+    content: tableChildren,
   }
 }
 

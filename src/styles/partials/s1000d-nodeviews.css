@@ -1,0 +1,178 @@
+﻿.ietm-editor-surface .tiptap .s1000d-levelled-para {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: #fafbfc;
+}
+
+.ietm-editor-surface .tiptap .s1000d-levelled-para__content {
+  outline: none;
+}
+
+/* `warning` / `caution` NodeView 共用 */
+.ietm-editor-surface .tiptap .s1000d-attention-block {
+  --s1000d-attn-accent: #f5222d;
+  --s1000d-attn-bg: #fff1f0;
+  --s1000d-attn-border: #e8e8e8;
+  --s1000d-attn-body: #1f2937;
+  /* attention 列表正文：比标题略浅，仍带警示色相 */
+  --s1000d-attn-list-text: #9e2629;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 18px 20px;
+  border: 1px solid var(--s1000d-attn-border);
+  border-left-width: 5px;
+  border-left-color: var(--s1000d-attn-accent);
+  background: var(--s1000d-attn-bg);
+  box-sizing: border-box;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block--caution {
+  --s1000d-attn-accent: #d48806;
+  --s1000d-attn-bg: #fffbe6;
+  --s1000d-attn-border: #f0e0c2;
+  --s1000d-attn-list-text: #9a6b06;
+}
+.ietm-editor-surface .tiptap .s1000d-attention-block__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__icon-wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--s1000d-attn-accent);
+  line-height: 0;
+}
+
+/* `warning`/`caution` 正文区：多块 `warningAndCautionPara` 纵向堆叠（非 ol/li） */
+.ietm-editor-surface .tiptap .s1000d-attention-block__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65em;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  color: var(--s1000d-attn-body);
+  line-height: 1.6;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__body > .s1000d-attention-block__body-item {
+  color: var(--s1000d-attn-body);
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__body-item__content {
+  outline: none;
+}
+
+/* 段落块内再嵌套的 Tiptap ol/ul */
+.ietm-editor-surface .tiptap .s1000d-attention-block__body-item__content ol {
+  margin: 0.35em 0 0;
+  padding-left: 1.35em;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__body-item__content ol li::marker {
+  color: var(--s1000d-attn-accent);
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__body-item__content ul {
+  margin: 0.35em 0 0;
+  padding-left: 1.35em;
+  list-style: disc;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__body-item__content ul li::marker {
+  color: var(--s1000d-attn-accent);
+}
+
+/* `warningAndCautionLead` NodeView：图标 + 引导文同一行 */
+.ietm-editor-surface .tiptap .s1000d-attention-lead {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 0.55em;
+  padding: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-lead__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 0.12em;
+  color: var(--s1000d-attn-accent);
+  line-height: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-lead__icon-svg {
+  display: block;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-lead__text {
+  flex: 1;
+  min-width: 0;
+  outline: none;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: var(--s1000d-attn-accent);
+}
+
+/* S1000D attentionRandomList（样例中与 lead 并排） */
+.ietm-editor-surface .tiptap attentionRandomList {
+  display: block;
+  margin: 0.35em 0 0;
+  padding-left: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block attentionRandomListItem {
+  display: list-item;
+  margin: 0.28em 0;
+  margin-left: 1.35em;
+  list-style: decimal;
+  list-style-position: outside;
+}
+
+.ietm-editor-surface .tiptap attentionRandomListItem {
+  display: list-item;
+  margin: 0.28em 0;
+  margin-left: 1.15em;
+  list-style: disc;
+  list-style-position: outside;
+}
+.ietm-editor-surface .tiptap attentionRandomListItem::marker {
+  color: var(--s1000d-attn-accent, #f5222d);
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block attentionRandomListItem::marker {
+  color: var(--s1000d-attn-accent);
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block attentionListItemPara {
+  display: block;
+  margin: 0;
+  line-height: 1.55;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--s1000d-attn-list-text);
+}
+
+.ietm-editor-surface .tiptap attentionListItemPara {
+  display: block;
+  margin: 0;
+  line-height: 1.55;
+}
