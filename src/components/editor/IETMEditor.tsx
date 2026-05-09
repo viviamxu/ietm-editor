@@ -11,7 +11,6 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { TextStyleKit } from '@tiptap/extension-text-style/text-style-kit'
-import { TableKit } from '@tiptap/extension-table/kit'
 import type { JSONContent } from '@tiptap/core'
 import {
   defaultApplicabilityAttributes,
@@ -20,8 +19,10 @@ import {
 import { IETMImage } from '../../extensions/IETMImage'
 import {
   getDescriptionInnerXmlFromDmXml,
+  preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
 } from '../../extensions/S1000DNodes'
+import { createMinimalS1000dTableInsertJson } from '../../extensions/s1000d/s1000dTableNodes'
 import bikeDmSampleXml from '../../data/bikeDmSample.xml?raw'
 import { FormatToolbar } from './FormatToolbar'
 import {
@@ -50,6 +51,13 @@ interface IETMEditorProps {
 
 const DEFAULT_CONTENT_FROM_BIKE_DM_XML =
   getDescriptionInnerXmlFromDmXml(bikeDmSampleXml)
+
+function normalizeEditorContentInput(
+  content: JSONContent | string | undefined,
+): JSONContent | string | undefined {
+  if (typeof content !== 'string') return content
+  return preprocessS1000dDescriptionHtmlFragment(content)
+}
 
 const FALLBACK_DOCUMENT: JSONContent = {
   type: 'doc',
@@ -106,14 +114,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         IETMImage.configure({
           resize: false,
         }),
-        TableKit.configure({
-          table: { resizable: false },
-        }),
         ...s1000dPhase1Nodes,
         S1000DApplicability,
       ],
       content:
-        props.initialContent ??
+        normalizeEditorContentInput(props.initialContent) ??
         DEFAULT_CONTENT_FROM_BIKE_DM_XML ??
         FALLBACK_DOCUMENT,
       editorProps: {
@@ -152,7 +157,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ref,
       () => ({
         setContent: (content) => {
-          editor?.commands.setContent(content)
+          editor?.commands.setContent(normalizeEditorContentInput(content) ?? '')
         },
         getJSON: () => editor?.getJSON() ?? { type: 'doc', content: [] },
         focus: () => {
@@ -198,7 +203,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         .run()
 
     const insertTable = () =>
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      editor
+        .chain()
+        .focus()
+        .insertContent(createMinimalS1000dTableInsertJson(4, 1, 3))
+        .run()
 
     const insertImageFromPrompt = () => {
       const url = window.prompt('请输入图片 URL')

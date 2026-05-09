@@ -1,10 +1,16 @@
 import { mergeAttributes, Node } from '@tiptap/core'
+import type { Node as PMNode } from '@tiptap/pm/model'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { EditorView } from '@tiptap/pm/view'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 
 import { InternalRefNodeView } from './s1000d/InternalRefNodeView'
 import { S1000DEmphasis } from './s1000dEmphasis'
 import { LevelledParaNodeView } from './s1000d/LevelledParaNodeView'
+import { s1000dTableNodes } from './s1000d/s1000dTableNodes'
+import { S1000DSub, S1000DSup } from './s1000d/subSuperMarks'
 import {
+  WarningAndCautionLeadNodeView,
   WarningAndCautionParaNodeView,
   WarningNodeView,
 } from './s1000d/WarningNodeView'
@@ -14,21 +20,111 @@ export type { ParaAttrs, S1000DEditorJSON } from './s1000d/types'
 export { S1000DEmphasis }
 
 /**
- * 判断给定元素是否为我们关心的 S1000D `title` 容器：
- * Schema 允许 `title` 出现在 `levelledPara`、`figure`、`table`（经 `title` 子标签）等处。
- * 借此避免在无父链上下文中误接纳 HTML 文档的 `<title>`。
+ * 判断给定元素是否为我们关心的 S1000D `title` 容器。
+ * `text/html` 解析后标签名为小写（如 `levelledpara`）；`levelledPara` 的 NodeView 下标题父级可能是
+ * `div.s1000d-levelled-para__content` 或带 `data-s1000d-node="levelledPara"` 的外壳。
  */
 function isS1000DTitleParent(parent: Element | null): boolean {
   if (!parent) return false
-  const ln = parent.localName
+  if (parent.getAttribute('data-s1000d-node') === 'levelledPara') return true
+  if (parent.classList.contains('s1000d-levelled-para__content')) return true
+  if (parent.getAttribute('data-s1000d-xml-table') === '1') return true
+
+  const ln = parent.localName.toLowerCase()
   return (
-    ln === 'levelledPara' ||
+    ln === 'levelledpara' ||
     ln === 'figure' ||
     ln === 'table' ||
-    ln === 'sequentialList' ||
-    ln === 'randomList' ||
+    ln === 'sequentiallist' ||
+    ln === 'randomlist' ||
     ln === 'multimedia'
   )
+}
+
+const S1000D_TITLE_LEVEL_CAP = 6
+
+const s1000dTitleLevelsKey = new PluginKey<{ forceInitialSync?: true }>('s1000d-title-levels')
+
+function clampS1000dTitleDisplayLevel(raw: number): number {
+  if (!Number.isFinite(raw)) return 1
+  return Math.min(S1000D_TITLE_LEVEL_CAP, Math.max(1, Math.round(raw)))
+}
+
+/**
+ * 统计包含该 `title` 节点的 `levelledPara` 祖先数量，用于对应 h1/h2/…（最外层为 1）。
+ * 位于 figure/table 等下且路径上无 `levelledPara` 时得到 0，按一级标题处理。
+ */
+function ancestorLevelledParaDepthForTitle(doc: PMNode, titleStartPos: number): number {
+  let count = 0
+  try {
+    const $pos = doc.resolve(titleStartPos + 1)
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === 'levelledPara') count++
+    }
+  } catch {
+    return 1
+  }
+  return clampS1000dTitleDisplayLevel(Math.max(1, count))
+}
+
+function createS1000dTitleLevelsPlugin() {
+  return new Plugin({
+    key: s1000dTitleLevelsKey,
+    appendTransaction(transactions, _oldState, newState) {
+      const docChanged = transactions.some((tr) => tr.docChanged)
+      const forced = transactions.some((tr) => {
+        const meta = tr.getMeta(s1000dTitleLevelsKey)
+        return meta?.forceInitialSync === true
+      })
+      // 初始文档不经 dispatch，仅靠 Plugin.view + meta 走首次展平（见上方 view(...)）
+      if (!docChanged && !forced) return null
+
+      let tr = newState.tr
+      let changed = false
+
+      newState.doc.descendants((node, pos) => {
+        if (node.type.name !== 'title') return true
+
+        const next = ancestorLevelledParaDepthForTitle(newState.doc, pos)
+        const curr = clampS1000dTitleDisplayLevel(
+          Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
+        )
+
+        if (curr !== next) {
+          tr = tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            displayLevel: next,
+          })
+          changed = true
+        }
+        return true
+      })
+
+      return changed ? tr : null
+    },
+    view(editorView: EditorView) {
+      queueMicrotask(() => {
+        if (editorView.isDestroyed) return
+        editorView.dispatch(
+          editorView.state.tr.setMeta(s1000dTitleLevelsKey, {
+            forceInitialSync: true,
+          }),
+        )
+      })
+      return {}
+    },
+  })
+}
+
+function parseS1000dTitleDisplayLevelFromElement(el: Element): number {
+  const fromData = el.getAttribute('data-s1000d-title-level')
+  if (fromData != null && fromData.trim() !== '') {
+    const n = Number.parseInt(fromData, 10)
+    if (!Number.isNaN(n)) return clampS1000dTitleDisplayLevel(n)
+  }
+  const m = /^h([1-6])$/i.exec(el.tagName ?? '')
+  if (m) return clampS1000dTitleDisplayLevel(Number.parseInt(m[1], 10))
+  return 1
 }
 
 /** 编辑器内部块：承接 `warningAndCautionPara` 内、位于 `attentionRandomList` 之前的行内与前导内容（原装 XML 无此外壳，导入时写入）。 */
@@ -51,6 +147,10 @@ export const WarningAndCautionLead = Node.create({
       mergeAttributes(HTMLAttributes),
       0,
     ]
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(WarningAndCautionLeadNodeView)
   },
 })
 
@@ -238,18 +338,65 @@ export const S1000DNote = Node.create({
   },
 })
 
+/** h1～h6 + `data-s1000d-title`，层级数字由标签 / `data-s1000d-title-level` 经 `displayLevel.parseHTML` 读取。 */
+const s1000dTitleHeadingParseRules = (
+  [1, 2, 3, 4, 5, 6] as const
+).map((level) => ({
+  tag: `h${level}[data-s1000d-title]`,
+  priority: 100,
+  getAttrs: (el: HTMLElement) => {
+    if (!el || !(el instanceof Element)) return false
+    return isS1000DTitleParent(el.parentElement) ? {} : false
+  },
+}))
+
 /**
  * S1000D `title`：标题行块，Schema 为 `(text)*`；此处建模为 `inline*` 以支持后续行内标记扩展。
+ * 展示用标题级数由祖先 `levelledPara` 深度决定（一级 h1、嵌套一层 h2，以此类推，上限 6）。
  */
 export const S1000DTitle = Node.create({
   name: 'title',
   group: 'block',
   content: 'inline*',
 
+  addAttributes() {
+    return {
+      /** 仅用于编辑/HTML 往返，不落 S1000D XML `<title>` 属性 */
+      displayLevel: {
+        default: 1,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? parseS1000dTitleDisplayLevelFromElement(el)
+            : 1,
+        renderHTML: (attrs) => ({
+          'data-s1000d-title-level': String(
+            clampS1000dTitleDisplayLevel(
+              Number((attrs as { displayLevel?: number }).displayLevel ?? 1),
+            ),
+          ),
+        }),
+      },
+    }
+  },
+
+  addProseMirrorPlugins() {
+    return [createS1000dTitleLevelsPlugin()]
+  },
+
   parseHTML() {
     return [
       {
+        tag: 's1000d-block-title',
+        priority: 105,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false
+          return isS1000DTitleParent(el.parentElement) ? {} : false
+        },
+      },
+      ...s1000dTitleHeadingParseRules,
+      {
         tag: 'title',
+        priority: 51,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false
           return isS1000DTitleParent(el.parentElement) ? {} : false
@@ -258,8 +405,19 @@ export const S1000DTitle = Node.create({
     ]
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ['title', mergeAttributes(HTMLAttributes), 0]
+  renderHTML({ node, HTMLAttributes }) {
+    const level = clampS1000dTitleDisplayLevel(
+      Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
+    )
+    const tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+    return [
+      tag,
+      mergeAttributes(HTMLAttributes, {
+        'data-s1000d-title': '1',
+        class: 's1000d-title-display',
+      }),
+      0,
+    ]
   },
 })
 
@@ -286,6 +444,7 @@ export const S1000DPara = Node.create({
     return [
       {
         tag: 'para',
+        priority: 200,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false
           return {
@@ -327,8 +486,23 @@ export const S1000DDmRef = Node.create({
   inline: true,
   atom: true,
 
+  addAttributes() {
+    return {
+      rawXml: { default: '' }, // 增加 rawXml 存储黑盒数据
+    }
+  },
+
   parseHTML() {
-    return [{ tag: 'dmref' }, { tag: 'dmRef' }]
+    return [
+      {
+        tag: 'dmref',
+        getAttrs: (el) => ({ rawXml: (el as Element).innerHTML }),
+      },
+      {
+        tag: 'dmRef',
+        getAttrs: (el) => ({ rawXml: (el as Element).innerHTML }),
+      },
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -341,7 +515,6 @@ export const S1000DDmRef = Node.create({
     ]
   },
 })
-
 /**
  * S1000D `internalRef`：内部引用；兼容 `internalRef`/`internalref`/`span[data-s1000d-internal-ref]`。
  */
@@ -484,12 +657,23 @@ export const LevelledPara = Node.create({
   name: 'levelledPara',
   group: 'block',
   content:
-    '(title?) (warningAndCautionElemGroup | note | para | fmftElemGroup | table)* levelledPara*',
+    '(title?) (warningAndCautionElemGroup | note | para | fmftElemGroup | table | bulletList | orderedList)* levelledPara*',
   defining: true,
   isolating: true,
 
   parseHTML() {
-    return [{ tag: 'levelledPara' }]
+    return [
+      {
+        tag: 'section',
+        priority: 52,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false
+          return el.getAttribute('data-s1000d-node') === 'levelledPara' ? {} : false
+        },
+      },
+      { tag: 'levelledPara' },
+      { tag: 'levelledpara' },
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -503,6 +687,8 @@ export const LevelledPara = Node.create({
 
 /** S1000D 描述类节点注册顺序（子类型先于引用它们的容器）。 */
 export const s1000dPhase1Nodes = [
+  S1000DSub,
+  S1000DSup,
   S1000DEmphasis,
   AttentionListItemPara,
   AttentionRandomListItem,
@@ -519,6 +705,7 @@ export const s1000dPhase1Nodes = [
   S1000DInternalRef,
   S1000DGraphic,
   S1000DFigure,
+  ...s1000dTableNodes,
   LevelledPara,
 ] as const
 
@@ -599,6 +786,343 @@ function normalizeWarningAndCautionParasForEditor(descriptionRoot: Element) {
   }
 }
 
+function elementDepth(el: Element): number {
+  let d = 0
+  let p: Element | null = el.parentElement
+  while (p) {
+    d++
+    p = p.parentElement
+  }
+  return d
+}
+
+function renameXmlElementTag(el: Element, newName: string) {
+  const doc = el.ownerDocument
+  if (!doc) return
+  const neu = doc.createElement(newName)
+  for (const attr of Array.from(el.attributes)) {
+    neu.setAttribute(attr.name, attr.value)
+  }
+  while (el.firstChild) {
+    neu.appendChild(el.firstChild)
+  }
+  el.parentNode?.replaceChild(neu, el)
+}
+
+function isS1000dSequentialOrRandomListTag(ln: string): boolean {
+  return ln === 'sequentiallist' || ln === 'randomlist'
+}
+
+function normalizeListItemParasBeforeListRename(item: Element) {
+  const doc = item.ownerDocument
+  if (!doc) return
+  const paras = Array.from(item.children).filter(
+    (c) => c.localName.toLowerCase() === 'para',
+  )
+  for (const para of paras) {
+    const blocks: Element[] = []
+    const inlineParts: globalThis.ChildNode[] = []
+    for (const n of Array.from(para.childNodes)) {
+      if (n.nodeType === globalThis.Node.TEXT_NODE) {
+        inlineParts.push(n)
+        continue
+      }
+      if (n.nodeType === globalThis.Node.ELEMENT_NODE) {
+        const e = n as Element
+        const ln = e.localName.toLowerCase()
+        if (isS1000dSequentialOrRandomListTag(ln)) {
+          blocks.push(e)
+        } else {
+          inlineParts.push(n)
+        }
+      }
+    }
+    const meaningfulText = inlineParts.some(
+      (n) =>
+        n.nodeType === globalThis.Node.TEXT_NODE &&
+        (n.textContent?.trim()?.length ?? 0) > 0,
+    )
+    const nonTextInline = inlineParts.some(
+      (n) => n.nodeType === globalThis.Node.ELEMENT_NODE,
+    )
+    const frag = doc.createDocumentFragment()
+    if (
+      meaningfulText ||
+      nonTextInline ||
+      (inlineParts.length > 0 && blocks.length === 0)
+    ) {
+      const p = doc.createElement('p')
+      for (const n of inlineParts) p.appendChild(n)
+      frag.appendChild(p)
+    } else {
+      for (const n of inlineParts) frag.appendChild(n)
+    }
+    for (const b of blocks) frag.appendChild(b)
+    item.insertBefore(frag, para)
+    para.remove()
+  }
+}
+
+function normalizeMixedContentParas(description: Element) {
+  const paras = Array.from(description.getElementsByTagName('para'))
+  const doc = description.ownerDocument
+  if (!doc) return
+
+  for (const para of paras) {
+    // 检查是否包含列表等块级元素
+    let hasBlock = false
+    for (const child of Array.from(para.children)) {
+      const ln = child.localName.toLowerCase()
+      if (isS1000dSequentialOrRandomListTag(ln) || ln === 'figure' || ln === 'table') {
+        hasBlock = true
+        break
+      }
+    }
+    if (!hasBlock) continue
+
+    const parent = para.parentElement
+    if (!parent) continue
+
+    let currentParaContent: globalThis.Node[] = []
+    const flushPara = () => {
+      if (currentParaContent.length > 0) {
+        // 如果内部不仅是空白字符，则生成新的独立 para
+        const hasSubstance = currentParaContent.some(n =>
+          n.nodeType === globalThis.Node.ELEMENT_NODE ||
+          (n.nodeType === globalThis.Node.TEXT_NODE && n.textContent?.trim() !== '')
+        )
+        if (hasSubstance) {
+          const newPara = doc.createElement('para')
+          for (const n of currentParaContent) newPara.appendChild(n)
+          parent.insertBefore(newPara, para)
+        }
+        currentParaContent = []
+      }
+    }
+
+    // 遍历所有子节点（包含 Text 节点），遇到 block 则截断 para
+    for (const node of Array.from(para.childNodes)) {
+      if (node.nodeType === globalThis.Node.ELEMENT_NODE) {
+        const ln = (node as Element).localName.toLowerCase()
+        if (isS1000dSequentialOrRandomListTag(ln) || ln === 'figure' || ln === 'table') {
+          flushPara()
+          parent.insertBefore(node, para) // 块级元素提升到与 para 同级
+          continue
+        }
+      }
+      currentParaContent.push(node)
+    }
+    flushPara()
+    parent.removeChild(para) // 移除原始的混合 content para
+  }
+}
+
+/**
+ * 将描述 DOM 中的 S1000D 列表转为 HTML `ol`/`ul`/`li`/`p`，以便 StarterKit 列表与 `para` 的 `inline*` 共存。
+ * 须在序列化为 HTML 导入字符串之前、在已解析的 `description` 元素上调用。
+ */
+function normalizeS1000dListsForEditor(descriptionRoot: Element) {
+  const listItems = Array.from(descriptionRoot.getElementsByTagName('listItem'))
+  for (const item of listItems) {
+    normalizeListItemParasBeforeListRename(item)
+  }
+
+  normalizeMixedContentParas(descriptionRoot)
+
+  const sequentialLists = Array.from(
+    descriptionRoot.getElementsByTagName('sequentialList'),
+  )
+  sequentialLists.sort((a, b) => elementDepth(b) - elementDepth(a))
+  for (const el of sequentialLists) renameXmlElementTag(el, 'ol')
+
+  const randomLists = Array.from(descriptionRoot.getElementsByTagName('randomList'))
+  randomLists.sort((a, b) => elementDepth(b) - elementDepth(a))
+  for (const el of randomLists) renameXmlElementTag(el, 'ul')
+
+  const liAgain = Array.from(descriptionRoot.getElementsByTagName('listItem'))
+  liAgain.sort((a, b) => elementDepth(b) - elementDepth(a))
+  for (const el of liAgain) renameXmlElementTag(el, 'li')
+}
+
+/**
+ * DOM `text/html` 会与文档 `<title>` 冲突或不保留 body 内的 `<title>`，导入前将片段中的 S1000D
+ * `title` 换为 `s1000d-block-title`（由 `S1000DTitle.parseHTML` 识别）。
+ */
+function renameS1000dTitleTagsForHtmlImport(fragmentXml: string): string {
+  return fragmentXml
+    .replace(/<title(\s[^>]*)?>/gi, '<s1000d-block-title$1>')
+    .replace(/<\/title>/gi, '</s1000d-block-title>')
+}
+
+/**
+ * HTML 解析不认 XML 自闭合：`<para/>`、`<s1000d-block-title/>` 会变成未闭合起始标签，
+ * tbody/td 内外结构错乱，整段易被当成段落纯文本渲染。
+ */
+function normalizeS1000dSelfClosingElementsForHtmlImport(s: string): string {
+  return s.replace(/<([a-zA-Z0-9_-]+)([^>]*?)\s*\/\s*>/g, '<$1$2></$1>')
+}
+
+/**
+ * XML 序列化常在 `</thead>` 与 `<tbody>` 等之间留白；`text/html` 解析成「仅空白」的 #text，
+ * Schema 无法在 `thead`/`tbody` 下接纳，整块表格导入会失败，表现为整段成纯文本或其它退化。
+ */
+function collapseWhitespaceBetweenTags(html: string): string {
+  return html.replace(/>\s+</g, '><')
+}
+
+/** 用户若粘贴完整 HTML 文档，去掉不参与正文的包裹标签以免干扰解析（如尾随 `</body>`）。 */
+function stripHtmlDocumentWrapperTags(fragment: string): string {
+  return fragment.replace(/<\/?\s*(html|head|body)\b[^>]*>\s*/gi, '')
+}
+
+function escapeAttrForQuotedDouble(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+}
+
+/** 剥离 tgroup 上已提取到 data-s1000d-tgroup-cols 的 cols 属性，避免写入 HTML table 后与 class 语义重复 */
+function stripTgroupColsAttr(attrs: string): string {
+  return attrs
+    .replace(/\bcols\s*=\s*"[^"]*"/gi, '')
+    .replace(/\bcols\s*=\s*'[^']*'/gi, '')
+    .replace(/\bcols\s*=\s*[^\s>]*/gi, '')
+    .trim()
+}
+
+/**
+ * XML 内部的 <tgroup>…</tgroup> 转为「内层表格」：`table.s1000d-tgroup-table` + thead/tbody + tr/td，
+ * 供现有 `parseHTML` 吃进 `tgroup` / `row` / `entry` 等价结构。
+ */
+function convertS1000dTableInnerToHtml(innerXml: string): string {
+  let s = innerXml.replace(/<\s*tgroup\b([^>]*)>/gi, (_full, attrs: string) => {
+    let colsVal = ''
+    const q =
+      /\bcols\s*=\s*(["'])((?:\\.|[^\\])*?)\1/i.exec(attrs) ?? null
+    if (q?.[2] != null && q[2].length > 0) {
+      colsVal = q[2]
+    } else {
+      const u = /\bcols\s*=\s*(\S+)/i.exec(attrs)
+      if (u?.[1]) {
+        colsVal = u[1].replace(/^["']/g, '').replace(/["']$/g, '')
+      }
+    }
+    const rest = stripTgroupColsAttr(attrs)
+    const tail = rest ? ` ${rest}` : ''
+    return `<table class="s1000d-tgroup-table"${tail} data-s1000d-tgroup-cols="${escapeAttrForQuotedDouble(colsVal)}">`
+  })
+  s = s.replace(/<\/\s*tgroup\s*>/gi, '</table>')
+  s = s.replace(/<\s*row\b([^>]*)>/gi, '<tr$1>')
+  s = s.replace(/<\/\s*row\s*>/gi, '</tr>')
+  s = s.replace(/<\s*entry\b([^>]*)>/gi, '<td$1>')
+  s = s.replace(/<\/\s*entry\s*>/gi, '</td>')
+  return s
+}
+
+/** 已由 `convertS1000dTableInnerToHtml` 生成的内层网格表，不得再按「外层 S1000D table」二次包裹，否则 `setContent(getHTML())` 会破坏 DOM，整段落成纯文本。 */
+function isS1000dTgroupGridTableOpenTag(openTagFull: string): boolean {
+  return /\bs1000d-tgroup-table\b/i.test(openTagFull)
+}
+
+/** 从 `<table` 起始位置起，找到与之平衡的 `</table>` 结束位置（不含闭合标签本身）。 */
+function findBalancedTableCloseRange(
+  fragment: string,
+  lower: string,
+  innerStart: number,
+): { innerEndCloseStart: number; closeLen: number } | null {
+  let depth = 1
+  let pos = innerStart
+  let innerEndCloseStart = -1
+  while (depth > 0 && pos < fragment.length) {
+    const iOpen = lower.indexOf('<table', pos)
+    const iClose = lower.indexOf('</table>', pos)
+    if (iClose === -1) break
+
+    const hasInnerOpen = iOpen !== -1 && iOpen < iClose
+
+    if (hasInnerOpen) {
+      depth += 1
+      const gt = fragment.indexOf('>', iOpen)
+      pos = gt === -1 ? iOpen + 6 : gt + 1
+    } else {
+      depth -= 1
+      if (depth === 0) {
+        innerEndCloseStart = iClose
+        break
+      }
+      const gt = fragment.indexOf('>', iClose)
+      pos = gt === -1 ? iClose + 8 : gt + 1
+    }
+  }
+
+  if (innerEndCloseStart === -1) return null
+
+  const closePiece = fragment.slice(innerEndCloseStart)
+  const closeMatch = /<\/\s*table\s*>/.exec(closePiece)
+  const closeLen = closeMatch?.[0]?.length ?? 8
+  return { innerEndCloseStart, closeLen }
+}
+
+/** 外层 S1000D `<table>...</table>` 用 div 包住，并把 tgroup 等转为浏览器可接受的表格 HTML，否则 text/html 会 foster 掉非法子节点导致整段成纯文本 */
+function sanitizeS1000dXmlTablesForHtmlImport(fragment: string): string {
+  const lower = fragment.toLowerCase()
+  let out = ''
+  let cursor = 0
+
+  while (cursor < fragment.length) {
+    const openIdx = lower.indexOf('<table', cursor)
+    if (openIdx === -1) {
+      out += fragment.slice(cursor)
+      return out
+    }
+    out += fragment.slice(cursor, openIdx)
+
+    const gtIdx = fragment.indexOf('>', openIdx)
+    if (gtIdx === -1) {
+      out += fragment.slice(openIdx)
+      return out
+    }
+    const openTagFull = fragment.slice(openIdx, gtIdx + 1)
+    const innerStart = gtIdx + 1
+
+    const balanced = findBalancedTableCloseRange(fragment, lower, innerStart)
+    if (!balanced) {
+      out += fragment.slice(openIdx)
+      cursor = fragment.length
+      continue
+    }
+    const { innerEndCloseStart, closeLen } = balanced
+
+    /** 内层 tgroup 渲染表：原样拷贝，避免二次 sanitize 把结构撕碎 */
+    if (isS1000dTgroupGridTableOpenTag(openTagFull)) {
+      out += fragment.slice(openIdx, innerEndCloseStart + closeLen)
+      cursor = innerEndCloseStart + closeLen
+      continue
+    }
+
+    const innerXml = fragment.slice(innerStart, innerEndCloseStart)
+    const idM = /\bid\s*=\s*(["'])(.*?)\1/i.exec(openTagFull)
+    const idAttr = idM ? ` id="${escapeAttrForQuotedDouble(idM[2])}"` : ''
+    const innerHtml = convertS1000dTableInnerToHtml(innerXml)
+    out += `<div data-s1000d-xml-table="1"${idAttr}>${innerHtml}</div>`
+
+    cursor = innerEndCloseStart + closeLen
+  }
+
+  return out
+}
+
+/**
+ * 供 `editor.setContent(...)`（HTML）前调用：将与 XML 等价但 HTML 不认的片段整理好。
+ */
+export function preprocessS1000dDescriptionHtmlFragment(fragmentXml: string): string {
+  const stripped = stripHtmlDocumentWrapperTags(fragmentXml.trim())
+  const body = sanitizeS1000dXmlTablesForHtmlImport(
+    normalizeS1000dSelfClosingElementsForHtmlImport(
+      renameS1000dTitleTagsForHtmlImport(stripped),
+    ),
+  )
+  return collapseWhitespaceBetweenTags(body)
+}
+
 /**
  * 从 DM 正文字符串中取出可用于 `editor.setContent` 的片段：
  * 截取 `<content>` → `<description>` 的**直接子节点**，序列化为连续 XML 字符串（无 `<description>` 外壳）。
@@ -612,10 +1136,13 @@ export function getDescriptionInnerXmlFromDmXml(xmlString: string): string | nul
   )
   if (!description) return null
   normalizeWarningAndCautionParasForEditor(description)
+  normalizeS1000dListsForEditor(description)
   const serializer = new XMLSerializer()
   const parts: string[] = []
   for (const child of Array.from(description.children)) {
     parts.push(serializer.serializeToString(child))
   }
-  return parts.length > 0 ? parts.join('') : null
+  const joined = parts.length > 0 ? parts.join('') : null
+  if (!joined) return null
+  return preprocessS1000dDescriptionHtmlFragment(joined)
 }

@@ -1,10 +1,33 @@
 import type { NodeViewProps } from '@tiptap/react'
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 
-function WarningTriangleIcon() {
+/** 从文档位置向上解析，判断是否位于 `caution` 内（否则视为 `warning`）。 */
+function attentionKindFromPos(
+  getPos: (() => number | undefined) | undefined,
+  props: NodeViewProps,
+): 'warning' | 'caution' {
+  const gp = typeof getPos === 'function' ? getPos : undefined
+  if (!gp) return 'warning'
+  const pos = gp()
+  if (pos == null) return 'warning'
+  try {
+    const { doc } = props.editor.state
+    const $pos = doc.resolve(Math.min(pos, doc.content.size))
+    for (let d = $pos.depth; d >= 0; d--) {
+      const name = $pos.node(d).type.name
+      if (name === 'caution') return 'caution'
+      if (name === 'warning') return 'warning'
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'warning'
+}
+
+export function WarningTriangleIcon() {
   return (
     <svg
-      className="s1000d-attention-block__icon-svg"
+      className="s1000d-attention-lead__icon-svg"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -30,6 +53,49 @@ function WarningTriangleIcon() {
   )
 }
 
+/** 注意：橙色主题下使用的信息圈「i」图标 */
+function CautionInfoIcon() {
+  return (
+    <svg
+      className="s1000d-attention-lead__icon-svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9.25" stroke="currentColor" strokeWidth="1.75" />
+      <circle cx="12" cy="8.25" r="1.15" fill="currentColor" />
+      <path
+        d="M12 11.25v6.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/**
+ * `warningAndCautionLead`：图标 + 可编辑引导文同一行，与示意稿一致。
+ */
+export function WarningAndCautionLeadNodeView(props: NodeViewProps) {
+  const kind = attentionKindFromPos(props.getPos, props)
+  return (
+    <NodeViewWrapper
+      as="div"
+      className="s1000d-attention-lead"
+      data-s1000d-lead-kind={kind}
+    >
+      <span className="s1000d-attention-lead__icon" contentEditable={false} aria-hidden>
+        {kind === 'caution' ? <CautionInfoIcon /> : <WarningTriangleIcon />}
+      </span>
+      <NodeViewContent className="s1000d-attention-lead__text" />
+    </NodeViewWrapper>
+  )
+}
+
 /**
  * `warning` / `caution` 共用外壳：通过 `node.type.name` 区分皮肤与 `data-s1000d-node`。
  */
@@ -42,11 +108,6 @@ export function WarningNodeView(props: NodeViewProps) {
       data-s1000d-node={kind}
       role="note"
     >
-      {/* <header className="s1000d-attention-block__header" contentEditable={false}>
-        <span className="s1000d-attention-block__icon-wrap" aria-hidden>
-          <WarningTriangleIcon />
-        </span>
-      </header> */}
       <NodeViewContent className="s1000d-attention-block__body" />
     </NodeViewWrapper>
   )
