@@ -243,6 +243,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
 
     return (
       <div className="ietm-editor-root">
+        <div className="ietm-editor-chrome">
         <header className="ietm-app-header">
           <nav className="ietm-app-nav" aria-label="主菜单">
             <div className="ietm-menu">
@@ -403,6 +404,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         </header>
 
         <FormatToolbar editor={editor} />
+        </div>
 
         <div className="ietm-app-main">
           <div

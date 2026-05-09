@@ -352,7 +352,7 @@ const s1000dTitleHeadingParseRules = (
 
 /**
  * S1000D `title`：标题行块，Schema 为 `(text)*`；此处建模为 `inline*` 以支持后续行内标记扩展。
- * 展示用标题级数由祖先 `levelledPara` 深度决定（一级 h1、嵌套一层 h2，以此类推，上限 6）。
+ * 展示级数由祖先 `levelledPara` 深度决定（上限 6），但渲染为统一块标签，避免输出语义 h1~h6。
  */
 export const S1000DTitle = Node.create({
   name: 'title',
@@ -409,11 +409,11 @@ export const S1000DTitle = Node.create({
     const level = clampS1000dTitleDisplayLevel(
       Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
     )
-    const tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
     return [
-      tag,
+      's1000d-block-title',
       mergeAttributes(HTMLAttributes, {
         'data-s1000d-title': '1',
+        'data-s1000d-title-level': String(level),
         class: 's1000d-title-display',
       }),
       0,

@@ -1,4 +1,4 @@
-﻿.ietm-editor-surface .tiptap h1.s1000d-title-display {
+﻿.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='1'] {
   display: block;
   font-size: 1.5rem;
   font-weight: 700;
@@ -7,7 +7,7 @@
   color: #0f172a;
 }
 
-.ietm-editor-surface .tiptap h2.s1000d-title-display {
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='2'] {
   display: block;
   font-size: 1.22rem;
   font-weight: 650;
@@ -16,7 +16,7 @@
   color: #0f172a;
 }
 
-.ietm-editor-surface .tiptap h3.s1000d-title-display {
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='3'] {
   display: block;
   font-size: 1.08rem;
   font-weight: 625;
@@ -25,7 +25,7 @@
   color: #1e293b;
 }
 
-.ietm-editor-surface .tiptap h4.s1000d-title-display {
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='4'] {
   display: block;
   font-size: 1rem;
   font-weight: 600;
@@ -34,7 +34,7 @@
   color: #334155;
 }
 
-.ietm-editor-surface .tiptap h5.s1000d-title-display {
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='5'] {
   display: block;
   font-size: 0.95rem;
   font-weight: 600;
@@ -43,7 +43,7 @@
   color: #475569;
 }
 
-.ietm-editor-surface .tiptap h6.s1000d-title-display {
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='6'] {
   display: block;
   font-size: 0.9rem;
   font-weight: 600;
@@ -52,11 +52,26 @@
   color: #64748b;
 }
 
-/* figure 等块内短标题（任意层级语义 heading 略微缩小） */
-.ietm-editor-surface .tiptap figure > :is(h1, h2, h3, h4, h5, h6).s1000d-title-display {
+/* figure 等块内短标题（任意层级）略微缩小 */
+.ietm-editor-surface .tiptap figure > .s1000d-title-display {
   font-size: 1.05em;
   font-weight: 600;
   margin: 0.35em 0 0.2em;
+}
+
+/* table 标题：不使用 heading 语义，视觉按业务示例居中、浅灰并带短下划线 */
+.ietm-editor-surface .tiptap .s1000d-table-wrap > .s1000d-title-display {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 14px;
+  padding: 0 6px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #66696c;
+  text-align: center;
+  border-bottom: 1px solid #8e9297;
 }
 
 .ietm-editor-surface .tiptap para {
