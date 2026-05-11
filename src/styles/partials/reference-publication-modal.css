@@ -3,8 +3,8 @@
 /* Arco 版引用出版物弹框布局 */
 .ietm-ref-pub-arco-body {
   display: flex;
-  min-height: 420px;
-  max-height: min(560px, 72vh);
+  min-height: 520px;
+  max-height: min(680px, 82vh);
 }
 
 .ietm-ref-pub-arco-sidebar {
@@ -37,10 +37,16 @@
 .ietm-ref-pub-arco-table-wrap {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  /* 纵向滚动交给 Arco Table 的 scroll.y，避免外层与表体双滚动条 */
+  overflow: hidden;
 }
 
 .ietm-ref-pub-arco-pagination {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-end;
+  align-items: center;
   padding: 10px 12px;
   border-top: 1px solid var(--ietm-arco-color-border-2);
 }

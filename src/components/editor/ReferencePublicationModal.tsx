@@ -9,7 +9,13 @@ import {
   Table,
   Tree,
 } from "@arco-design/web-react";
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 
@@ -124,7 +130,26 @@ function ReferencePublicationDialog() {
   );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  /** 表体滚动高度：容器高度减去表头行约高，供 Arco Table `scroll.y` 固定表头 */
+  const [tableBodyScrollY, setTableBodyScrollY] = useState(400);
+
+  useLayoutEffect(() => {
+    const el = tableWrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const h = el.clientHeight;
+      if (h <= 0) return;
+      const headerApprox = 44;
+      setTableBodyScrollY(Math.max(120, Math.floor(h - headerApprox)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -174,7 +199,7 @@ function ReferencePublicationDialog() {
     if (!key || !LEAF_ID_SET.has(key)) return;
     setActiveMenuId(key);
     setPage(1);
-    setSelectedId(null);
+    setSelectedIds([]);
   }, []);
 
   const handleConfirm = () => {
@@ -182,20 +207,19 @@ function ReferencePublicationDialog() {
       closeInsertPublication();
       return;
     }
-    const row = ALL_ROWS.find((r) => r.id === selectedId);
-    if (row) {
-      editor
-        .chain()
-        .focus()
-        .insertContent({
-          type: "image",
-          attrs: {
-            src: row.preview,
-            alt: row.title,
-            figureId: row.code,
-          },
-        })
-        .run();
+    const rows = selectedIds
+      .map((id) => ALL_ROWS.find((r) => r.id === id))
+      .filter((r): r is PublicationRow => r != null);
+    if (rows.length > 0) {
+      const images = rows.map((row) => ({
+        type: "image" as const,
+        attrs: {
+          src: row.preview,
+          alt: row.title,
+          figureId: row.code,
+        },
+      }));
+      editor.chain().focus().insertContent(images).run();
     }
     closeInsertPublication();
   };
@@ -254,19 +278,21 @@ function ReferencePublicationDialog() {
           </div>
         </div>
         <div className="ietm-ref-pub-arco-main">
-          <div className="ietm-ref-pub-arco-table-wrap">
+          <div className="ietm-ref-pub-arco-table-wrap" ref={tableWrapRef}>
             <Table<PublicationRow>
               rowKey="id"
               columns={columns}
               data={pageRows}
               pagination={false}
               border
+              tableLayoutFixed
+              scroll={{ y: tableBodyScrollY }}
               noDataElement={<Empty description="当前分类下无匹配数据" />}
               rowSelection={{
-                type: "radio",
-                selectedRowKeys: selectedId ? [selectedId] : [],
+                type: "checkbox",
+                selectedRowKeys: selectedIds,
                 onChange: (keys) => {
-                  setSelectedId((keys[0] as string | undefined) ?? null);
+                  setSelectedIds(keys as string[]);
                 },
               }}
             />
