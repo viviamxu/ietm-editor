@@ -47,6 +47,7 @@
     "release:major": "pnpm version major && pnpm publish"
   },
   "dependencies": {
+    "@arco-design/web-react": "^2.66.15",
     "@tiptap/core": "^3.22.5",
     "@tiptap/extension-highlight": "3.22.5",
     "@tiptap/extension-image": "^3.22.5",
@@ -56,6 +57,7 @@
     "@tiptap/pm": "^3.22.5",
     "@tiptap/react": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
+    "less": "^4.6.4",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

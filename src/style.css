@@ -11,7 +11,7 @@
 @import './styles/partials/s1000d-applicability.css';
 @import './styles/partials/s1000d-content.css';
 @import './styles/partials/s1000d-nodeviews.css';
-@import './styles/partials/reference-publication-modal.css';
+@import './styles/partials/arco-ietm.less';
 
 @tailwind base;
 @tailwind components;

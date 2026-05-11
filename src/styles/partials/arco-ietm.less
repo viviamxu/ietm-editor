@@ -1,0 +1,69 @@
+/*
+ * Arco Design React：自定义 class 前缀 + CSS 变量挂载在 .ietm-arco-root，
+ * 与 ConfigProvider prefixCls="ietm-arco" 一致；不引入 es/style/index.less，避免 normalize 污染全局 html/body。
+ */
+@prefix: ietm-arco;
+@arco-theme-tag: ~'.ietm-arco-root';
+
+@import '@arco-design/web-react/es/style/theme/default.less';
+@import '@arco-design/web-react/es/style/theme/css-variables.less';
+@import '@arco-design/web-react/es/style/mixin.less';
+@import '@arco-design/web-react/es/style/icon.less';
+@import '@arco-design/web-react/es/style/animation.less';
+
+@import '@arco-design/web-react/es/Trigger/style/index.less';
+@import '@arco-design/web-react/es/ResizeBox/style/index.less';
+@import '@arco-design/web-react/es/Button/style/index.less';
+@import '@arco-design/web-react/es/Input/style/index.less';
+@import '@arco-design/web-react/es/Select/style/index.less';
+@import '@arco-design/web-react/es/Checkbox/style/index.less';
+@import '@arco-design/web-react/es/Radio/style/index.less';
+@import '@arco-design/web-react/es/Spin/style/index.less';
+@import '@arco-design/web-react/es/Empty/style/index.less';
+@import '@arco-design/web-react/es/Tooltip/style/index.less';
+@import '@arco-design/web-react/es/Popover/style/index.less';
+@import '@arco-design/web-react/es/Dropdown/style/index.less';
+@import '@arco-design/web-react/es/Menu/style/index.less';
+@import '@arco-design/web-react/es/Pagination/style/index.less';
+@import '@arco-design/web-react/es/Table/style/index.less';
+@import '@arco-design/web-react/es/Tree/style/index.less';
+@import '@arco-design/web-react/es/Modal/style/index.less';
+@import '@arco-design/web-react/es/Divider/style/index.less';
+@import '@arco-design/web-react/es/Space/style/index.less';
+
+/* 给隔离容器一个稳定的基础排版，避免宿主全局样式影响 Arco 内部 */
+.ietm-arco-root {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(~'@{arco-cssvars-prefix}-color-text-1');
+}
+
+/* 弹框内布局（非 Arco token，仅本 SDK） */
+.ietm-ref-pub-arco-body {
+  display: flex;
+  min-height: 420px;
+  max-height: min(560px, 72vh);
+}
+
+.ietm-ref-pub-arco-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(~'@{arco-cssvars-prefix}-color-border-2');
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ietm-ref-pub-arco-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ietm-ref-pub-arco-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
