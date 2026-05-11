@@ -1,7 +1,19 @@
+import type { TableColumnProps, TreeProps } from '@arco-design/web-react'
+import {
+  Button,
+  Empty,
+  Input,
+  Modal,
+  Pagination,
+  Space,
+  Table,
+  Tree,
+} from '@arco-design/web-react'
 import { useCallback, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
 
 import { useInsertPublicationModalStore } from '../../store/insertPublicationModalStore'
+
+type ArcoTreeDataNode = NonNullable<TreeProps['treeData']>[number]
 
 type MenuItem = {
   id: string
@@ -19,7 +31,6 @@ type PublicationRow = {
   preview: string
 }
 
-/** 左侧树：与截图类似的层级（演示数据） */
 const MENU_TREE: MenuItem[] = [
   {
     id: 'product',
@@ -54,6 +65,29 @@ function collectLeafIds(nodes: MenuItem[], out: string[] = []): string[] {
 }
 
 const LEAF_IDS = collectLeafIds(MENU_TREE)
+const LEAF_ID_SET = new Set(LEAF_IDS)
+
+function collectParentIds(nodes: MenuItem[], out: string[] = []): string[] {
+  for (const n of nodes) {
+    if (n.children?.length) {
+      out.push(n.id)
+      collectParentIds(n.children, out)
+    }
+  }
+  return out
+}
+
+const DEFAULT_EXPANDED_KEYS = collectParentIds(MENU_TREE)
+
+function toTreeData(nodes: MenuItem[]): ArcoTreeDataNode[] {
+  return nodes.map((n) => ({
+    key: n.id,
+    title: n.label,
+    children: n.children?.length ? toTreeData(n.children) : undefined,
+  }))
+}
+
+const TREE_DATA = toTreeData(MENU_TREE)
 
 function makeMockRows(): PublicationRow[] {
   const rows: PublicationRow[] = []
@@ -77,83 +111,6 @@ function makeMockRows(): PublicationRow[] {
 
 const ALL_ROWS = makeMockRows()
 
-function TreeRows(props: {
-  nodes: MenuItem[]
-  depth: number
-  expanded: Set<string>
-  toggle: (id: string) => void
-  activeId: string
-  onSelectLeaf: (id: string) => void
-}) {
-  const { nodes, depth, expanded, toggle, activeId, onSelectLeaf } = props
-  return (
-    <>
-      {nodes.map((node) => {
-        const hasChildren = Boolean(node.children?.length)
-        const isOpen = expanded.has(node.id)
-        const isLeaf = !hasChildren
-        const isActive = activeId === node.id
-
-        return (
-          <div key={node.id} className="ietm-ref-pub-tree__node">
-            <div
-              className={`ietm-ref-pub-tree__row ${isActive ? 'is-active' : ''}`}
-              style={{ paddingLeft: 12 + depth * 14 }}
-              role="treeitem"
-              aria-expanded={hasChildren ? isOpen : undefined}
-              onClick={() => {
-                if (isLeaf) onSelectLeaf(node.id)
-                else toggle(node.id)
-              }}
-            >
-              {hasChildren ? (
-                <button
-                  type="button"
-                  className="ietm-ref-pub-tree__toggle"
-                  aria-label={isOpen ? '折叠' : '展开'}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggle(node.id)
-                  }}
-                >
-                  {isOpen ? '▼' : '▶'}
-                </button>
-              ) : (
-                <span className="ietm-ref-pub-tree__toggle" aria-hidden />
-              )}
-              <span className="ietm-ref-pub-tree__label">{node.label}</span>
-            </div>
-            {hasChildren && isOpen ? (
-              <TreeRows
-                nodes={node.children!}
-                depth={depth + 1}
-                expanded={expanded}
-                toggle={toggle}
-                activeId={activeId}
-                onSelectLeaf={onSelectLeaf}
-              />
-            ) : null}
-          </div>
-        )
-      })}
-    </>
-  )
-}
-
-function defaultExpandedIds(nodes: MenuItem[]): Set<string> {
-  const s = new Set<string>()
-  const walk = (list: MenuItem[]) => {
-    for (const n of list) {
-      if (n.children?.length) {
-        s.add(n.id)
-        walk(n.children)
-      }
-    }
-  }
-  walk(nodes)
-  return s
-}
-
 function ReferencePublicationDialog() {
   const editor = useInsertPublicationModalStore((s) => s.editor)
   const closeInsertPublication = useInsertPublicationModalStore(
@@ -161,36 +118,18 @@ function ReferencePublicationDialog() {
   )
 
   const [search, setSearch] = useState('')
-  const [expanded, setExpanded] = useState(() => defaultExpandedIds(MENU_TREE))
   const [activeMenuId, setActiveMenuId] = useState(() => LEAF_IDS[0] ?? '')
+  const [expandedKeys, setExpandedKeys] = useState<string[]>(DEFAULT_EXPANDED_KEYS)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [jumpInput, setJumpInput] = useState('')
-
-  const toggle = useCallback((id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
-
-  const onSelectLeaf = useCallback((id: string) => {
-    setActiveMenuId(id)
-    setPage(1)
-    setSelectedId(null)
-  }, [])
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase()
     return ALL_ROWS.filter((r) => {
       if (r.menuId !== activeMenuId) return false
       if (!q) return true
-      return (
-        r.title.toLowerCase().includes(q) || r.code.toLowerCase().includes(q)
-      )
+      return r.title.toLowerCase().includes(q) || r.code.toLowerCase().includes(q)
     })
   }, [activeMenuId, search])
 
@@ -202,15 +141,37 @@ function ReferencePublicationDialog() {
     return filteredRows.slice(start, start + pageSize)
   }, [filteredRows, displayPage, pageSize])
 
-  const pageButtons = useMemo(() => {
-    const maxBtn = 5
-    let start = Math.max(1, displayPage - 2)
-    const end = Math.min(totalPages, start + maxBtn - 1)
-    start = Math.max(1, end - maxBtn + 1)
-    const arr: number[] = []
-    for (let i = start; i <= end; i++) arr.push(i)
-    return arr
-  }, [displayPage, totalPages])
+  const columns: TableColumnProps<PublicationRow>[] = useMemo(
+    () => [
+      { title: '标题', dataIndex: 'title', width: 220 },
+      { title: '编码', dataIndex: 'code', width: 260 },
+      { title: '版本', dataIndex: 'version', width: 80 },
+      { title: '密级', dataIndex: 'security', width: 80 },
+      {
+        title: '预览',
+        dataIndex: 'preview',
+        width: 100,
+        render: (_: unknown, row: PublicationRow) => (
+          <img
+            className="ietm-ref-pub-arco-preview"
+            src={row.preview}
+            alt=""
+            width={48}
+            height={48}
+          />
+        ),
+      },
+    ],
+    [],
+  )
+
+  const onTreeSelect = useCallback((keys: string[]) => {
+    const key = keys[0]
+    if (!key || !LEAF_ID_SET.has(key)) return
+    setActiveMenuId(key)
+    setPage(1)
+    setSelectedId(null)
+  }, [])
 
   const handleConfirm = () => {
     if (!editor) {
@@ -235,178 +196,95 @@ function ReferencePublicationDialog() {
     closeInsertPublication()
   }
 
+  const popupContainer = useCallback(() => {
+    return document.getElementById('ietm-sdk-portal-root') || document.body
+  }, [])
+
   return (
-    <div
-      className="ietm-ref-pub-overlay"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) closeInsertPublication()
-      }}
-    >
-      <div
-        className="ietm-ref-pub-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="ietm-ref-pub-title"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="ietm-ref-pub-dialog__head" id="ietm-ref-pub-title">
-          引用出版物
+    <Modal
+      title="插入 S1000D 出版物"
+      visible
+      maskClosable={false}
+      onCancel={closeInsertPublication}
+      getPopupContainer={popupContainer}
+      getChildrenPopupContainer={() => popupContainer()}
+      style={{ width: 960 }}
+      footer={
+        <div className="ietm-ref-pub-arco-footer">
+          <Space>
+            <Button onClick={closeInsertPublication}>取消</Button>
+            <Button type="primary" onClick={handleConfirm}>
+              确定
+            </Button>
+          </Space>
         </div>
-        <div className="ietm-ref-pub-dialog__body">
-          <aside className="ietm-ref-pub-sidebar" aria-label="分类">
-            <div className="ietm-ref-pub-search">
-              <input
-                type="search"
-                placeholder="输入标题/编码检索"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPage(1)
-                }}
-                aria-label="输入标题或编码检索"
-              />
-            </div>
-            <nav className="ietm-ref-pub-tree" role="tree">
-              <TreeRows
-                nodes={MENU_TREE}
-                depth={0}
-                expanded={expanded}
-                toggle={toggle}
-                activeId={activeMenuId}
-                onSelectLeaf={onSelectLeaf}
-              />
-            </nav>
-          </aside>
-          <div className="ietm-ref-pub-main">
-            <div className="ietm-ref-pub-table-wrap">
-              <table className="ietm-ref-pub-table">
-                <thead>
-                  <tr>
-                    <th
-                      className="ietm-ref-pub-table__check"
-                      scope="col"
-                      aria-label="选择"
-                    />
-                    <th scope="col">标题</th>
-                    <th scope="col">编码</th>
-                    <th scope="col">版本</th>
-                    <th scope="col">密级</th>
-                    <th scope="col">预览</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageRows.map((row) => (
-                    <tr key={row.id}>
-                      <td className="ietm-ref-pub-table__check">
-                        <input
-                          type="radio"
-                          name="ietm-ref-pub-pick"
-                          checked={selectedId === row.id}
-                          onChange={() => setSelectedId(row.id)}
-                          aria-label={`选择 ${row.title}`}
-                        />
-                      </td>
-                      <td>{row.title}</td>
-                      <td>{row.code}</td>
-                      <td>{row.version}</td>
-                      <td>{row.security}</td>
-                      <td>
-                        <img
-                          className="ietm-ref-pub-preview"
-                          src={row.preview}
-                          alt=""
-                          loading="lazy"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {pageRows.length === 0 ? (
-                <p
-                  style={{
-                    padding: '24px 12px',
-                    color: '#6b7280',
-                    fontSize: 14,
-                    margin: 0,
-                  }}
-                >
-                  当前分类下无匹配数据
-                </p>
-              ) : null}
-            </div>
-            <div className="ietm-ref-pub-pagination">
-              <label>
-                每页{' '}
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value))
-                    setPage(1)
-                  }}
-                  aria-label="每页条数"
-                >
-                  {[10, 20, 50].map((n) => (
-                    <option key={n} value={n}>
-                      每页 {n} 条
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="ietm-ref-pub-pagination__pages" role="navigation">
-                {pageButtons.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    className={p === displayPage ? 'is-current' : ''}
-                    onClick={() => setPage(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <label className="ietm-ref-pub-pagination__jump">
-                跳转至
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={jumpInput}
-                  placeholder={String(displayPage)}
-                  onChange={(e) => setJumpInput(e.target.value.replace(/\D/g, ''))}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter') return
-                    const n = Number.parseInt(jumpInput, 10)
-                    if (!Number.isNaN(n) && n >= 1 && n <= totalPages) {
-                      setPage(n)
-                      setJumpInput('')
-                    }
-                  }}
-                  aria-label="页码"
-                />
-                页
-              </label>
-            </div>
+      }
+    >
+      <div className="ietm-ref-pub-arco-body">
+        <div className="ietm-ref-pub-arco-sidebar">
+          <div className="ietm-ref-pub-arco-search">
+            <Input.Search
+              allowClear
+              placeholder="输入标题/编码检索"
+              value={search}
+              onChange={(v) => {
+                setSearch(v)
+                setPage(1)
+              }}
+              onSearch={() => setPage(1)}
+            />
+          </div>
+          <div className="ietm-ref-pub-arco-tree-wrap">
+            <Tree
+              treeData={TREE_DATA}
+              selectedKeys={[activeMenuId]}
+              expandedKeys={expandedKeys}
+              onExpand={(keys) => setExpandedKeys(keys as string[])}
+              onSelect={onTreeSelect}
+              blockNode
+            />
           </div>
         </div>
-        <div className="ietm-ref-pub-dialog__foot">
-          <button
-            type="button"
-            className="ietm-ref-pub-btn"
-            onClick={() => closeInsertPublication()}
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            className="ietm-ref-pub-btn ietm-ref-pub-btn--primary"
-            onClick={handleConfirm}
-          >
-            确定
-          </button>
+        <div className="ietm-ref-pub-arco-main">
+          <div className="ietm-ref-pub-arco-table-wrap">
+            <Table<PublicationRow>
+              rowKey="id"
+              columns={columns}
+              data={pageRows}
+              pagination={false}
+              border
+              noDataElement={<Empty description="当前分类下无匹配数据" />}
+              rowSelection={{
+                type: 'radio',
+                selectedRowKeys: selectedId ? [selectedId] : [],
+                onChange: (keys) => {
+                  setSelectedId((keys[0] as string | undefined) ?? null)
+                },
+              }}
+            />
+          </div>
+          <div className="ietm-ref-pub-arco-pagination">
+            <Pagination
+              showTotal
+              sizeCanChange
+              sizeOptions={[10, 20, 50]}
+              total={filteredRows.length}
+              current={displayPage}
+              pageSize={pageSize}
+              onChange={(p, ps) => {
+                setPageSize(ps)
+                setPage(p)
+              }}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setPage(1)
+              }}
+              showJumper
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -416,8 +294,5 @@ export function ReferencePublicationModal() {
 
   if (!isOpen) return null
 
-  return createPortal(
-    <ReferencePublicationDialog key={openNonce} />,
-    document.body,
-  )
+  return <ReferencePublicationDialog key={openNonce} />
 }

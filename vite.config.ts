@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     vitePluginForArco({
-      style: "css", // 如果你想让它编译出纯 CSS；填 true 会引入 less
+      style: true, // 如果你想让它编译出纯 CSS；填 true 会引入 less
       modifyVars: {
         // 核心：在编译阶段将 Arco 的默认前缀替换为我们的隔离前缀
         prefix: "ietm-arco",

@@ -14,7 +14,7 @@ import {
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { IETMEditor, type IETMEditorRefValue } from "./IETMEditor";
 import { ConfigProvider } from "@arco-design/web-react";
-import { ReferencePublicationModal } from "../../extensions/s1000d/ReferencePublicationModal";
+import { ReferencePublicationModal } from "./ReferencePublicationModal";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
