@@ -1,113 +1,72 @@
-import type { Editor } from '@tiptap/core'
-import { useEffect, useReducer } from 'react'
+import type { Editor } from "@tiptap/core";
+import { useEffect, useReducer } from "react";
 
-import { createMinimalS1000dTableInsertJson } from '../../extensions/s1000d/s1000dTableNodes'
-import { List,ListOrdered,Table,Undo2 ,Redo2   } from 'lucide-react';
+import {
+  insertFilmFromSchema,
+  insertImageFromSchema,
+  insertLevelledParaFromSchema,
+  insertRandomOrAttentionListFromSchema,
+  insertSequentialListFromSchema,
+  insertTableFromSchema,
+} from "../../lib/s1000d/descriptionSchemaInsert";
+import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
+import {
+  List,
+  ListOrdered,
+  Table,
+  Undo2,
+  Redo2,
+  Film,
+  Image,
+  Pilcrow,
+} from "lucide-react";
 
 const FONT_CHOICES: { label: string; value: string }[] = [
-  { label: 'Inter', value: 'Inter, ui-sans-serif, system-ui, sans-serif' },
+  { label: "Inter", value: "Inter, ui-sans-serif, system-ui, sans-serif" },
   {
-    label: 'PingFang SC',
+    label: "PingFang SC",
     value: '"PingFang SC", "Microsoft YaHei", sans-serif',
   },
-  { label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
-  { label: 'Consolas', value: 'Consolas, ui-monospace, monospace' },
-]
+  { label: "Times New Roman", value: '"Times New Roman", Times, serif' },
+  { label: "Consolas", value: "Consolas, ui-monospace, monospace" },
+];
 
-const FONT_SIZES = ['11px', '12px', '14px', '16px', '18px', '24px']
+const FONT_SIZES = ["11px", "12px", "14px", "16px", "18px", "24px"];
 
 interface FormatToolbarProps {
-  editor: Editor
-}
-
-function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
-  const $from = editor.state.selection.$from
-  for (let d = $from.depth; d >= 0; d--) {
-    if ($from.node(d).type.name === nodeTypeName) return true
-  }
-  return false
-}
-
-function insertSequentialListBySchema(editor: Editor) {
-  // Schema: sequentialList -> listItem+（在编辑器映射为 orderedList -> listItem -> paragraph）
-  return editor
-    .chain()
-    .focus()
-    .insertContent({
-      type: 'orderedList',
-      content: [
-        {
-          type: 'listItem',
-          content: [{ type: 'paragraph', content: [] }],
-        },
-      ],
-    })
-    .run()
-}
-
-function insertRandomOrAttentionListBySchema(editor: Editor) {
-  if (isInsideNodeType(editor, 'warningAndCautionPara')) {
-    // Schema: attentionRandomList -> attentionRandomListItem+ -> attentionListItemPara+
-    return editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'attentionRandomList',
-        content: [
-          {
-            type: 'attentionRandomListItem',
-            content: [{ type: 'attentionListItemPara', content: [] }],
-          },
-        ],
-      })
-      .run()
-  }
-
-  // Schema: randomList -> listItem+（在编辑器映射为 bulletList -> listItem -> paragraph）
-  return editor
-    .chain()
-    .focus()
-    .insertContent({
-      type: 'bulletList',
-      content: [
-        {
-          type: 'listItem',
-          content: [{ type: 'paragraph', content: [] }],
-        },
-      ],
-    })
-    .run()
+  editor: Editor;
 }
 
 export function FormatToolbar({ editor }: FormatToolbarProps) {
-  const [, refresh] = useReducer((n: number) => n + 1, 0)
+  const schema = useDescriptionSchemaStore((s) => s.schema);
+  const [, refresh] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
     const onTxn = () => {
-      refresh()
-    }
-    editor.on('transaction', onTxn)
+      refresh();
+    };
+    editor.on("transaction", onTxn);
     return () => {
-      editor.off('transaction', onTxn)
-    }
-  }, [editor])
+      editor.off("transaction", onTxn);
+    };
+  }, [editor]);
 
-  const textAttrs = editor.getAttributes('textStyle') as {
-    fontFamily?: string | null
-    fontSize?: string | null
-    color?: string | null
-    backgroundColor?: string | null
-  }
+  const textAttrs = editor.getAttributes("textStyle") as {
+    fontFamily?: string | null;
+    fontSize?: string | null;
+    color?: string | null;
+    backgroundColor?: string | null;
+  };
 
-  const highlightAttrs = editor.getAttributes('highlight') as {
-    color?: string | null
-  }
+  const highlightAttrs = editor.getAttributes("highlight") as {
+    color?: string | null;
+  };
 
   const alignLeft =
-    editor.isActive({ textAlign: 'left' }) ||
-    (!editor.isActive({ textAlign: 'center' }) &&
-      !editor.isActive({ textAlign: 'right' }) &&
-      !editor.isActive({ textAlign: 'justify' }))
+    editor.isActive({ textAlign: "left" }) ||
+    (!editor.isActive({ textAlign: "center" }) &&
+      !editor.isActive({ textAlign: "right" }) &&
+      !editor.isActive({ textAlign: "justify" }));
 
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
@@ -133,19 +92,17 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          onClick={() => insertLevelledParaFromSchema(editor, schema)}
+          title="插入段落"
+          aria-label="插入段落"
+        >
+          <Pilcrow size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
           onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .insertContent(
-                createMinimalS1000dTableInsertJson(
-                  4,
-                  1,
-                  3,
-                  true,
-                ),
-              )
-              .run()
+            insertTableFromSchema(editor, schema, 4, 1, 3)
           }
           title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
         >
@@ -154,7 +111,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => insertSequentialListBySchema(editor)}
+          onClick={() => insertSequentialListFromSchema(editor, schema)}
           title="插入有序列表（sequentialList）"
           aria-label="插入有序列表"
         >
@@ -163,11 +120,29 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => insertRandomOrAttentionListBySchema(editor)}
+          onClick={() => insertRandomOrAttentionListFromSchema(editor, schema)}
           title="插入无序列表（randomList / attentionRandomList）"
           aria-label="插入无序列表"
         >
           <List size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => insertFilmFromSchema(editor, schema)}
+          title="插入多媒体"
+          aria-label="插入多媒体"
+        >
+          <Film size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => insertImageFromSchema(editor, schema)}
+          title="插入图片"
+          aria-label="插入图片"
+        >
+          <Image size={16} aria-hidden className="shrink-0" />
         </button>
       </div>
 
@@ -177,12 +152,12 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         <select
           className="ietm-toolbar-select"
           aria-label="字体"
-          value={textAttrs.fontFamily ?? ''}
+          value={textAttrs.fontFamily ?? ""}
           onChange={(e) => {
-            const v = e.target.value
-            const chain = editor.chain().focus()
-            if (!v) chain.unsetFontFamily().run()
-            else chain.setFontFamily(v).run()
+            const v = e.target.value;
+            const chain = editor.chain().focus();
+            if (!v) chain.unsetFontFamily().run();
+            else chain.setFontFamily(v).run();
           }}
         >
           <option value="">默认字体</option>
@@ -196,18 +171,18 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         <select
           className="ietm-toolbar-select ietm-toolbar-select--narrow"
           aria-label="字号"
-          value={textAttrs.fontSize ?? ''}
+          value={textAttrs.fontSize ?? ""}
           onChange={(e) => {
-            const v = e.target.value
-            const chain = editor.chain().focus()
-            if (!v) chain.unsetFontSize().run()
-            else chain.setFontSize(v).run()
+            const v = e.target.value;
+            const chain = editor.chain().focus();
+            if (!v) chain.unsetFontSize().run();
+            else chain.setFontSize(v).run();
           }}
         >
           <option value="">默认</option>
           {FONT_SIZES.map((s) => (
             <option key={s} value={s}>
-              {s.replace('px', '')}
+              {s.replace("px", "")}
             </option>
           ))}
         </select>
@@ -218,7 +193,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
       <div className="ietm-format-toolbar__cluster">
         <button
           type="button"
-          className={`ietm-toggle-btn ${editor.isActive('bold') ? 'is-active' : ''}`}
+          className={`ietm-toggle-btn ${editor.isActive("bold") ? "is-active" : ""}`}
           onClick={() => editor.chain().focus().toggleBold().run()}
           title="加粗"
         >
@@ -226,7 +201,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         </button>
         <button
           type="button"
-          className={`ietm-toggle-btn ${editor.isActive('italic') ? 'is-active' : ''}`}
+          className={`ietm-toggle-btn ${editor.isActive("italic") ? "is-active" : ""}`}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           title="斜体"
         >
@@ -234,7 +209,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         </button>
         <button
           type="button"
-          className={`ietm-toggle-btn ${editor.isActive('underline') ? 'is-active' : ''}`}
+          className={`ietm-toggle-btn ${editor.isActive("underline") ? "is-active" : ""}`}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           title="下划线"
         >
@@ -245,20 +220,27 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           <span className="ietm-color-swatch__glyph">A</span>
           <input
             type="color"
-            value={rgbToHex(textAttrs.color ?? '#1f2330')}
+            value={rgbToHex(textAttrs.color ?? "#1f2330")}
             onChange={(e) =>
               editor.chain().focus().setColor(e.target.value).run()
             }
           />
         </label>
 
-        <label className="ietm-color-swatch ietm-color-swatch--highlight" title="背景色">
+        <label
+          className="ietm-color-swatch ietm-color-swatch--highlight"
+          title="背景色"
+        >
           <span className="ietm-highlight-icon">▮</span>
           <input
             type="color"
-            value={rgbToHex(highlightAttrs.color ?? '#fef08a')}
+            value={rgbToHex(highlightAttrs.color ?? "#fef08a")}
             onChange={(e) =>
-              editor.chain().focus().setHighlight({ color: e.target.value }).run()
+              editor
+                .chain()
+                .focus()
+                .setHighlight({ color: e.target.value })
+                .run()
             }
           />
         </label>
@@ -269,48 +251,48 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
       <div className="ietm-format-toolbar__cluster">
         <button
           type="button"
-          className={`ietm-toggle-btn ${alignLeft ? 'is-active' : ''}`}
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={`ietm-toggle-btn ${alignLeft ? "is-active" : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
           title="左对齐"
         >
           ≡
         </button>
         <button
           type="button"
-          className={`ietm-toggle-btn ${editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}`}
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={`ietm-toggle-btn ${editor.isActive({ textAlign: "center" }) ? "is-active" : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
           title="居中"
         >
           ☰
         </button>
         <button
           type="button"
-          className={`ietm-toggle-btn ${editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}`}
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={`ietm-toggle-btn ${editor.isActive({ textAlign: "right" }) ? "is-active" : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
           title="右对齐"
         >
           ≡
         </button>
         <button
           type="button"
-          className={`ietm-toggle-btn ${editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}`}
-          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+          className={`ietm-toggle-btn ${editor.isActive({ textAlign: "justify" }) ? "is-active" : ""}`}
+          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
           title="两端对齐"
         >
           ≋
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 function rgbToHex(color: string): string {
-  const s = color.trim()
-  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s
-  const m = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
-  if (!m) return '#1f2330'
-  const r = Number(m[1]).toString(16).padStart(2, '0')
-  const g = Number(m[2]).toString(16).padStart(2, '0')
-  const b = Number(m[3]).toString(16).padStart(2, '0')
-  return `#${r}${g}${b}`
+  const s = color.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s;
+  const m = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (!m) return "#1f2330";
+  const r = Number(m[1]).toString(16).padStart(2, "0");
+  const g = Number(m[2]).toString(16).padStart(2, "0");
+  const b = Number(m[3]).toString(16).padStart(2, "0");
+  return `#${r}${g}${b}`;
 }

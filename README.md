@@ -103,7 +103,9 @@ onBeforeUnmount(() => instance?.destroy())
 | `content`       | `JSONContent | string`                   | 内置示例              | 初始文档内容  |
 | `applicability` | `{ activePlatform, showOnlyApplicable }` | `{ A320, false }` | 适用性全局配置 |
 | `editable`      | `boolean`                                | `true`            | 是否可编辑   |
+| `descriptionSchema` | `DescriptionSchema`（与 `src/data/描述类Schema.json` 同形） | 内置默认 | 服务端下发的描述类规则；工具栏插入会据此校验。传入时卸载编辑器会恢复内置默认。 |
 
+宿主也可在挂载前调用 `setDescriptionSchema(schema)`，或与 `createIETMEditor({ descriptionSchema })` 二选一。
 
 ### `IETMEditorInstance`
 

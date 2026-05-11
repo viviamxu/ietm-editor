@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -10,6 +11,11 @@ import {
   ApplicabilityProvider,
   type ApplicabilityState,
 } from '../../context/ApplicabilityContext'
+import {
+  resetDescriptionSchema,
+  setDescriptionSchema,
+} from '../../store/descriptionSchemaStore'
+import type { DescriptionSchema } from '../../types/descriptionSchema'
 import { IETMEditor, type IETMEditorRefValue } from './IETMEditor'
 
 export interface IETMEditorRootHandle {
@@ -24,6 +30,7 @@ interface IETMEditorRootProps {
   initialContent?: JSONContent | string
   initialApplicability?: ApplicabilityState
   initialEditable: boolean
+  initialDescriptionSchema?: DescriptionSchema
   onUpdate: (json: JSONContent) => void
   onSelectionChange: (range: { from: number; to: number }) => void
   onReady: () => void
@@ -41,6 +48,14 @@ export const IETMEditorRoot = forwardRef<IETMEditorRootHandle, IETMEditorRootPro
     const editorRef = useRef<IETMEditorRefValue>(null)
 
     const ctxValue = useMemo(() => applicability, [applicability])
+
+    useEffect(() => {
+      if (!props.initialDescriptionSchema) return undefined
+      setDescriptionSchema(props.initialDescriptionSchema)
+      return () => {
+        resetDescriptionSchema()
+      }
+    }, [props.initialDescriptionSchema])
 
     useImperativeHandle(
       ref,

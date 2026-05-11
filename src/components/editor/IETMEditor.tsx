@@ -25,6 +25,7 @@ import {
 import { createMinimalS1000dTableInsertJson } from '../../extensions/s1000d/s1000dTableNodes'
 import bikeDmSampleXml from '../../data/bikeDmSample.xml?raw'
 import { FormatToolbar } from './FormatToolbar'
+import { ReferencePublicationModal } from './ReferencePublicationModal'
 import {
   resolveInspectable,
   tableDimensions,
@@ -581,6 +582,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             onClick={closeMenus}
           />
         ) : null}
+
+        <ReferencePublicationModal />
       </div>
     )
   },

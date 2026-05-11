@@ -6,15 +6,36 @@ import {
   type IETMEditorRootHandle,
 } from './components/editor/IETMEditorRoot'
 import type { ApplicabilityState } from './context/ApplicabilityContext'
+import {
+  getDescriptionSchema,
+  resetDescriptionSchema,
+  setDescriptionSchema,
+  useDescriptionSchemaStore,
+} from './store/descriptionSchemaStore'
+import { useInsertPublicationModalStore } from './store/insertPublicationModalStore'
+import type {
+  DescriptionSchema,
+  DescriptionSchemaRule,
+} from './types/descriptionSchema'
 import './style.css'
 
 export type { ApplicabilityState, JSONContent }
+export type { DescriptionSchema, DescriptionSchemaRule }
+export {
+  getDescriptionSchema,
+  resetDescriptionSchema,
+  setDescriptionSchema,
+  useDescriptionSchemaStore,
+}
+export { useInsertPublicationModalStore }
 
 export interface IETMEditorOptions {
   element: HTMLElement
   content?: JSONContent | string
   applicability?: ApplicabilityState
   editable?: boolean
+  /** 服务端下发的描述类 schema；不传则使用内置默认，卸载实例时会恢复默认（若创建时传入了本字段） */
+  descriptionSchema?: DescriptionSchema
 }
 
 export interface IETMEditorEvents {
@@ -123,6 +144,7 @@ export function createIETMEditor(
       initialContent: options.content,
       initialApplicability: options.applicability,
       initialEditable: options.editable ?? true,
+      initialDescriptionSchema: options.descriptionSchema,
       onUpdate: (json) => emitter.emit('update', { json }),
       onSelectionChange: (range) => emitter.emit('selectionChange', range),
       onReady: () => emitter.emit('ready', undefined),
