@@ -3,15 +3,15 @@
  * - 业务样式 partials 须先于 @tailwind（PostCSS 要求 @import 在前）
  * - Tailwind：工具类（preflight 已关，见 tailwind.config.js）
  */
-
-@import './styles/partials/shell.css';
-@import './styles/partials/toolbar.css';
-@import './styles/partials/main-layout.css';
-@import './styles/partials/tiptap-document.css';
-@import './styles/partials/s1000d-applicability.css';
-@import './styles/partials/s1000d-content.css';
-@import './styles/partials/s1000d-nodeviews.css';
-@import './styles/partials/arco-ietm.less';
+@import "@arco-design/web-react/dist/css/arco.css";
+@import "./styles/partials/shell.css";
+@import "./styles/partials/toolbar.css";
+@import "./styles/partials/main-layout.css";
+@import "./styles/partials/tiptap-document.css";
+@import "./styles/partials/s1000d-applicability.css";
+@import "./styles/partials/s1000d-content.css";
+@import "./styles/partials/s1000d-nodeviews.css";
+@import "./styles/partials/arco-ietm.less";
 
 @tailwind base;
 @tailwind components;
