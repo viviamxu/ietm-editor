@@ -12,10 +12,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { TextStyleKit } from '@tiptap/extension-text-style/text-style-kit'
 import type { JSONContent } from '@tiptap/core'
-import {
-  defaultApplicabilityAttributes,
-  S1000DApplicability,
-} from '../../extensions/S1000DApplicability/extension'
 import { IETMImage } from '../../extensions/IETMImage'
 import {
   getDescriptionInnerXmlFromDmXml,
@@ -25,7 +21,6 @@ import {
 import { createMinimalS1000dTableInsertJson } from '../../extensions/s1000d/s1000dTableNodes'
 import bikeDmSampleXml from '../../data/bikeDmSample.xml?raw'
 import { FormatToolbar } from './FormatToolbar'
-import { ReferencePublicationModal } from './ReferencePublicationModal'
 import {
   resolveInspectable,
   tableDimensions,
@@ -106,7 +101,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           resize: false,
         }),
         ...s1000dPhase1Nodes,
-        S1000DApplicability,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
@@ -177,22 +171,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       return null
     }
 
-    const insertApplicabilityBlock = () =>
-      editor
-        .chain()
-        .focus()
-        .insertContent({
-          type: 's1000dApplicability',
-          attrs: defaultApplicabilityAttributes,
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: '编辑适用性条件块内容...' }],
-            },
-          ],
-        })
-        .run()
-
     const insertTable = () =>
       editor
         .chain()
@@ -218,17 +196,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         .focus()
         .setNodeSelection(resolvedTarget.pos)
         .updateAttributes('image', attrs)
-        .run()
-    }
-
-    const applyApplicabilityAttrs = (attrs: Record<string, unknown>) => {
-      if (!resolvedTarget || resolvedTarget.kind !== 's1000dApplicability')
-        return
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(resolvedTarget.pos)
-        .updateAttributes('s1000dApplicability', attrs)
         .run()
     }
 
@@ -304,16 +271,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               </button>
               {menuOpen === 'insert' ? (
                 <div className="ietm-menu-dropdown" role="menu">
-                  <button
-                    type="button"
-                    className="ietm-menu-item"
-                    onClick={() => {
-                      insertApplicabilityBlock()
-                      closeMenus()
-                    }}
-                  >
-                    插入适用性块
-                  </button>
                   <button
                     type="button"
                     className="ietm-menu-item"
@@ -471,37 +428,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       })()}
                     </>
                   ) : null}
-
-                  {resolvedTarget.kind === 's1000dApplicability' ? (
-                    <>
-                      <label className="ietm-prop-field">
-                        <span>modelCodes</span>
-                        <input
-                          type="text"
-                          value={String(resolvedTarget.attrs.modelCodes ?? '')}
-                          onChange={(e) =>
-                            applyApplicabilityAttrs({
-                              modelCodes: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>conditionLabel</span>
-                        <input
-                          type="text"
-                          value={String(
-                            resolvedTarget.attrs.conditionLabel ?? '',
-                          )}
-                          onChange={(e) =>
-                            applyApplicabilityAttrs({
-                              conditionLabel: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                    </>
-                  ) : null}
                 </div>
               </div>
             ) : (
@@ -530,7 +456,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           />
         ) : null}
 
-        <ReferencePublicationModal />
       </div>
     )
   },

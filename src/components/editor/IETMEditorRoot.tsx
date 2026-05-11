@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -12,7 +13,8 @@ import {
 } from "../../store/descriptionSchemaStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { IETMEditor, type IETMEditorRefValue } from "./IETMEditor";
-
+import { ConfigProvider } from "@arco-design/web-react";
+import { ReferencePublicationModal } from "../../extensions/s1000d/ReferencePublicationModal";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
@@ -55,15 +57,30 @@ export const IETMEditorRoot = forwardRef<
     }),
     [],
   );
-
+  // 定义所有内部浮层的安全挂载点
+  const getPopupContainer = useCallback(() => {
+    // 寻找我们铺设的结界，找不到就降级到 body
+    return document.getElementById("ietm-sdk-portal-root") || document.body;
+  }, []);
   return (
-    <IETMEditor
-      ref={editorRef}
-      initialContent={props.initialContent}
-      editable={editable}
-      onUpdate={props.onUpdate}
-      onSelectionChange={props.onSelectionChange}
-      onReady={props.onReady}
-    />
+    <div
+      id="ietm-sdk-portal-root"
+      style={{ position: "relative", width: "100%", height: "100%" }}
+    >
+      <ConfigProvider
+        prefixCls="ietm-arco"
+        getPopupContainer={getPopupContainer}
+      >
+        <IETMEditor
+          ref={editorRef}
+          initialContent={props.initialContent}
+          editable={editable}
+          onUpdate={props.onUpdate}
+          onSelectionChange={props.onSelectionChange}
+          onReady={props.onReady}
+        />
+        <ReferencePublicationModal />
+      </ConfigProvider>
+    </div>
   );
 });
