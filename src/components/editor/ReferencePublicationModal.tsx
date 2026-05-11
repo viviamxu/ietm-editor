@@ -9,7 +9,7 @@ import {
   Tree,
 } from "@arco-design/web-react";
 import type { TableColumnProps, TreeProps } from "@arco-design/web-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { IETM_ARCO_PREFIX_CLS } from "../../constants/arco";
@@ -114,7 +114,13 @@ function makeMockRows(): PublicationRow[] {
 
 const ALL_ROWS = makeMockRows();
 
-function ReferencePublicationDialog() {
+function ReferencePublicationDialog({
+  visible,
+  openNonce,
+}: {
+  visible: boolean;
+  openNonce: number;
+}) {
   const editor = useInsertPublicationModalStore((s) => s.editor);
   const closeInsertPublication = useInsertPublicationModalStore(
     (s) => s.closeInsertPublication,
@@ -128,10 +134,17 @@ function ReferencePublicationDialog() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // 2. 创建一个指向样式隔离容器的 ref
-  const containerRef = useRef<HTMLDivElement>(null);
-  // 3. 增加一个 mounted 状态，控制 Modal 的渲染时机
-  const [isMounted, setIsMounted] = useState(false);
+
+  // 3. 重点：每次弹窗打开时，优雅地重置表单状态，而不是销毁整个组件
+  useEffect(() => {
+    if (visible) {
+      setSearch("");
+      setActiveMenuId(LEAF_IDS[0] ?? "");
+      setPage(1);
+      setSelectedId(null);
+      setExpandedKeys(DEFAULT_EXPANDED_KEYS);
+    }
+  }, [visible, openNonce]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -212,111 +225,106 @@ function ReferencePublicationDialog() {
   };
 
   const popupContainer = useCallback(() => {
-    return containerRef.current || document.body;
+    const el = document.getElementById("ietm-modal-portal-root");
+    return (el as HTMLElement) ?? document.body;
   }, []);
 
   return (
-    <div className="ietm-arco-root" ref={containerRef}>
-      <ConfigProvider
-        prefixCls={IETM_ARCO_PREFIX_CLS}
-        effectGlobalNotice={false}
-        effectGlobalModal={false}
+    <ConfigProvider
+      prefixCls={IETM_ARCO_PREFIX_CLS}
+      effectGlobalNotice={false}
+      effectGlobalModal={false}
+      getPopupContainer={popupContainer} // 这个负责 Select, Tooltip 等内部小弹层
+    >
+      <Modal
+        title="引用出版物"
+        visible
+        maskClosable={false}
         getPopupContainer={popupContainer}
+        getChildrenPopupContainer={() => popupContainer()}
+        onCancel={closeInsertPublication}
+        style={{ width: 960 }}
+        footer={
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <Space>
+              <Button onClick={closeInsertPublication}>取消</Button>
+              <Button type="primary" onClick={handleConfirm}>
+                确定
+              </Button>
+            </Space>
+          </div>
+        }
       >
-        {isMounted && (
-          <Modal
-            title="引用出版物"
-            visible
-            maskClosable={false}
-            getPopupContainer={popupContainer}
-            getChildrenPopupContainer={() => popupContainer()}
-            onCancel={closeInsertPublication}
-            style={{ width: 960 }}
-            footer={
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <Space>
-                  <Button onClick={closeInsertPublication}>取消</Button>
-                  <Button type="primary" onClick={handleConfirm}>
-                    确定
-                  </Button>
-                </Space>
-              </div>
-            }
-          >
-            <div className="ietm-ref-pub-arco-body">
-              <div className="ietm-ref-pub-arco-sidebar">
-                <div style={{ padding: 10 }}>
-                  <Input.Search
-                    allowClear
-                    placeholder="输入标题/编码检索"
-                    value={search}
-                    onChange={(v) => {
-                      setSearch(v);
-                      setPage(1);
-                    }}
-                    onSearch={() => setPage(1)}
-                  />
-                </div>
-                <div
-                  style={{ flex: 1, overflow: "auto", padding: "0 4px 8px" }}
-                >
-                  <Tree
-                    treeData={TREE_DATA}
-                    selectedKeys={[activeMenuId]}
-                    expandedKeys={expandedKeys}
-                    onExpand={(keys) => setExpandedKeys(keys as string[])}
-                    onSelect={onTreeSelect}
-                    blockNode
-                  />
-                </div>
-              </div>
-              <div className="ietm-ref-pub-arco-main">
-                <div className="ietm-ref-pub-arco-table-wrap">
-                  <Table<PublicationRow>
-                    rowKey="id"
-                    columns={columns}
-                    data={pageRows}
-                    pagination={false}
-                    border
-                    rowSelection={{
-                      type: "radio",
-                      selectedRowKeys: selectedId ? [selectedId] : [],
-                      onChange: (keys) => {
-                        setSelectedId((keys[0] as string | undefined) ?? null);
-                      },
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    borderTop: "1px solid var(--ietm-arco-color-border-2)",
-                  }}
-                >
-                  <Pagination
-                    showTotal
-                    sizeCanChange
-                    sizeOptions={[10, 20, 50]}
-                    total={filteredRows.length}
-                    current={displayPage}
-                    pageSize={pageSize}
-                    onChange={(p, ps) => {
-                      setPageSize(ps);
-                      setPage(p);
-                    }}
-                    onPageSizeChange={(size) => {
-                      setPageSize(size);
-                      setPage(1);
-                    }}
-                    showJumper
-                  />
-                </div>
-              </div>
+        <div className="ietm-ref-pub-arco-body">
+          <div className="ietm-ref-pub-arco-sidebar">
+            <div style={{ padding: 10 }}>
+              <Input.Search
+                allowClear
+                placeholder="输入标题/编码检索"
+                value={search}
+                onChange={(v) => {
+                  setSearch(v);
+                  setPage(1);
+                }}
+                onSearch={() => setPage(1)}
+              />
             </div>
-          </Modal>
-        )}
-      </ConfigProvider>
-    </div>
+            <div style={{ flex: 1, overflow: "auto", padding: "0 4px 8px" }}>
+              <Tree
+                treeData={TREE_DATA}
+                selectedKeys={[activeMenuId]}
+                expandedKeys={expandedKeys}
+                onExpand={(keys) => setExpandedKeys(keys as string[])}
+                onSelect={onTreeSelect}
+                blockNode
+              />
+            </div>
+          </div>
+          <div className="ietm-ref-pub-arco-main">
+            <div className="ietm-ref-pub-arco-table-wrap">
+              <Table<PublicationRow>
+                rowKey="id"
+                columns={columns}
+                data={pageRows}
+                pagination={false}
+                border
+                rowSelection={{
+                  type: "radio",
+                  selectedRowKeys: selectedId ? [selectedId] : [],
+                  onChange: (keys) => {
+                    setSelectedId((keys[0] as string | undefined) ?? null);
+                  },
+                }}
+              />
+            </div>
+            <div
+              style={{
+                padding: "10px 12px",
+                borderTop: "1px solid var(--ietm-arco-color-border-2)",
+              }}
+            >
+              <Pagination
+                showTotal
+                sizeCanChange
+                sizeOptions={[10, 20, 50]}
+                total={filteredRows.length}
+                current={displayPage}
+                pageSize={pageSize}
+                onChange={(p, ps) => {
+                  setPageSize(ps);
+                  setPage(p);
+                }}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
+                showJumper
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </ConfigProvider>
   );
 }
 
@@ -324,11 +332,13 @@ export function ReferencePublicationModal() {
   const isOpen = useInsertPublicationModalStore((s) => s.isOpen);
   const openNonce = useInsertPublicationModalStore((s) => s.openNonce);
 
-  if (!isOpen) return null;
+  // 删掉之前的 if (!isOpen) return null
+  // 删掉之前的 key={openNonce} 暴力重置
 
   return createPortal(
-    <div key={openNonce}>
-      <ReferencePublicationDialog />
+    // 这是一个永久存在的空壳结界，专门用来接纳 Modal
+    <div className="ietm-arco-root" id="ietm-modal-portal-root">
+      <ReferencePublicationDialog visible={isOpen} openNonce={openNonce} />
     </div>,
     document.body,
   );
