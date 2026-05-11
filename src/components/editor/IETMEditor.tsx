@@ -31,7 +31,6 @@ import {
   tableDimensions,
   type InspectTarget,
 } from '../../lib/editor/resolveInspectable'
-import type { ApplicabilityState } from '../../context/ApplicabilityContext'
 
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void
@@ -42,9 +41,6 @@ export interface IETMEditorRefValue {
 interface IETMEditorProps {
   initialContent?: JSONContent | string
   editable: boolean
-  applicability: ApplicabilityState
-  setApplicability: (next: Partial<ApplicabilityState>) => void
-  platformChoices?: readonly string[]
   onUpdate: (json: JSONContent) => void
   onSelectionChange: (range: { from: number; to: number }) => void
   onReady: () => void
@@ -77,8 +73,6 @@ const FALLBACK_DOCUMENT: JSONContent = {
 
 const DOC_TITLE_PLACEHOLDER = '数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D'
 
-const DEFAULT_PLATFORMS = ['A320', 'B737', 'C919'] as const
-
 const UNIT_PRESETS = ['ph01(h)', 'mm', 'in', 'deg']
 
 export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
@@ -86,12 +80,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const readyFiredRef = useRef(false)
     const selectionAnchorRef = useRef<string>('')
 
-    const platforms =
-      props.platformChoices ??
-      (DEFAULT_PLATFORMS as unknown as readonly string[])
-
     const [menuOpen, setMenuOpen] = useState<
-      null | 'file' | 'edit' | 'insert' | 'tools'
+      null | 'file' | 'edit' | 'insert'
     >(null)
 
     const [propertiesDismissed, setPropertiesDismissed] = useState(false)
@@ -348,49 +338,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               ) : null}
             </div>
 
-            <div className="ietm-menu">
-              <button
-                type="button"
-                className={`ietm-menu-trigger ${menuOpen === 'tools' ? 'is-open' : ''}`}
-                aria-expanded={menuOpen === 'tools'}
-                onClick={() => toggleMenu('tools')}
-              >
-                工具
-              </button>
-              {menuOpen === 'tools' ? (
-                <div className="ietm-menu-dropdown ietm-menu-dropdown--wide" role="menu">
-                  <label className="ietm-menu-field">
-                    <span>机型</span>
-                    <select
-                      value={props.applicability.activePlatform}
-                      onChange={(e) =>
-                        props.setApplicability({
-                          activePlatform: e.target.value,
-                        })
-                      }
-                    >
-                      {platforms.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="ietm-menu-field ietm-menu-field--check">
-                    <input
-                      type="checkbox"
-                      checked={props.applicability.showOnlyApplicable}
-                      onChange={(e) =>
-                        props.setApplicability({
-                          showOnlyApplicable: e.target.checked,
-                        })
-                      }
-                    />
-                    <span>仅高亮适用内容</span>
-                  </label>
-                </div>
-              ) : null}
-            </div>
           </nav>
 
           <div className="ietm-app-header-right">
