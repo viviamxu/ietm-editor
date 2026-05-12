@@ -215,19 +215,16 @@ function serializeNodeToXml(node: JSONContent): string {
     return text;
   }
 
-  // 2. 兜底与黑盒数据提取（例如复杂的 dmRef 如果存了 rawXml 属性，直接还原）
   if (node.attrs && node.attrs.rawXml) {
     return node.attrs.rawXml;
   }
 
-  // 3. 处理图片转换 (映射为 S1000D 的 figure/graphic)
   if (node.type === "image") {
     const id = node.attrs?.figureId || "ICN-UNKNOWN";
     const alt = node.attrs?.alt || "";
     return `<figure id="fig-${id}">\n  <title>${escapeXml(alt)}</title>\n  <graphic infoEntityIdent="${escapeXml(id)}" />\n</figure>`;
   }
 
-  // 4. 标准标签映射映射表 (Tiptap 标签名 -> S1000D XML 标签名)
   const tagMap: Record<string, string> = {
     bulletList: "randomList",
     orderedList: "sequentialList",
@@ -237,16 +234,19 @@ function serializeNodeToXml(node: JSONContent): string {
 
   const xmlTag = tagMap[node.type || ""] || node.type || "unknown";
 
-  // 5. 提取并组装属性
+  // ==========================================
+  // 过滤不需要导出的内部属性
+  // ==========================================
   let attrsStr = "";
   if (node.attrs) {
+    // 定义不需要导出到 S1000D XML 的 Tiptap 内部辅助属性
+    const ignoredAttrs = ["class", "rawXml", "displayLevel", "start"];
+
     for (const [key, value] of Object.entries(node.attrs)) {
-      // 过滤掉内部状态属性，如 class 或 rawXml
       if (
         value !== null &&
         value !== undefined &&
-        key !== "rawXml" &&
-        key !== "class"
+        !ignoredAttrs.includes(key) // 拦截黑名单属性
       ) {
         attrsStr += ` ${key}="${escapeXml(String(value))}"`;
       }
@@ -256,12 +256,18 @@ function serializeNodeToXml(node: JSONContent): string {
   // 6. 递归处理子节点
   const children = (node.content || []).map(serializeNodeToXml).join("");
 
-  // 7. 处理根节点包装
+  // ==========================================
+  //剥离辅助外壳，直接返回子节点内容
+  // ==========================================
+  if (node.type === "warningAndCautionLead") {
+    // 不输出 <warningAndCautionLead> 标签，只输出它里面的正文
+    return children;
+  }
+
   if (node.type === "doc") {
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
   }
 
-  // 8. 返回组装好的 XML 标签
   if (!children) {
     // 空标签处理，防止自闭合标签导致某些解析器报错，统一使用双标签
     return `<${xmlTag}${attrsStr}></${xmlTag}>`;
