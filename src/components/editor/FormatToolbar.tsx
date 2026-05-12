@@ -232,6 +232,14 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         >
           <TextAlignJustify size={16} aria-hidden className="shrink-0" />
         </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => print()}
+          title="打印"
+        >
+          打印
+        </button>
       </div>
     </div>
   );

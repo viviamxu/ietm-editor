@@ -161,3 +161,6 @@ export function insertImageFromSchema(
   void schema;
   useInsertPublicationModalStore.getState().openInsertPublication(editor);
 }
+export function print(editor: Editor): void {
+  void editor;
+}
