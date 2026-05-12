@@ -8,6 +8,7 @@ import {
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
   insertTableFromSchema,
+  print,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import {
@@ -24,6 +25,7 @@ import {
   TextAlignEnd,
   TextAlignJustify,
 } from "lucide-react";
+import { Button } from "@arco-design/web-react";
 
 interface FormatToolbarProps {
   editor: Editor;
@@ -232,14 +234,17 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         >
           <TextAlignJustify size={16} aria-hidden className="shrink-0" />
         </button>
-        <button
+        {/* <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => print()}
-          title="打印"
+          onClick={() => print(editor)}
+          title="导出 XML"
         >
-          打印
-        </button>
+          导出 XML
+        </button> */}
+        <Button type="primary" onClick={() => print(editor)}>
+          导出 XML
+        </Button>
       </div>
     </div>
   );
