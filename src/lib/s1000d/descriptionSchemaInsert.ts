@@ -253,8 +253,72 @@ function serializeNodeToXml(node: JSONContent): string {
     }
   }
 
-  // 6. 递归处理子节点
-  const children = (node.content || []).map(serializeNodeToXml).join("");
+  // 6. 递归处理子节点 (修复 S1000D listItem 嵌套规则)
+  let children;
+
+  if (node.type === "listItem") {
+    const paras: string[] = [];
+    let currentParaContent = "";
+    let currentParaAttrs = "";
+
+    const childNodes = node.content || [];
+    for (const child of childNodes) {
+      // 💡 核心修复：兼容 Tiptap 原生命名和 S1000D 自定义命名
+      const isParaNode = child.type === "paragraph" || child.type === "para";
+      const isListNode = [
+        "bulletList",
+        "orderedList",
+        "randomList",
+        "sequentialList",
+      ].includes(child.type || "");
+
+      if (isParaNode) {
+        // 1. 遇到新段落：先闭合上一个段落
+        if (currentParaContent) {
+          paras.push(`<para${currentParaAttrs}>${currentParaContent}</para>`);
+        }
+        // 2. 收集新段落的属性
+        currentParaAttrs = "";
+        if (child.attrs) {
+          const ignoredAttrs = ["class", "rawXml", "displayLevel", "start"];
+          for (const [key, value] of Object.entries(child.attrs)) {
+            if (
+              value !== null &&
+              value !== undefined &&
+              !ignoredAttrs.includes(key)
+            ) {
+              currentParaAttrs += ` ${key}="${escapeXml(String(value))}"`;
+            }
+          }
+        }
+        // 3. 提取新段落的内部文本
+        currentParaContent = (child.content || [])
+          .map(serializeNodeToXml)
+          .join("");
+      } else if (isListNode) {
+        // 💥 关键点：遇到嵌套列表，绝不作为同级标签输出，而是无缝塞进当前正在处理的 para 内部！
+        currentParaContent += "\n" + serializeNodeToXml(child);
+      } else {
+        // 遇到其他合法的块级元素 (如 figure, warning, table 等)，先闭合当前 para
+        if (currentParaContent) {
+          paras.push(`<para${currentParaAttrs}>${currentParaContent}</para>`);
+          currentParaContent = "";
+          currentParaAttrs = "";
+        }
+        paras.push(serializeNodeToXml(child));
+      }
+    }
+
+    // 循环结束，闭合最后残留的 para
+    if (currentParaContent) {
+      paras.push(`<para${currentParaAttrs}>${currentParaContent}</para>`);
+    }
+
+    children = paras.join("\n");
+  } else {
+    // 常规节点的子节点处理保持不变
+    children = (node.content || []).map(serializeNodeToXml).join("");
+  }
 
   // ==========================================
   //剥离辅助外壳，直接返回子节点内容
