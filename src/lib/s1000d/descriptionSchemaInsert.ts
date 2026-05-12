@@ -3,6 +3,7 @@ import type { Editor, JSONContent } from "@tiptap/core";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
+import { useDmMetadataStore } from "../../store/dmMetadataStore";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
   const $from = editor.state.selection.$from;
@@ -161,6 +162,148 @@ export function insertImageFromSchema(
   void schema;
   useInsertPublicationModalStore.getState().openInsertPublication(editor);
 }
+// --- 以下代码添加到 descriptionSchemaInsert.ts 的最底部 ---
+
+/**
+ * 转义 XML 特殊字符，防止破坏文档结构
+ */
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, function (c) {
+    switch (c) {
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "&":
+        return "&amp;";
+      case "'":
+        return "&apos;";
+      case '"':
+        return "&quot;";
+      default:
+        return c;
+    }
+  });
+}
+
+/**
+ * 递归遍历 Tiptap JSON AST，将其还原为 S1000D XML 字符串
+ */
+function serializeNodeToXml(node: JSONContent): string {
+  // 1. 处理纯文本与行内样式 (Marks)
+  if (node.type === "text") {
+    let text = escapeXml(node.text || "");
+    if (node.marks) {
+      node.marks.forEach((mark) => {
+        // 将富文本样式映射回 S1000D 标签
+        if (mark.type === "bold") {
+          text = `<emphasis emphasisType="em01">${text}</emphasis>`;
+        } else if (mark.type === "italic") {
+          text = `<emphasis emphasisType="em02">${text}</emphasis>`;
+        } else if (mark.type === "underline") {
+          text = `<emphasis emphasisType="em03">${text}</emphasis>`;
+        } else if (mark.type === "subscript" || mark.type === "subScript") {
+          text = `<subScript>${text}</subScript>`;
+        } else if (mark.type === "superscript" || mark.type === "superScript") {
+          text = `<superScript>${text}</superScript>`;
+        } else if (mark.type === "emphasis") {
+          const type = mark.attrs?.emphasisType || "em01";
+          text = `<emphasis emphasisType="${type}">${text}</emphasis>`;
+        }
+      });
+    }
+    return text;
+  }
+
+  // 2. 兜底与黑盒数据提取（例如复杂的 dmRef 如果存了 rawXml 属性，直接还原）
+  if (node.attrs && node.attrs.rawXml) {
+    return node.attrs.rawXml;
+  }
+
+  // 3. 处理图片转换 (映射为 S1000D 的 figure/graphic)
+  if (node.type === "image") {
+    const id = node.attrs?.figureId || "ICN-UNKNOWN";
+    const alt = node.attrs?.alt || "";
+    return `<figure id="fig-${id}">\n  <title>${escapeXml(alt)}</title>\n  <graphic infoEntityIdent="${escapeXml(id)}" />\n</figure>`;
+  }
+
+  // 4. 标准标签映射映射表 (Tiptap 标签名 -> S1000D XML 标签名)
+  const tagMap: Record<string, string> = {
+    bulletList: "randomList",
+    orderedList: "sequentialList",
+    paragraph: "para",
+    doc: "description", // Tiptap 的根节点对应 description
+  };
+
+  const xmlTag = tagMap[node.type || ""] || node.type || "unknown";
+
+  // 5. 提取并组装属性
+  let attrsStr = "";
+  if (node.attrs) {
+    for (const [key, value] of Object.entries(node.attrs)) {
+      // 过滤掉内部状态属性，如 class 或 rawXml
+      if (
+        value !== null &&
+        value !== undefined &&
+        key !== "rawXml" &&
+        key !== "class"
+      ) {
+        attrsStr += ` ${key}="${escapeXml(String(value))}"`;
+      }
+    }
+  }
+
+  // 6. 递归处理子节点
+  const children = (node.content || []).map(serializeNodeToXml).join("");
+
+  // 7. 处理根节点包装
+  if (node.type === "doc") {
+    return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
+  }
+
+  // 8. 返回组装好的 XML 标签
+  if (!children) {
+    // 空标签处理，防止自闭合标签导致某些解析器报错，统一使用双标签
+    return `<${xmlTag}${attrsStr}></${xmlTag}>`;
+  }
+
+  return `<${xmlTag}${attrsStr}>${children}</${xmlTag}>`;
+}
+
+/**
+ * 导出编辑器内容为 S1000D XML 并触发浏览器下载
+ */
 export function print(editor: Editor): void {
-  void editor;
+  // 1. 获取编辑器的 AST
+  const jsonAST = editor.getJSON();
+
+  const contentXml = serializeNodeToXml(jsonAST);
+  // 2. 从 Store 中提取一开始暂存的 identAndStatusSection
+  const identAndStatusXml = useDmMetadataStore.getState().identAndStatusXml;
+  const finalIdentXml =
+    identAndStatusXml ||
+    `<identAndStatusSection>\n    \n  </identAndStatusSection>`;
+  // 3. 组装一个合法的 S1000D 外壳 (此处为最小可用外壳，真实场景需结合原 XML 头部合并)
+  const finalXml = `<?xml version="1.0" encoding="utf-8"?>
+    <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
+      ${finalIdentXml}
+      ${contentXml}
+    </dmodule>`;
+
+  // 4. 利用 Blob 创建内存文件，并模拟点击下载
+  const blob = new Blob([finalXml], { type: "text/xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  // 格式化当前时间作为默认文件名
+  const dateStr = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+  a.download = `DMC-EXPORT-${dateStr}.xml`;
+
+  document.body.appendChild(a);
+  a.click();
+
+  // 清理内存
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
