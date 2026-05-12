@@ -162,7 +162,8 @@ export function insertImageFromSchema(
   void schema;
   useInsertPublicationModalStore.getState().openInsertPublication(editor);
 }
-// --- 以下代码添加到 descriptionSchemaInsert.ts 的最底部 ---
+
+// --- 从这里开始复制，替换 descriptionSchemaInsert.ts 底部剩余的所有代码 ---
 
 /**
  * 转义 XML 特殊字符，防止破坏文档结构
@@ -187,6 +188,122 @@ function escapeXml(unsafe: string): string {
 }
 
 /**
+ * 💡 辅助函数：深度探测节点是否包含“实质性内容”
+ * 彻底拦截并销毁 Tiptap 产生的无意义空壳节点（如多敲的回车、空列表项）
+ */
+function hasEffectiveContent(node: JSONContent): boolean {
+  if (node.type === "text" && node.text?.trim() !== "") return true;
+  if (node.type === "image" || (node.attrs && node.attrs.rawXml)) return true;
+  if (node.type === "table") return true; // 表格等大结构默认保留
+  if (node.content && node.content.length > 0) {
+    return node.content.some(hasEffectiveContent);
+  }
+  return false;
+}
+
+const ignoredExportAttrs = ["class", "rawXml", "displayLevel", "start"];
+const listNodeTypes = [
+  "bulletList",
+  "orderedList",
+  "randomList",
+  "sequentialList",
+];
+
+function isListNode(node: JSONContent): boolean {
+  return listNodeTypes.includes(node.type || "");
+}
+
+function buildAttrsString(attrs: JSONContent["attrs"]): string {
+  if (!attrs) return "";
+
+  let attrsStr = "";
+  for (const [key, value] of Object.entries(attrs)) {
+    if (
+      value !== null &&
+      value !== undefined &&
+      !ignoredExportAttrs.includes(key)
+    ) {
+      attrsStr += ` ${key}="${escapeXml(String(value))}"`;
+    }
+  }
+  return attrsStr;
+}
+
+function appendListRunAsPara(parts: string[], run: string[]): void {
+  if (run.length === 0) return;
+  parts.push(`<para>${run.join("")}</para>`);
+  run.length = 0;
+}
+
+function isParaNode(node: JSONContent): boolean {
+  return node.type === "paragraph" || node.type === "para";
+}
+
+function serializeChildrenToXml(node: JSONContent): string {
+  if (node.type === "entry") {
+    const children = node.content || [];
+    if (children.length === 0) return "<para />";
+
+    return children
+      .map((child) => {
+        if (isParaNode(child) && !hasEffectiveContent(child)) {
+          return "<para />";
+        }
+        return serializeNodeToXml(child);
+      })
+      .join("");
+  }
+
+  if (node.type !== "levelledPara") {
+    return (node.content || []).map(serializeNodeToXml).join("");
+  }
+
+  const parts: string[] = [];
+  const listRun: string[] = [];
+
+  for (const child of node.content || []) {
+    if (isListNode(child)) {
+      const listXml = serializeNodeToXml(child);
+      if (listXml) listRun.push(listXml);
+      continue;
+    }
+
+    appendListRunAsPara(parts, listRun);
+    parts.push(serializeNodeToXml(child));
+  }
+
+  appendListRunAsPara(parts, listRun);
+  return parts.join("");
+}
+
+function buildGraphicEntityDoctype(contentXml: string): string {
+  const graphicIds = Array.from(
+    contentXml.matchAll(/\binfoEntityIdent="([^"]+)"/g),
+  )
+    .map((match) => match[1])
+    .filter((id): id is string => !!id && id !== "XXXXXX");
+
+  if (graphicIds.length === 0) {
+    return `<!DOCTYPE dmodule [
+   <!ENTITY ICN-C0419-S1000D0392-001-01 SYSTEM "ICN-C0419-S1000D0392-001-01.CGM" NDATA cgm >
+   <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
+]>`;
+  }
+
+  const entities = [...new Set(graphicIds)]
+    .map(
+      (id) =>
+        `   <!ENTITY ${id} SYSTEM "${id}.CGM" NDATA cgm >`,
+    )
+    .join("\n");
+
+  return `<!DOCTYPE dmodule [
+${entities}
+   <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
+]>`;
+}
+
+/**
  * 递归遍历 Tiptap JSON AST，将其还原为 S1000D XML 字符串
  */
 function serializeNodeToXml(node: JSONContent): string {
@@ -195,18 +312,25 @@ function serializeNodeToXml(node: JSONContent): string {
     let text = escapeXml(node.text || "");
     if (node.marks) {
       node.marks.forEach((mark) => {
-        // 将富文本样式映射回 S1000D 标签
-        if (mark.type === "bold") {
+        if (mark.type === "bold")
           text = `<emphasis emphasisType="em01">${text}</emphasis>`;
-        } else if (mark.type === "italic") {
+        else if (mark.type === "italic")
           text = `<emphasis emphasisType="em02">${text}</emphasis>`;
-        } else if (mark.type === "underline") {
+        else if (mark.type === "underline")
           text = `<emphasis emphasisType="em03">${text}</emphasis>`;
-        } else if (mark.type === "subscript" || mark.type === "subScript") {
+        else if (
+          mark.type === "subscript" ||
+          mark.type === "subScript" ||
+          mark.type === "s1000dSub"
+        )
           text = `<subScript>${text}</subScript>`;
-        } else if (mark.type === "superscript" || mark.type === "superScript") {
+        else if (
+          mark.type === "superscript" ||
+          mark.type === "superScript" ||
+          mark.type === "s1000dSup"
+        )
           text = `<superScript>${text}</superScript>`;
-        } else if (mark.type === "emphasis") {
+        else if (mark.type === "emphasis" || mark.type === "s1000dEmphasis") {
           const type = mark.attrs?.emphasisType || "em01";
           text = `<emphasis emphasisType="${type}">${text}</emphasis>`;
         }
@@ -215,45 +339,64 @@ function serializeNodeToXml(node: JSONContent): string {
     return text;
   }
 
-  if (node.attrs && node.attrs.rawXml) {
-    return node.attrs.rawXml;
+  // 🌟 核心防线 1: 如果是块级元素且里面没有任何字，直接熔断抛弃！
+  const tagsToFilterIfEmpty = [
+    "levelledPara",
+    "paragraph",
+    "para",
+    "randomList",
+    "sequentialList",
+    "warning",
+    "caution",
+    "note",
+  ];
+  if (
+    tagsToFilterIfEmpty.includes(node.type || "") &&
+    !hasEffectiveContent(node)
+  ) {
+    return "";
   }
 
+  // 2. 兜底与黑盒数据提取
+  if (node.attrs && node.attrs.rawXml) return node.attrs.rawXml;
+
+  // 3. 处理图片转换
   if (node.type === "image") {
     const id = node.attrs?.figureId || "ICN-UNKNOWN";
     const alt = node.attrs?.alt || "";
     return `<figure id="fig-${id}">\n  <title>${escapeXml(alt)}</title>\n  <graphic infoEntityIdent="${escapeXml(id)}" />\n</figure>`;
   }
 
+  // 4. 标准标签映射
   const tagMap: Record<string, string> = {
     bulletList: "randomList",
     orderedList: "sequentialList",
     paragraph: "para",
-    doc: "description", // Tiptap 的根节点对应 description
+    doc: "description",
   };
-
   const xmlTag = tagMap[node.type || ""] || node.type || "unknown";
 
-  // ==========================================
-  // 过滤不需要导出的内部属性
-  // ==========================================
-  let attrsStr = "";
-  if (node.attrs) {
-    // 定义不需要导出到 S1000D XML 的 Tiptap 内部辅助属性
-    const ignoredAttrs = ["class", "rawXml", "displayLevel", "start"];
+  // 5. 过滤不需要导出的内部属性
+  let attrsStr = buildAttrsString(node.attrs);
 
-    for (const [key, value] of Object.entries(node.attrs)) {
-      if (
-        value !== null &&
-        value !== undefined &&
-        !ignoredAttrs.includes(key) // 拦截黑名单属性
-      ) {
-        attrsStr += ` ${key}="${escapeXml(String(value))}"`;
+  // 🌟 核心防线 2: 自动补齐 S1000D 表格强制要求的 cols 属性
+  if (xmlTag === "tgroup" && !attrsStr.includes("cols=")) {
+    let cols = 1;
+    try {
+      const tbody = node.content?.find(
+        (c) => c.type === "tbody" || c.type === "thead",
+      );
+      const firstRow = tbody?.content?.find((c) => c.type === "row");
+      if (firstRow && firstRow.content) {
+        cols = firstRow.content.filter((c) => c.type === "entry").length || 1;
       }
-    }
+    } catch (e) {}
+    attrsStr += ` cols="${cols}"`;
   }
 
-  // 6. 递归处理子节点 (修复 S1000D listItem 嵌套规则)
+  // ==========================================
+  // 🌟 核心防线 3: 强制处理 listItem 的极严苛嵌套包裹规范
+  // ==========================================
   let children;
 
   if (node.type === "listItem") {
@@ -263,43 +406,21 @@ function serializeNodeToXml(node: JSONContent): string {
 
     const childNodes = node.content || [];
     for (const child of childNodes) {
-      // 💡 核心修复：兼容 Tiptap 原生命名和 S1000D 自定义命名
-      const isParaNode = child.type === "paragraph" || child.type === "para";
-      const isListNode = [
-        "bulletList",
-        "orderedList",
-        "randomList",
-        "sequentialList",
-      ].includes(child.type || "");
+      // 在 list 内部也要先筛掉空段落，防止产生空的包装
+      if (!hasEffectiveContent(child)) continue;
 
-      if (isParaNode) {
-        // 1. 遇到新段落：先闭合上一个段落
+      if (isParaNode(child)) {
         if (currentParaContent) {
           paras.push(`<para${currentParaAttrs}>${currentParaContent}</para>`);
         }
-        // 2. 收集新段落的属性
-        currentParaAttrs = "";
-        if (child.attrs) {
-          const ignoredAttrs = ["class", "rawXml", "displayLevel", "start"];
-          for (const [key, value] of Object.entries(child.attrs)) {
-            if (
-              value !== null &&
-              value !== undefined &&
-              !ignoredAttrs.includes(key)
-            ) {
-              currentParaAttrs += ` ${key}="${escapeXml(String(value))}"`;
-            }
-          }
-        }
-        // 3. 提取新段落的内部文本
+        currentParaAttrs = buildAttrsString(child.attrs);
         currentParaContent = (child.content || [])
           .map(serializeNodeToXml)
           .join("");
-      } else if (isListNode) {
-        // 💥 关键点：遇到嵌套列表，绝不作为同级标签输出，而是无缝塞进当前正在处理的 para 内部！
+      } else if (isListNode(child)) {
+        // 遇到嵌套列表，无缝塞进当前 para 内！
         currentParaContent += "\n" + serializeNodeToXml(child);
       } else {
-        // 遇到其他合法的块级元素 (如 figure, warning, table 等)，先闭合当前 para
         if (currentParaContent) {
           paras.push(`<para${currentParaAttrs}>${currentParaContent}</para>`);
           currentParaContent = "";
@@ -309,22 +430,18 @@ function serializeNodeToXml(node: JSONContent): string {
       }
     }
 
-    // 循环结束，闭合最后残留的 para
     if (currentParaContent) {
       paras.push(`<para${currentParaAttrs}>${currentParaContent}</para>`);
     }
 
     children = paras.join("\n");
   } else {
-    // 常规节点的子节点处理保持不变
-    children = (node.content || []).map(serializeNodeToXml).join("");
+    // 非 listItem 的常规处理
+    children = serializeChildrenToXml(node);
   }
 
-  // ==========================================
-  //剥离辅助外壳，直接返回子节点内容
-  // ==========================================
+  // 7. 剥离辅助外壳
   if (node.type === "warningAndCautionLead") {
-    // 不输出 <warningAndCautionLead> 标签，只输出它里面的正文
     return children;
   }
 
@@ -332,8 +449,11 @@ function serializeNodeToXml(node: JSONContent): string {
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
   }
 
+  if (!children && (xmlTag === "title" || xmlTag === "graphic")) {
+    return `<${xmlTag}${attrsStr} />`;
+  }
+
   if (!children) {
-    // 空标签处理，防止自闭合标签导致某些解析器报错，统一使用双标签
     return `<${xmlTag}${attrsStr}></${xmlTag}>`;
   }
 
@@ -344,36 +464,38 @@ function serializeNodeToXml(node: JSONContent): string {
  * 导出编辑器内容为 S1000D XML 并触发浏览器下载
  */
 export function print(editor: Editor): void {
-  // 1. 获取编辑器的 AST
   const jsonAST = editor.getJSON();
-
   const contentXml = serializeNodeToXml(jsonAST);
-  // 2. 从 Store 中提取一开始暂存的 identAndStatusSection
+  const doctypeXml = buildGraphicEntityDoctype(contentXml);
+
   const identAndStatusXml = useDmMetadataStore.getState().identAndStatusXml;
   const finalIdentXml =
-    identAndStatusXml ||
-    `<identAndStatusSection>\n    \n  </identAndStatusSection>`;
-  // 3. 组装一个合法的 S1000D 外壳 (此处为最小可用外壳，真实场景需结合原 XML 头部合并)
-  const finalXml = `<?xml version="1.0" encoding="utf-8"?>
-    <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
-      ${finalIdentXml}
-      ${contentXml}
-    </dmodule>`;
+    identAndStatusXml || `<identAndStatusSection>\n  </identAndStatusSection>`;
 
-  // 4. 利用 Blob 创建内存文件，并模拟点击下载
+  // 🌟 核心防线 4: 补齐 S1000D 必须的全局 Namespaces (否则校验器会报 Fatal Error)
+  const finalXml = `<?xml version="1.0" encoding="utf-8"?>
+${doctypeXml}
+<dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:dc="http://www.purl.org/dc/elements/1.1/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
+
+   ${finalIdentXml}
+   ${contentXml}
+</dmodule>`;
+
+  // 触发下载
   const blob = new Blob([finalXml], { type: "text/xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
-  // 格式化当前时间作为默认文件名
+
   const dateStr = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
   a.download = `DMC-EXPORT-${dateStr}.xml`;
 
   document.body.appendChild(a);
   a.click();
-
-  // 清理内存
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
