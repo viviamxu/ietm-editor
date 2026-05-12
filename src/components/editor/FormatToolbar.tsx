@@ -19,19 +19,11 @@ import {
   Film,
   Image,
   Pilcrow,
+  TextAlignStart,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignJustify,
 } from "lucide-react";
-
-const FONT_CHOICES: { label: string; value: string }[] = [
-  { label: "Inter", value: "Inter, ui-sans-serif, system-ui, sans-serif" },
-  {
-    label: "PingFang SC",
-    value: '"PingFang SC", "Microsoft YaHei", sans-serif',
-  },
-  { label: "Times New Roman", value: '"Times New Roman", Times, serif' },
-  { label: "Consolas", value: "Consolas, ui-monospace, monospace" },
-];
-
-const FONT_SIZES = ["11px", "12px", "14px", "16px", "18px", "24px"];
 
 interface FormatToolbarProps {
   editor: Editor;
@@ -98,16 +90,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         >
           <Pilcrow size={16} aria-hidden className="shrink-0" />
         </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          onClick={() =>
-            insertTableFromSchema(editor, schema, 4, 1, 3)
-          }
-          title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
-        >
-          <Table size={16} aria-hidden className="shrink-0" />
-        </button>
+
         <button
           type="button"
           className="ietm-icon-btn"
@@ -129,11 +112,10 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => insertFilmFromSchema(editor, schema)}
-          title="插入多媒体"
-          aria-label="插入多媒体"
+          onClick={() => insertTableFromSchema(editor, schema, 4, 1, 3)}
+          title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
         >
-          <Film size={16} aria-hidden className="shrink-0" />
+          <Table size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
@@ -144,49 +126,18 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         >
           <Image size={16} aria-hidden className="shrink-0" />
         </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => insertFilmFromSchema(editor, schema)}
+          title="插入多媒体"
+          aria-label="插入多媒体"
+        >
+          <Film size={16} aria-hidden className="shrink-0" />
+        </button>
       </div>
 
       <span className="ietm-format-toolbar__divider" />
-
-      <div className="ietm-format-toolbar__cluster">
-        <select
-          className="ietm-toolbar-select"
-          aria-label="字体"
-          value={textAttrs.fontFamily ?? ""}
-          onChange={(e) => {
-            const v = e.target.value;
-            const chain = editor.chain().focus();
-            if (!v) chain.unsetFontFamily().run();
-            else chain.setFontFamily(v).run();
-          }}
-        >
-          <option value="">默认字体</option>
-          {FONT_CHOICES.map((f) => (
-            <option key={f.value} value={f.value}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="ietm-toolbar-select ietm-toolbar-select--narrow"
-          aria-label="字号"
-          value={textAttrs.fontSize ?? ""}
-          onChange={(e) => {
-            const v = e.target.value;
-            const chain = editor.chain().focus();
-            if (!v) chain.unsetFontSize().run();
-            else chain.setFontSize(v).run();
-          }}
-        >
-          <option value="">默认</option>
-          {FONT_SIZES.map((s) => (
-            <option key={s} value={s}>
-              {s.replace("px", "")}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <span className="ietm-format-toolbar__divider" />
 
@@ -255,7 +206,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           onClick={() => editor.chain().focus().setTextAlign("left").run()}
           title="左对齐"
         >
-          ≡
+          <TextAlignStart size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
@@ -263,7 +214,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           onClick={() => editor.chain().focus().setTextAlign("center").run()}
           title="居中"
         >
-          ☰
+          <TextAlignCenter size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
@@ -271,7 +222,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           onClick={() => editor.chain().focus().setTextAlign("right").run()}
           title="右对齐"
         >
-          ≡
+          <TextAlignEnd size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
@@ -279,7 +230,7 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           onClick={() => editor.chain().focus().setTextAlign("justify").run()}
           title="两端对齐"
         >
-          ≋
+          <TextAlignJustify size={16} aria-hidden className="shrink-0" />
         </button>
       </div>
     </div>

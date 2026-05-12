@@ -9,13 +9,7 @@ import {
   Table,
   Tree,
 } from "@arco-design/web-react";
-import {
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 
@@ -172,8 +166,8 @@ function ReferencePublicationDialog() {
 
   const columns: TableColumnProps<PublicationRow>[] = useMemo(
     () => [
-      { title: "标题", dataIndex: "title", width: 220 },
-      { title: "编码", dataIndex: "code", width: 260 },
+      { title: "标题", dataIndex: "title" },
+      { title: "编码", dataIndex: "code", width: 200 },
       { title: "版本", dataIndex: "version", width: 80 },
       { title: "密级", dataIndex: "security", width: 80 },
       {
