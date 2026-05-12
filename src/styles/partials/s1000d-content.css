@@ -1,0 +1,219 @@
+﻿.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='1'] {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0.4em 0 0.25em;
+  color: #0f172a;
+}
+
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='2'] {
+  display: block;
+  font-size: 1.22rem;
+  font-weight: 650;
+  line-height: 1.32;
+  margin: 0.35em 0 0.2em;
+  color: #0f172a;
+}
+
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='3'] {
+  display: block;
+  font-size: 1.08rem;
+  font-weight: 625;
+  line-height: 1.38;
+  margin: 0.32em 0 0.18em;
+  color: #1e293b;
+}
+
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='4'] {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.42;
+  margin: 0.28em 0 0.16em;
+  color: #334155;
+}
+
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='5'] {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 0.26em 0 0.14em;
+  color: #475569;
+}
+
+.ietm-editor-surface .tiptap .s1000d-title-display[data-s1000d-title-level='6'] {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 0.24em 0 0.12em;
+  color: #64748b;
+}
+
+/* figure 等块内短标题（任意层级）略微缩小 */
+.ietm-editor-surface .tiptap figure > .s1000d-title-display {
+  font-size: 1.05em;
+  font-weight: 600;
+  margin: 0.35em 0 0.2em;
+}
+
+/* table 标题：不使用 heading 语义，视觉按业务示例居中、浅灰并带短下划线 */
+.ietm-editor-surface .tiptap .s1000d-table-wrap > .s1000d-title-display {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 14px;
+  padding: 0 6px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #66696c;
+  text-align: center;
+  border-bottom: 1px solid #8e9297;
+}
+
+.ietm-editor-surface .tiptap para {
+  display: block;
+  margin: 0.35em 0;
+  line-height: 1.55;
+}
+
+.ietm-editor-surface .tiptap warningAndCautionPara {
+  display: block;
+  margin: 0.2em 0;
+  line-height: 1.5;
+}
+
+.ietm-editor-surface .tiptap figure {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.ietm-editor-surface .tiptap graphic {
+  display: block;
+  margin: 8px 0;
+  padding: 8px 10px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  color: #1e40af;
+  background: #eff6ff;
+  border-radius: 4px;
+}
+
+.ietm-editor-surface .tiptap internalRef,
+.ietm-editor-surface .tiptap internalref {
+  display: contents;
+}
+
+/* S1000D internalRef：由 NodeView / 序列化 span 呈现 */
+.ietm-editor-surface .tiptap .s1000d-internal-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 2px;
+  vertical-align: baseline;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ietm-editor-surface .tiptap .s1000d-internal-ref .s1000d-internal-ref__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px 1px 8px;
+  border-radius: 4px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.88em;
+  line-height: 1.3;
+  cursor: help;
+}
+
+.ietm-editor-surface .tiptap .s1000d-internal-ref .s1000d-internal-ref__id {
+  font-weight: 600;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.ietm-editor-surface .tiptap .s1000d-internal-ref .s1000d-internal-ref__missing {
+  opacity: 0.6;
+}
+
+.ietm-editor-surface .tiptap .s1000d-internal-ref .s1000d-internal-ref__jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 5px;
+  min-width: 1.5em;
+  border: none;
+  border-radius: 4px;
+  background: #818cf8;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ietm-editor-surface .tiptap .s1000d-internal-ref .s1000d-internal-ref__jump:hover {
+  background: #6366f1;
+}
+
+.ietm-editor-surface .tiptap .s1000d-dmref-chip {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 1px dashed #94a3b8;
+  font-size: 0.85em;
+  color: #475569;
+  background: #f1f5f9;
+  vertical-align: baseline;
+  font-style: italic;
+}
+
+.ietm-editor-surface .tiptap .s1000d-dmref-chip::before {
+  content: 'DM';
+  font-style: normal;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.s1000d-internal-ref-target-flash {
+  animation: s1000d-internal-ref-flash-keyframes 1s ease-out 1 !important;
+  outline: 3px solid #f97316 !important;
+  outline-offset: 2px !important;
+}
+
+@keyframes s1000d-internal-ref-flash-keyframes {
+  0%,
+  100% {
+    outline-width: 0;
+    outline-color: transparent;
+  }
+  15% {
+    outline-width: 5px;
+    outline-color: #ea580c;
+  }
+}
+
+/* S1000D emphasis：特别强调（语义由 emphasisType 区分）；标签名保持与 XML 一致 */
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis {
+  border-radius: 2px;
+  padding: 0 0.06em;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type='em02'] {
+  font-style: italic;
+  font-weight: 500;
+  color: #334155;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis:not([data-emphasis-type='em02']) {
+  font-weight: 700;
+  color: #0f172a;
+}

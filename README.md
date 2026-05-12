@@ -13,7 +13,6 @@ S1000D IETM 编辑器 SDK：**React Island in Vanilla Shell** 架构。
 
 ```ini
 @ccengine:registry=https://nexus.ccengine.com/repository/cc-npm/
-registry=https://nexus.ccengine.com/repository/cc-group/
 ```
 
 然后：
@@ -27,6 +26,12 @@ pnpm add @ccengine/ietm-editor
 ---
 
 ## 使用
+
+### 宿主容器高度（重要）
+
+顶栏与格式工具栏使用 **`position: sticky`**：宿主页面整体滚动时仍会贴在视口顶部；在理想集成下（挂载节点有高度、滚动发生在 `.ietm-editor-pane` 内）则仍由 flex 布局固定不参与文档滚动。底部状态栏在壳内单独一行。文档过长时的主滚动条在主编辑区（右侧属性面板正文区在表单过长时内部滚动）。
+
+请将 `createIETMEditor({ element })` 的挂载节点放在**有明确高度上限**的容器里，例如外层 `display: flex; flex-direction: column` 且挂载节点 `flex: 1; min-height: 0`，或 `height: 100%` / `height: 100vh`。若挂载节点随内容无限增高，浏览器会改为整页滚动，壳内固定布局可能表现异常。
 
 ### Vue 3
 
@@ -64,14 +69,16 @@ onBeforeUnmount(() => instance?.destroy())
 </script>
 
 <template>
-  <div ref="containerEl" />
+  <!-- 示例：占满父级可用高度；父级需为 flex 列且自身有高度 -->
+  <div ref="containerEl" style="flex: 1; min-height: 0; display: flex; flex-direction: column" />
 </template>
 ```
 
 ### 原生 HTML
 
 ```html
-<div id="editor"></div>
+<!-- 示例：给挂载节点高度上限，壳内才会出现编辑区滚动条 -->
+<div id="editor" style="height: 100vh; min-height: 0; display: flex; flex-direction: column"></div>
 <script type="module">
   import { createIETMEditor } from '@ccengine/ietm-editor'
   import '@ccengine/ietm-editor/style.css'
@@ -89,12 +96,16 @@ onBeforeUnmount(() => instance?.destroy())
 
 ### `createIETMEditor(options): IETMEditorInstance`
 
-| Option | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| `element` | `HTMLElement` | 必填 | 挂载容器 |
-| `content` | `JSONContent \| string` | 内置示例 | 初始文档内容 |
+
+| Option          | 类型                                       | 默认                | 说明      |
+| --------------- | ---------------------------------------- | ----------------- | ------- |
+| `element`       | `HTMLElement`                            | 必填                | 挂载容器    |
+| `content`       | `JSONContent | string`                   | 内置示例              | 初始文档内容  |
 | `applicability` | `{ activePlatform, showOnlyApplicable }` | `{ A320, false }` | 适用性全局配置 |
-| `editable` | `boolean` | `true` | 是否可编辑 |
+| `editable`      | `boolean`                                | `true`            | 是否可编辑   |
+| `descriptionSchema` | `DescriptionSchema`（与 `src/data/描述类Schema.json` 同形） | 内置默认 | 服务端下发的描述类规则；工具栏插入会据此校验。传入时卸载编辑器会恢复内置默认。 |
+
+宿主也可在挂载前调用 `setDescriptionSchema(schema)`，或与 `createIETMEditor({ descriptionSchema })` 二选一。
 
 ### `IETMEditorInstance`
 

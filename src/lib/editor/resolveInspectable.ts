@@ -1,7 +1,33 @@
 import type { Editor } from '@tiptap/core'
+import type { Node as PMNode } from '@tiptap/pm/model'
 import { NodeSelection } from '@tiptap/pm/state'
 
 export type InspectKind = 'image' | 'table' | 's1000dApplicability'
+
+function countEntryCellsInRow(row: PMNode): number {
+  let n = 0
+  row.forEach((c) => {
+    if (c.type.name === 'entry') n += 1
+  })
+  return n
+}
+
+function accumulateTgroupGrid(tgroup: PMNode): {
+  rows: number
+  cols: number
+} {
+  let rows = 0
+  let cols = 0
+  tgroup.forEach((section) => {
+    if (section.type.name !== 'thead' && section.type.name !== 'tbody') return
+    section.forEach((r) => {
+      if (r.type.name !== 'row') return
+      rows += 1
+      cols = Math.max(cols, countEntryCellsInRow(r))
+    })
+  })
+  return { rows, cols }
+}
 
 export interface InspectTarget {
   kind: InspectKind
@@ -57,11 +83,11 @@ export function tableDimensions(editor: Editor, tablePos: number) {
   if (!node || node.type.name !== 'table') return null
   let rows = 0
   let cols = 0
-  node.forEach((row) => {
-    if (row.type.name === 'tableRow') {
-      rows++
-      if (cols === 0) cols = row.childCount
-    }
+  node.forEach((child) => {
+    if (child.type.name !== 'tgroup') return
+    const chunk = accumulateTgroupGrid(child)
+    rows += chunk.rows
+    cols = Math.max(cols, chunk.cols)
   })
-  return { rows, cols }
+  return rows > 0 ? { rows, cols } : null
 }

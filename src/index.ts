@@ -4,17 +4,36 @@ import type { JSONContent } from '@tiptap/core'
 import {
   IETMEditorRoot,
   type IETMEditorRootHandle,
-} from './react/IETMEditorRoot'
-import type { ApplicabilityState } from './react/context/ApplicabilityContext'
+} from './components/editor/IETMEditorRoot'
+import {
+  getDescriptionSchema,
+  resetDescriptionSchema,
+  setDescriptionSchema,
+  useDescriptionSchemaStore,
+} from './store/descriptionSchemaStore'
+import { useInsertPublicationModalStore } from './store/insertPublicationModalStore'
+import type {
+  DescriptionSchema,
+  DescriptionSchemaRule,
+} from './types/descriptionSchema'
 import './style.css'
 
-export type { ApplicabilityState, JSONContent }
+export type { JSONContent }
+export type { DescriptionSchema, DescriptionSchemaRule }
+export {
+  getDescriptionSchema,
+  resetDescriptionSchema,
+  setDescriptionSchema,
+  useDescriptionSchemaStore,
+}
+export { useInsertPublicationModalStore }
 
 export interface IETMEditorOptions {
   element: HTMLElement
   content?: JSONContent | string
-  applicability?: ApplicabilityState
   editable?: boolean
+  /** 服务端下发的描述类 schema；不传则使用内置默认，卸载实例时会恢复默认（若创建时传入了本字段） */
+  descriptionSchema?: DescriptionSchema
 }
 
 export interface IETMEditorEvents {
@@ -31,7 +50,6 @@ export type IETMEditorEventHandler<E extends IETMEditorEventName> = (
 
 export interface IETMEditorInstance {
   setContent(content: JSONContent | string): void
-  setApplicability(next: Partial<ApplicabilityState>): void
   setEditable(value: boolean): void
   getJSON(): JSONContent
   focus(): void
@@ -121,8 +139,8 @@ export function createIETMEditor(
     createElement(IETMEditorRoot, {
       ref: setHandle,
       initialContent: options.content,
-      initialApplicability: options.applicability,
       initialEditable: options.editable ?? true,
+      initialDescriptionSchema: options.descriptionSchema,
       onUpdate: (json) => emitter.emit('update', { json }),
       onSelectionChange: (range) => emitter.emit('selectionChange', range),
       onReady: () => emitter.emit('ready', undefined),
@@ -131,7 +149,6 @@ export function createIETMEditor(
 
   return {
     setContent: (content) => withHandle((h) => h.setContent(content)),
-    setApplicability: (next) => withHandle((h) => h.setApplicability(next)),
     setEditable: (value) => withHandle((h) => h.setEditable(value)),
     getJSON: () =>
       handleRef.current?.getJSON() ?? { type: 'doc', content: [] },

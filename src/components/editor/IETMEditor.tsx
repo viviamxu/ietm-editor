@@ -11,21 +11,21 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { TextStyleKit } from '@tiptap/extension-text-style/text-style-kit'
-import { TableKit } from '@tiptap/extension-table/kit'
 import type { JSONContent } from '@tiptap/core'
+import { IETMImage } from '../../extensions/IETMImage'
 import {
-  defaultApplicabilityAttributes,
-  S1000DApplicability,
-} from './extensions/S1000DApplicability/extension'
-import { IETMImage } from './extensions/IETMImage'
-import { s1000dContent } from './data/s1000dContent'
+  getDescriptionInnerXmlFromDmXml,
+  preprocessS1000dDescriptionHtmlFragment,
+  s1000dPhase1Nodes,
+} from '../../extensions/S1000DNodes'
+import { createMinimalS1000dTableInsertJson } from '../../extensions/s1000d/s1000dTableNodes'
+import bikeDmSampleXml from '../../data/bikeDmSample.xml?raw'
 import { FormatToolbar } from './FormatToolbar'
 import {
   resolveInspectable,
   tableDimensions,
   type InspectTarget,
-} from './editor/resolveInspectable'
-import type { ApplicabilityState } from './context/ApplicabilityContext'
+} from '../../lib/editor/resolveInspectable'
 
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void
@@ -36,17 +36,37 @@ export interface IETMEditorRefValue {
 interface IETMEditorProps {
   initialContent?: JSONContent | string
   editable: boolean
-  applicability: ApplicabilityState
-  setApplicability: (next: Partial<ApplicabilityState>) => void
-  platformChoices?: readonly string[]
   onUpdate: (json: JSONContent) => void
   onSelectionChange: (range: { from: number; to: number }) => void
   onReady: () => void
 }
 
-const DOC_TITLE_PLACEHOLDER = '数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D'
+const DEFAULT_CONTENT_FROM_BIKE_DM_XML =
+  getDescriptionInnerXmlFromDmXml(bikeDmSampleXml)
 
-const DEFAULT_PLATFORMS = ['A320', 'B737', 'C919'] as const
+function normalizeEditorContentInput(
+  content: JSONContent | string | undefined,
+): JSONContent | string | undefined {
+  if (typeof content !== 'string') return content
+  return preprocessS1000dDescriptionHtmlFragment(content)
+}
+
+const FALLBACK_DOCUMENT: JSONContent = {
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: '（未能从 Bike DM XML 解析出 description，请检查 data/bikeDmSample.xml）',
+        },
+      ],
+    },
+  ],
+}
+
+const DOC_TITLE_PLACEHOLDER = '数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D'
 
 const UNIT_PRESETS = ['ph01(h)', 'mm', 'in', 'deg']
 
@@ -55,12 +75,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const readyFiredRef = useRef(false)
     const selectionAnchorRef = useRef<string>('')
 
-    const platforms =
-      props.platformChoices ??
-      (DEFAULT_PLATFORMS as unknown as readonly string[])
-
     const [menuOpen, setMenuOpen] = useState<
-      null | 'file' | 'edit' | 'insert' | 'tools'
+      null | 'file' | 'edit' | 'insert'
     >(null)
 
     const [propertiesDismissed, setPropertiesDismissed] = useState(false)
@@ -84,12 +100,12 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         IETMImage.configure({
           resize: false,
         }),
-        TableKit.configure({
-          table: { resizable: false },
-        }),
-        S1000DApplicability,
+        ...s1000dPhase1Nodes,
       ],
-      content: props.initialContent ?? s1000dContent,
+      content:
+        normalizeEditorContentInput(props.initialContent) ??
+        DEFAULT_CONTENT_FROM_BIKE_DM_XML ??
+        FALLBACK_DOCUMENT,
       editorProps: {
         attributes: {
           class: 'ietm-tiptap-root',
@@ -126,7 +142,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ref,
       () => ({
         setContent: (content) => {
-          editor?.commands.setContent(content)
+          editor?.commands.setContent(normalizeEditorContentInput(content) ?? '')
         },
         getJSON: () => editor?.getJSON() ?? { type: 'doc', content: [] },
         focus: () => {
@@ -155,24 +171,12 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       return null
     }
 
-    const insertApplicabilityBlock = () =>
+    const insertTable = () =>
       editor
         .chain()
         .focus()
-        .insertContent({
-          type: 's1000dApplicability',
-          attrs: defaultApplicabilityAttributes,
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: '编辑适用性条件块内容...' }],
-            },
-          ],
-        })
+        .insertContent(createMinimalS1000dTableInsertJson(4, 1, 3))
         .run()
-
-    const insertTable = () =>
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
 
     const insertImageFromPrompt = () => {
       const url = window.prompt('请输入图片 URL')
@@ -195,19 +199,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         .run()
     }
 
-    const applyApplicabilityAttrs = (attrs: Record<string, unknown>) => {
-      if (!resolvedTarget || resolvedTarget.kind !== 's1000dApplicability')
-        return
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(resolvedTarget.pos)
-        .updateAttributes('s1000dApplicability', attrs)
-        .run()
-    }
-
     return (
       <div className="ietm-editor-root">
+        <div className="ietm-editor-chrome">
         <header className="ietm-app-header">
           <nav className="ietm-app-nav" aria-label="主菜单">
             <div className="ietm-menu">
@@ -281,16 +275,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                     type="button"
                     className="ietm-menu-item"
                     onClick={() => {
-                      insertApplicabilityBlock()
-                      closeMenus()
-                    }}
-                  >
-                    插入适用性块
-                  </button>
-                  <button
-                    type="button"
-                    className="ietm-menu-item"
-                    onClick={() => {
                       insertTable()
                       closeMenus()
                     }}
@@ -311,49 +295,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               ) : null}
             </div>
 
-            <div className="ietm-menu">
-              <button
-                type="button"
-                className={`ietm-menu-trigger ${menuOpen === 'tools' ? 'is-open' : ''}`}
-                aria-expanded={menuOpen === 'tools'}
-                onClick={() => toggleMenu('tools')}
-              >
-                工具
-              </button>
-              {menuOpen === 'tools' ? (
-                <div className="ietm-menu-dropdown ietm-menu-dropdown--wide" role="menu">
-                  <label className="ietm-menu-field">
-                    <span>机型</span>
-                    <select
-                      value={props.applicability.activePlatform}
-                      onChange={(e) =>
-                        props.setApplicability({
-                          activePlatform: e.target.value,
-                        })
-                      }
-                    >
-                      {platforms.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="ietm-menu-field ietm-menu-field--check">
-                    <input
-                      type="checkbox"
-                      checked={props.applicability.showOnlyApplicable}
-                      onChange={(e) =>
-                        props.setApplicability({
-                          showOnlyApplicable: e.target.checked,
-                        })
-                      }
-                    />
-                    <span>仅高亮适用内容</span>
-                  </label>
-                </div>
-              ) : null}
-            </div>
           </nav>
 
           <div className="ietm-app-header-right">
@@ -368,6 +309,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         </header>
 
         <FormatToolbar editor={editor} />
+        </div>
 
         <div className="ietm-app-main">
           <div
@@ -486,37 +428,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       })()}
                     </>
                   ) : null}
-
-                  {resolvedTarget.kind === 's1000dApplicability' ? (
-                    <>
-                      <label className="ietm-prop-field">
-                        <span>modelCodes</span>
-                        <input
-                          type="text"
-                          value={String(resolvedTarget.attrs.modelCodes ?? '')}
-                          onChange={(e) =>
-                            applyApplicabilityAttrs({
-                              modelCodes: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>conditionLabel</span>
-                        <input
-                          type="text"
-                          value={String(
-                            resolvedTarget.attrs.conditionLabel ?? '',
-                          )}
-                          onChange={(e) =>
-                            applyApplicabilityAttrs({
-                              conditionLabel: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                    </>
-                  ) : null}
                 </div>
               </div>
             ) : (
@@ -544,6 +455,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             onClick={closeMenus}
           />
         ) : null}
+
       </div>
     )
   },

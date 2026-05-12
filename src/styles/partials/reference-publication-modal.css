@@ -1,0 +1,63 @@
+/* 引用出版物（插入图片）Arco 版弹框 */
+
+/* Arco 版引用出版物弹框布局 */
+.ietm-ref-pub-arco-body {
+  display: flex;
+  min-height: 520px;
+  max-height: min(680px, 82vh);
+}
+
+.ietm-ref-pub-arco-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--ietm-arco-color-border-2);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ietm-ref-pub-arco-search {
+  padding: 10px;
+}
+
+.ietm-ref-pub-arco-tree-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0 4px 8px;
+}
+
+.ietm-ref-pub-arco-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ietm-ref-pub-arco-table-wrap {
+  flex: 1;
+  min-height: 0;
+  /* 纵向滚动交给 Arco Table 的 scroll.y，避免外层与表体双滚动条 */
+  overflow: hidden;
+}
+
+.ietm-ref-pub-arco-pagination {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid var(--ietm-arco-color-border-2);
+}
+
+.ietm-ref-pub-arco-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ietm-ref-pub-arco-preview {
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--ietm-arco-color-border-2);
+}

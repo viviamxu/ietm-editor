@@ -1,0 +1,186 @@
+﻿/* ========== 应用壳（全视口布局） ========== */
+.ietm-editor-root {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  /* 占满宿主挂载节点；配合宿主 flex:1 + min-height:0 形成高度上限 */
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  /* 不设 overflow:hidden：否则会阻断子元素 position:sticky 相对视口吸顶 */
+  min-width: 0;
+  background: #f3f4f6;
+  color: #1f2330;
+  font:
+    14px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 顶栏 + 格式工具栏：宿主整页滚动时仍贴在视口顶部；编辑区内部滚动时由 flex 固定不参与滚动 */
+.ietm-editor-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+}
+
+.ietm-app-header {
+  flex-shrink: 0;
+  height: 56px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-sizing: border-box;
+}
+
+.ietm-app-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ietm-menu {
+  position: relative;
+}
+
+.ietm-menu-trigger {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ietm-menu-trigger:hover,
+.ietm-menu-trigger.is-open {
+  background: #f3f4f6;
+}
+
+.ietm-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  z-index: 50;
+}
+
+.ietm-menu-dropdown--wide {
+  min-width: 240px;
+  padding: 10px 12px;
+}
+
+.ietm-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ietm-menu-item:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.ietm-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ietm-menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+
+.ietm-menu-field:last-child {
+  margin-bottom: 0;
+}
+
+.ietm-menu-field select {
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.ietm-menu-field--check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.ietm-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.ietm-app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ietm-doc-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(420px, 36vw);
+}
+
+.ietm-share-btn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.ietm-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

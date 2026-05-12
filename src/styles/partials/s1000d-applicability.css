@@ -1,0 +1,53 @@
+﻿.s1000d-applicability {
+  border: 1px solid #c4d0e8;
+  border-radius: 8px;
+  margin: 14px 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+  background: #f6f9ff;
+}
+
+.s1000d-applicability[data-applicable='false'] {
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+
+.s1000d-applicability__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #c4d0e8;
+  background: #eaf1ff;
+  color: #1f3a73;
+  font-size: 14px;
+}
+
+.s1000d-applicability__header label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.s1000d-applicability__header input {
+  width: 170px;
+  padding: 4px 6px;
+  border: 1px solid #c4d0e8;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.s1000d-applicability__title {
+  font-weight: 600;
+}
+
+.s1000d-applicability__content {
+  padding: 10px 14px;
+}
+
+.s1000d-applicability.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

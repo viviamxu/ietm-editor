@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?><!DOCTYPE dmodule  [
+  <!ENTITY ICN-C0419-S1000D0392-001-01 SYSTEM "ICN-C0419-S1000D0392-001-01.CGM" NDATA cgm >
+  <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
+]>
+<dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:dc="http://www.purl.org/dc/elements/1.1/"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
+
+   <identAndStatusSection>
+      <dmAddress>
+         <dmIdent>
+            <dmCode modelIdentCode="S1000DLIGHTING" systemDiffCode="AAA" systemCode="D00"
+                    subSystemCode="0"
+                    subSubSystemCode="0"
+                    assyCode="00"
+                    disassyCode="00"
+                    disassyCodeVariant="AA"
+                    infoCode="040"
+                    infoCodeVariant="A"
+                    itemLocationCode="A"/>  
+            <language countryIsoCode="US" languageIsoCode="en"/>
+            <issueInfo issueNumber="008" inWork="00"/>
+         </dmIdent>
+         <dmAddressItems>
+            <issueDate day="31" month="12" year="2016"/>
+            <dmTitle>
+               <techName>Electrical system</techName>
+               <infoName>Description of how it is made and its function</infoName>
+            </dmTitle>
+         </dmAddressItems>
+      </dmAddress>
+      <dmStatus issueType="changed">
+         <security securityClassification="01" commercialClassification="cc51" caveat="cv51"/>
+         <derivativeClassification>
+            <classificationActionGroup id="dcg-001">
+               <classificationAction year="2012" month="03" day="15" actionIdentType="ai01">
+   <!-- Classified By -->
+   <businessUnit>
+                     <businessUnitName>ASD Couriers</businessUnitName>
+                     <contactPerson>
+                        <lastName>Clifford</lastName>
+                     </contactPerson>
+                  </businessUnit>
+                  <derivativeSource>Bike Security Guidance Book 1</derivativeSource>
+               </classificationAction>
+               <classificationAction year="2012" month="11" day="02" actionIdentType="ai09">
+   <!-- Upgrade to securityClassification 04 -->
+   <valueAfterAction year="2013" month="03" day="15" actionIdentType="ai02"/>
+                  <!-- Declassify -->
+   <businessUnit>
+	                    <businessUnitName>ASD Couriers</businessUnitName>
+                     <contactPerson>
+                        <lastName>Wink</lastName>
+                     </contactPerson>
+                  </businessUnit>
+                  <derivativeSource/>
+               </classificationAction>
+            </classificationActionGroup>
+            <classificationActionGroup id="dcg-002">
+               <classificationAction year="2012" month="01" day="02" actionIdentType="ai01">
+   <!-- Classified By -->
+   <businessUnit id="biz-fchs">
+                     <businessUnitName>Calm Security</businessUnitName>
+                     <contactPerson id="per-calm" personPrefix="Mr">
+					                   <lastName>Calm</lastName>
+				                 </contactPerson>
+			               </businessUnit>
+                  <derivativeSource>Bike Security Guidance Book 2</derivativeSource>
+               </classificationAction>
+               <classificationAction year="2012" month="04" day="01" actionIdentType="ai02">
+   <!-- Declassify On -->
+   <businessUnit>
+                     <businessUnitName>ASD Couriers</businessUnitName>
+                     <contactPerson>
+                        <lastName>Clifford</lastName>
+                     </contactPerson>
+                  </businessUnit>
+                  <derivativeSource> Bike Security Guidance Book 1</derivativeSource>
+               </classificationAction>
+            </classificationActionGroup>
+         </derivativeClassification>
+         <dataRestrictions>
+            <restrictionInstructions>
+               <dataDistribution>To be made available to all S1000D users.</dataDistribution>
+               <exportControl>
+                  <exportRegistrationStmt>
+                     <simplePara>Export of this data module to all countries that are the residence of
+                    organizations that are users of S1000D is permitted. Storage of this data module
+                    is to be at the discretion of the organization.</simplePara>
+                  </exportRegistrationStmt>
+               </exportControl>
+               <dataHandling>There are no specific handling instructions for this data
+            module.</dataHandling>
+               <dataDestruction>Users may destroy this data module in accordance with their own local
+            procedures.</dataDestruction>
+               <dataDisclosure>There are no dissemination limitations that apply to this data
+            module.</dataDisclosure>
+            </restrictionInstructions>
+            <restrictionInfo>
+               <copyright>
+                  <copyrightPara>
+                     <emphasis>Copyright (C) 2016</emphasis> by each of the following organizations: <randomList>
+                        <listItem>
+                           <para>AeroSpace and Defence Industries Associations of Europe - ASD.</para>
+                        </listItem>
+                        <listItem>
+                           <para>Ministries of Defence of the member countries of ASD.</para>
+                        </listItem>
+                     </randomList>
+                  </copyrightPara>
+                  <copyrightPara>
+                     <emphasis>Limitations of liability:</emphasis>
+                  </copyrightPara>
+                  <copyrightPara>
+                     <randomList>
+                        <listItem>
+                           <para>This material is provided "As is" and neither ASD nor any person who
+                            has contributed to the creation, revision or maintenance of the material
+                            makes any representations or warranties, express or implied, including
+                            but not limited to, warranties of merchantability or fitness for any
+                            particular purpose.</para>
+                        </listItem>
+                        <listItem>
+                           <para>Neither ASD nor any person who has contributed to the creation,
+                            revision or maintenance of this material shall be liable for any direct,
+                            indirect, special or consequential damages or any other liability
+                            arising from any use of this material.</para>
+                        </listItem>
+                        <listItem>
+                           <para>Revisions to this document may occur after its issuance. The user is
+                            responsible for determining if revisions to the material contained in
+                            this document have occurred and are applicable.</para>
+                        </listItem>
+                     </randomList>
+                  </copyrightPara>
+               </copyright>
+               <policyStatement>S1000D-SC-2016-017-002-00 Steering Committee TOR</policyStatement>
+               <dataConds>There are no known conditions that would change the data restrictions for, or
+            security classification of, this data module.</dataConds>
+            </restrictionInfo>
+         </dataRestrictions>
+         <responsiblePartnerCompany enterpriseCode="B6865">
+            <enterpriseName>AEROSPACE AND DEFENCE INDUSTRIES ASSOCIATION OF EUROPE</enterpriseName>
+         </responsiblePartnerCompany>
+         <originator enterpriseCode="B6865">
+            <enterpriseName>AEROSPACE AND DEFENCE INDUSTRIES ASSOCIATION OF EUROPE</enterpriseName>
+         </originator>
+         <applicCrossRefTableRef>
+            <dmRef>
+               <dmRefIdent>
+                  <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
+                          subSystemCode="0"
+                          subSubSystemCode="0"
+                          assyCode="00"
+                          disassyCode="00"
+                          disassyCodeVariant="AA"
+                          infoCode="00W"
+                          infoCodeVariant="A"
+                          itemLocationCode="D"/>
+               </dmRefIdent>
+            </dmRef>
+         </applicCrossRefTableRef>
+         <applicRef applicIdentValue="app-00000000AA040A-0000"/>
+         <techStandard>
+            <authorityInfoAndTp>
+               <authorityInfo>20010131</authorityInfo>
+               <techPubBase>Bike book</techPubBase>
+            </authorityInfoAndTp>
+            <authorityExceptions/>
+            <authorityNotes/>
+         </techStandard>
+         <brexDmRef>
+            <dmRef>
+               <dmRefIdent>
+                  <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
+                          subSystemCode="0"
+                          subSubSystemCode="0"
+                          assyCode="00"
+                          disassyCode="00"
+                          disassyCodeVariant="AA"
+                          infoCode="022"
+                          infoCodeVariant="A"
+                          itemLocationCode="D"/>
+               </dmRefIdent>
+            </dmRef>
+         </brexDmRef>
+         <qualityAssurance>
+            <firstVerification verificationType="tabtop"/>
+         </qualityAssurance>
+         <systemBreakdownCode>LT</systemBreakdownCode>
+         <reasonForUpdate id="rfu-general" updateReasonType="urt03">
+            <simplePara>S1000D upissued</simplePara>
+         </reasonForUpdate>
+         <reasonForUpdate id="rfu-2012-020US" updateReasonType="urt03">
+            <simplePara>Derivative Classification</simplePara>
+         </reasonForUpdate>
+
+      </dmStatus>
+   </identAndStatusSection>
+   <content>
+      <description>
+         <para id="para1">这是一段关于文档排版规范的说明文字。para 标签用于定义标准段落。在现代文档编辑中，我们支持丰富的行内元素：例如化学式
+               H<subScript>2</subScript>O中的<subScript>下标</subScript>，或者数学公式E=mc<superScript>2</superScript>中的<superScript>上标</superScript>。你也可以使用<emphasis
+    emphasisType="em01">加粗文本</emphasis>来强调核心概念，或者使用<emphasis emphasisType="em02"
+ >斜体文本</emphasis>来表示特定语境。</para>
+         <para>在编写技术文档时，内部引用格式通常为<internalRef internalRefId="para1"/>，以确保追溯的准确性。外部引用则通常以 <dmRef>
+               <dmRefIdent>
+                  <dmCode modelIdentCode="XXXX" systemDiffCode="A" systemCode="01" subSystemCode="0"
+                     subSubSystemCode="0" assyCode="00" disassyCode="00" disassyCodeVariant="A"
+                     infoCode="041" infoCodeVariant="A" itemLocationCode="D"/>
+                  <issueInfo issueNumber="001" inWork="00"/>
+                  <language languageIsoCode="zh" countryIsoCode="CN"/>
+               </dmRefIdent>
+               <dmRefAddressItems>
+                  <dmTitle>
+                     <techName>数据模块</techName>
+                     <infoName>超链接的形式</infoName>
+                  </dmTitle>
+               </dmRefAddressItems>
+            </dmRef>嵌入，引导读者获取更多背景信息。</para>
+         <levelledPara>
+            <title>层级段落标题 (一级)</title>
+            <para>一级标题通常用于划分文档的核心章节。在此层级下，内容应当具备高度的概括性。良好的段落间距 （Margin）是保证阅读节奏的关键因素。 </para>
+         </levelledPara>
+         <levelledPara>
+            <title>层级段落标题 (一级)</title>
+            <warning>
+               <warningAndCautionPara>警告文本
+                  <attentionRandomList>
+                     <attentionRandomListItem>
+                        <attentionListItemPara>警示无序列表1：执行此操作将永久删除关联数据，请在操作前务必进行完整备份。</attentionListItemPara>
+                     </attentionRandomListItem>
+                     <attentionRandomListItem>
+                        <attentionListItemPara>警示无序列表2：系统重启期间，所有进行中的任务将被强制中断。</attentionListItemPara>
+                     </attentionRandomListItem>
+                  </attentionRandomList>
+               </warningAndCautionPara>
+            </warning>
+            <caution>
+               <warningAndCautionPara>注意文本<attentionRandomList>
+                     <attentionRandomListItem>
+                        <attentionListItemPara>注意无序列表1：推荐在网络环境稳定的情况下进行大文件上传，以避免超时。</attentionListItemPara>
+                     </attentionRandomListItem>
+                     <attentionRandomListItem>
+                        <attentionListItemPara>注意无序列表2：部分旧版浏览器可能无法完美渲染高级排版特性。</attentionListItemPara>
+                     </attentionRandomListItem>
+                  </attentionRandomList></warningAndCautionPara>
+            </caution>
+            <para>一这是第二个主要章节的起始段落，准备引入更细致的子主题。 </para>
+            <levelledPara>
+               <title>层级段落标题 (二级) </title>
+               <para>二级标题用于对一级章节进行细分。内容的颗粒度在此处变小，通常伴随着具体的步骤、列表或 数据支撑。 </para>
+               <para>
+                  <sequentialList>
+                     <listItem>
+                        <para>有序列表项第一项：描述业务流程的初始步骤，确保环境准备就绪。</para>
+                     </listItem>
+                     <listItem>
+                        <para>有序列表项第二项：执行核心操作，此步骤包含以下子分类：</para>
+                     </listItem>
+                  </sequentialList>
+                  <randomList>
+                     <listItem>
+                        <para>无序列表：常规配置项说明。</para>
+                     </listItem>
+                     <listItem>
+                        <para>无序列表：高级参数调整指南。<randomList>
+                              <listItem>
+                                 <para>嵌套的无序列表。</para>
+                              </listItem>
+                           </randomList></para>
+                     </listItem>
+                  </randomList>
+               </para>
+               <figure>
+                  <title/>
+                  <graphic infoEntityIdent="XXXXXX"/>
+               </figure>
+               <table>
+                  <title/>
+                  <tgroup cols="4">
+                     <thead>
+                        <row>
+                           <entry>
+                              <para>参数标识</para>
+                           </entry>
+                           <entry>
+                              <para>数据类型</para>
+                           </entry>
+                           <entry>
+                              <para>默认值</para>
+                           </entry>
+                           <entry>
+                              <para>描述说明</para>
+                           </entry>
+                        </row>
+                     </thead>
+                     <tbody>
+                        <row>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                        </row>
+                        <row>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                        </row>
+                        <row>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                           <entry>
+                              <para/>
+                           </entry>
+                        </row>
+                     </tbody>
+                  </tgroup>
+               </table>
+            </levelledPara>
+         </levelledPara>
+      </description>
+   </content>
+  
+</dmodule>
