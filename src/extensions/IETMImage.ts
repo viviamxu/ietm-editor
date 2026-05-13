@@ -1,4 +1,6 @@
 import Image from '@tiptap/extension-image'
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { IETMImageNodeView } from './IETMImageNodeView'
 
 export const IETMImage = Image.extend({
   name: 'image',
@@ -26,5 +28,9 @@ export const IETMImage = Image.extend({
             : {},
       },
     }
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(IETMImageNodeView)
   },
 })

@@ -24,6 +24,8 @@ import {
   TextAlignCenter,
   TextAlignEnd,
   TextAlignJustify,
+  Subscript,
+  Superscript,
 } from "lucide-react";
 import { Button } from "@arco-design/web-react";
 
@@ -61,6 +63,27 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
     (!editor.isActive({ textAlign: "center" }) &&
       !editor.isActive({ textAlign: "right" }) &&
       !editor.isActive({ textAlign: "justify" }));
+
+  const subscriptActive = editor.isActive("s1000dSub");
+  const superscriptActive = editor.isActive("s1000dSup");
+
+  const toggleSubscript = () => {
+    const chain = editor.chain().focus().unsetMark("s1000dSup");
+    if (subscriptActive) {
+      chain.unsetMark("s1000dSub").run();
+    } else {
+      chain.setMark("s1000dSub").run();
+    }
+  };
+
+  const toggleSuperscript = () => {
+    const chain = editor.chain().focus().unsetMark("s1000dSub");
+    if (superscriptActive) {
+      chain.unsetMark("s1000dSup").run();
+    } else {
+      chain.setMark("s1000dSup").run();
+    }
+  };
 
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
@@ -234,14 +257,24 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         >
           <TextAlignJustify size={16} aria-hidden className="shrink-0" />
         </button>
-        {/* <button
+        <button
           type="button"
-          className="ietm-icon-btn"
-          onClick={() => print(editor)}
-          title="导出 XML"
+          className={`ietm-toggle-btn ${subscriptActive ? "is-active" : ""}`}
+          onClick={toggleSubscript}
+          title="下标"
+          aria-pressed={subscriptActive}
         >
-          导出 XML
-        </button> */}
+          <Subscript size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className={`ietm-toggle-btn ${superscriptActive ? "is-active" : ""}`}
+          onClick={toggleSuperscript}
+          title="上标"
+          aria-pressed={superscriptActive}
+        >
+          <Superscript size={16} aria-hidden className="shrink-0" />
+        </button>
         <Button type="primary" onClick={() => print(editor)}>
           导出 XML
         </Button>
