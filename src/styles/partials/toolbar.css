@@ -4,10 +4,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
-  padding: 8px 20px 10px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 8px 12px;
+  padding: 12px 28px 12px;
+  background: #fff;
+  border-bottom: 1px solid #d6dae1;
 }
 
 .ietm-format-toolbar__cluster {
@@ -18,9 +18,9 @@
 
 .ietm-format-toolbar__divider {
   width: 1px;
-  height: 22px;
-  background: #e5e7eb;
-  margin: 0 4px;
+  height: 26px;
+  background: #d4d8df;
+  margin: 0 6px;
 }
 
 .ietm-icon-btn {
@@ -31,15 +31,17 @@
   background: transparent;
   cursor: pointer;
   font-size: 16px;
-  color: #374151;
+  color: #7a8089;
 }
 
 .ietm-icon-btn:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: #dde2e8;
+  color: #5c6675;
 }
 
 .ietm-icon-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.5;
+  color: #aeb4bf;
   cursor: not-allowed;
 }
 
@@ -52,16 +54,16 @@
   background: transparent;
   cursor: pointer;
   font-size: 14px;
-  color: #374151;
+  color: #6a7280;
 }
 
 .ietm-toggle-btn:hover {
-  background: #f3f4f6;
+  background: #dde2e8;
 }
 
 .ietm-toggle-btn.is-active {
-  background: #e5edff;
-  color: #1d4ed8;
+  background: #dbe5f8;
+  color: #37598e;
 }
 
 .ietm-underline-label {
@@ -96,7 +98,7 @@
   background: #fafafa;
 }
 
-.ietm-color-swatch input[type='color'] {
+.ietm-color-swatch input[type="color"] {
   position: absolute;
   inset: 0;
   opacity: 0;

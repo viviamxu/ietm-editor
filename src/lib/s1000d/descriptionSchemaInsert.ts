@@ -24,6 +24,30 @@ function requireSchemaNode(schema: DescriptionSchema, name: string): boolean {
   return Object.prototype.hasOwnProperty.call(schema, name);
 }
 
+function focusFirstCellByMouseLikeClick(editor: Editor): void {
+  setTimeout(() => {
+    const root = editor.view.dom as HTMLElement;
+    const tables = root.querySelectorAll(".s1000d-table-wrap, .s1000d-tgroup-table");
+    const latestTable = tables.item(tables.length - 1) as HTMLElement | null;
+    if (!latestTable) return;
+
+    const firstCell = latestTable.querySelector(
+      ".s1000d-entry, td, th",
+    ) as HTMLElement | null;
+    if (!firstCell) return;
+
+    firstCell.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 }),
+    );
+    firstCell.dispatchEvent(
+      new MouseEvent("mouseup", { bubbles: true, cancelable: true, button: 0 }),
+    );
+    firstCell.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }),
+    );
+  }, 0);
+}
+
 /**
  * 按当前描述类 schema 的 `levelledPara.content` 组装最小可编辑片段。
  * 默认规则含 `title` 与 `para` 时各插入一个空块；无 `content` 字段时回退为 title + para。
@@ -143,7 +167,11 @@ export function insertTableFromSchema(
     bodyRows,
     includeEmptyTitle,
   );
-  return editor.chain().focus().insertContent(json).run();
+  const inserted = editor.chain().focus().insertContent(json).run();
+  if (inserted) {
+    focusFirstCellByMouseLikeClick(editor);
+  }
+  return inserted;
 }
 
 export function insertFilmFromSchema(
@@ -291,10 +319,7 @@ function buildGraphicEntityDoctype(contentXml: string): string {
   }
 
   const entities = [...new Set(graphicIds)]
-    .map(
-      (id) =>
-        `   <!ENTITY ${id} SYSTEM "${id}.CGM" NDATA cgm >`,
-    )
+    .map((id) => `   <!ENTITY ${id} SYSTEM "${id}.CGM" NDATA cgm >`)
     .join("\n");
 
   return `<!DOCTYPE dmodule [
@@ -523,4 +548,8 @@ ${doctypeXml}
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function save(editor: Editor): void {
+  //TODO: 保存到本地
 }
