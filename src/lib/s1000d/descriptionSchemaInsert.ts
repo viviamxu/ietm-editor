@@ -306,6 +306,27 @@ ${entities}
 /**
  * 递归遍历 Tiptap JSON AST，将其还原为 S1000D XML 字符串
  */
+function getTgroupCols(node: JSONContent): number {
+  const attrCols = Number.parseInt(String(node.attrs?.cols ?? ""), 10);
+  if (!Number.isNaN(attrCols) && attrCols > 0) return attrCols;
+
+  const section = node.content?.find(
+    (child) => child.type === "tbody" || child.type === "thead",
+  );
+  const row = section?.content?.find((child) => child.type === "row");
+  return Math.max(
+    1,
+    row?.content?.filter((child) => child.type === "entry").length ?? 1,
+  );
+}
+
+function buildColspecXml(cols: number): string {
+  return Array.from({ length: cols }, (_, index) => {
+    const n = index + 1;
+    return `<colspec colname="col${n}" colnum="${n}" />`;
+  }).join("");
+}
+
 function serializeNodeToXml(node: JSONContent): string {
   // 1. 处理纯文本与行内样式 (Marks)
   if (node.type === "text") {
@@ -447,6 +468,10 @@ function serializeNodeToXml(node: JSONContent): string {
 
   if (node.type === "doc") {
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
+  }
+
+  if (xmlTag === "tgroup") {
+    return `<${xmlTag}${attrsStr}>${buildColspecXml(getTgroupCols(node))}${children}</${xmlTag}>`;
   }
 
   if (!children && (xmlTag === "title" || xmlTag === "graphic")) {

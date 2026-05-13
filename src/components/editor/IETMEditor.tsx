@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { Tabs } from '@arco-design/web-react'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
@@ -26,6 +27,23 @@ import {
   tableDimensions,
   type InspectTarget,
 } from '../../lib/editor/resolveInspectable'
+import {
+  canRunS1000dTableAction,
+  runS1000dTableAction,
+} from '../../lib/editor/s1000dTableCommands'
+import {
+  BetweenHorizontalEnd,
+  BetweenHorizontalStart,
+  BetweenVerticalEnd,
+  BetweenVerticalStart,
+  Columns3,
+  Combine,
+  Eraser,
+  Rows3,
+  Split,
+  TableCellsSplit,
+  Trash2,
+} from 'lucide-react'
 
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void
@@ -75,9 +93,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const readyFiredRef = useRef(false)
     const selectionAnchorRef = useRef<string>('')
 
-    const [menuOpen, setMenuOpen] = useState<
-      null | 'file' | 'edit' | 'insert'
-    >(null)
+    const [activeTabKey, setActiveTabKey] = useState<'file' | 'edit' | 'insert'>('file')
 
     const [propertiesDismissed, setPropertiesDismissed] = useState(false)
 
@@ -167,6 +183,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       if (inspectStableKey === null) setPropertiesDismissed(false)
     }, [inspectStableKey])
 
+    useEffect(() => {
+      if (resolvedTarget?.kind === 'table') setActiveTabKey('edit')
+    }, [resolvedTarget?.kind, resolvedTarget?.pos])
+
     if (!editor) {
       return null
     }
@@ -184,11 +204,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       editor.chain().focus().setImage({ src: url }).run()
     }
 
-    const closeMenus = () => setMenuOpen(null)
-
-    const toggleMenu = (id: typeof menuOpen) =>
-      setMenuOpen((prev) => (prev === id ? null : id))
-
     const applyImageAttrs = (attrs: Record<string, unknown>) => {
       if (!resolvedTarget || resolvedTarget.kind !== 'image') return
       editor
@@ -199,103 +214,172 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         .run()
     }
 
+    const runTableAction = (
+      action: Parameters<typeof runS1000dTableAction>[1],
+    ) => {
+      runS1000dTableAction(editor, action)
+    }
+
+    const tableActionDisabled = (
+      action: Parameters<typeof canRunS1000dTableAction>[1],
+    ) => !canRunS1000dTableAction(editor, action)
+
     return (
       <div className="ietm-editor-root">
         <div className="ietm-editor-chrome">
         <header className="ietm-app-header">
-          <nav className="ietm-app-nav" aria-label="主菜单">
-            <div className="ietm-menu">
-              <button
-                type="button"
-                className={`ietm-menu-trigger ${menuOpen === 'file' ? 'is-open' : ''}`}
-                aria-expanded={menuOpen === 'file'}
-                onClick={() => toggleMenu('file')}
-              >
-                文件
-              </button>
-              {menuOpen === 'file' ? (
-                <div className="ietm-menu-dropdown" role="menu">
-                  <button type="button" className="ietm-menu-item" disabled>
-                    新建（占位）
-                  </button>
-                  <button type="button" className="ietm-menu-item" disabled>
-                    打开（占位）
-                  </button>
-                </div>
-              ) : null}
-            </div>
+          <Tabs activeTab={activeTabKey} onChange={setActiveTabKey} type='button' className="ietm-app-nav" aria-label="主菜单">
+            <Tabs.TabPane key="file" title="文件">
+              <div className="ietm-menu-dropdown" role="menu">
+                <button type="button" className="ietm-menu-item" disabled>
+                  新建（占位）
+                </button>
+                <button type="button" className="ietm-menu-item" disabled>
+                  打开（占位）
+                </button>
+              </div>
+            </Tabs.TabPane>
 
-            <div className="ietm-menu">
-              <button
-                type="button"
-                className={`ietm-menu-trigger ${menuOpen === 'edit' ? 'is-open' : ''}`}
-                aria-expanded={menuOpen === 'edit'}
-                onClick={() => toggleMenu('edit')}
-              >
-                编辑
-              </button>
-              {menuOpen === 'edit' ? (
-                <div className="ietm-menu-dropdown" role="menu">
-                  <button
-                    type="button"
-                    className="ietm-menu-item"
-                    onClick={() => {
-                      editor.chain().focus().undo().run()
-                      closeMenus()
-                    }}
-                  >
-                    撤销
-                  </button>
-                  <button
-                    type="button"
-                    className="ietm-menu-item"
-                    onClick={() => {
-                      editor.chain().focus().redo().run()
-                      closeMenus()
-                    }}
-                  >
-                    重做
-                  </button>
+            <Tabs.TabPane key="edit" title="编辑">
+              <div className="ietm-menu-dropdown ietm-menu-dropdown--table-tools" role="menu">
+                <div className="ietm-menu-section">
+                  <div className="ietm-menu-section__title">行</div>
+                  <div className="ietm-menu-icon-row">
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('insertRowAbove')}
+                      onClick={() => runTableAction('insertRowAbove')}
+                      title="上方插入行"
+                      aria-label="上方插入行">
+                      <BetweenVerticalStart size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('insertRowBelow')}
+                      onClick={() => runTableAction('insertRowBelow')}
+                      title="下方插入行"
+                      aria-label="下方插入行">
+                      <BetweenVerticalEnd size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('deleteRow')}
+                      onClick={() => runTableAction('deleteRow')}
+                      title="删除行"
+                      aria-label="删除行">
+                      <Rows3 size={16} aria-hidden />
+                    </button>
+                  </div>
                 </div>
-              ) : null}
-            </div>
-
-            <div className="ietm-menu">
-              <button
-                type="button"
-                className={`ietm-menu-trigger ${menuOpen === 'insert' ? 'is-open' : ''}`}
-                aria-expanded={menuOpen === 'insert'}
-                onClick={() => toggleMenu('insert')}
-              >
-                插入
-              </button>
-              {menuOpen === 'insert' ? (
-                <div className="ietm-menu-dropdown" role="menu">
-                  <button
-                    type="button"
-                    className="ietm-menu-item"
-                    onClick={() => {
-                      insertTable()
-                      closeMenus()
-                    }}
-                  >
-                    插入表格
-                  </button>
-                  <button
-                    type="button"
-                    className="ietm-menu-item"
-                    onClick={() => {
-                      insertImageFromPrompt()
-                      closeMenus()
-                    }}
-                  >
-                    插入图片
-                  </button>
+                <div className="ietm-menu-section">
+                  <div className="ietm-menu-section__title">列</div>
+                  <div className="ietm-menu-icon-row">
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('insertColLeft')}
+                      onClick={() => runTableAction('insertColLeft')}
+                      title="左侧插入列"
+                      aria-label="左侧插入列">
+                      <BetweenHorizontalStart size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('insertColRight')}
+                      onClick={() => runTableAction('insertColRight')}
+                      title="右侧插入列"
+                      aria-label="右侧插入列">
+                      <BetweenHorizontalEnd size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('deleteCol')}
+                      onClick={() => runTableAction('deleteCol')}
+                      title="删除列"
+                      aria-label="删除列">
+                      <Columns3 size={16} aria-hidden />
+                    </button>
+                  </div>
                 </div>
-              ) : null}
-            </div>
+                <div className="ietm-menu-section">
+                  <div className="ietm-menu-section__title">单元格</div>
+                  <div className="ietm-menu-icon-row">
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('mergeCells')}
+                      onClick={() => runTableAction('mergeCells')}
+                      title="合并单元格"
+                      aria-label="合并单元格">
+                      <Combine size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('splitCell')}
+                      onClick={() => runTableAction('splitCell')}
+                      title="拆分单元格"
+                      aria-label="拆分单元格">
+                      <Split size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('deleteCell')}
+                      onClick={() => runTableAction('deleteCell')}
+                      title="删除单元格"
+                      aria-label="删除单元格">
+                      <TableCellsSplit size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('clearCell')}
+                      onClick={() => runTableAction('clearCell')}
+                      title="清空单元格"
+                      aria-label="清空单元格">
+                      <Eraser size={16} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ietm-menu-icon-btn"
+                      disabled={tableActionDisabled('deleteTable')}
+                      onClick={() => runTableAction('deleteTable')}
+                      title="删除表格"
+                      aria-label="删除表格">
+                      <Trash2 size={16} aria-hidden />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Tabs.TabPane>
 
-          </nav>
+            <Tabs.TabPane key="insert" title="插入">
+              <div className="ietm-menu-dropdown" role="menu">
+                <button
+                  type="button"
+                  className="ietm-menu-item"
+                  onClick={() => {
+                    insertTable()
+                  }}>
+                  插入表格
+                </button>
+                <button
+                  type="button"
+                  className="ietm-menu-item"
+                  onClick={() => {
+                    insertImageFromPrompt()
+                  }}>
+                  插入图片
+                </button>
+              </div>
+            </Tabs.TabPane>
+          </Tabs>
 
           <div className="ietm-app-header-right">
             <span className="ietm-doc-title">{DOC_TITLE_PLACEHOLDER}</span>
@@ -447,14 +531,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           </span>
         </footer>
 
-        {menuOpen ? (
-          <button
-            type="button"
-            className="ietm-menu-backdrop"
-            aria-label="关闭菜单"
-            onClick={closeMenus}
-          />
-        ) : null}
+        {/* The backdrop for old menu is no longer needed */}
 
       </div>
     )
