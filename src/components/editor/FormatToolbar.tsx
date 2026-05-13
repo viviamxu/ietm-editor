@@ -64,6 +64,27 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
       !editor.isActive({ textAlign: "right" }) &&
       !editor.isActive({ textAlign: "justify" }));
 
+  const subscriptActive = editor.isActive("s1000dSub");
+  const superscriptActive = editor.isActive("s1000dSup");
+
+  const toggleSubscript = () => {
+    const chain = editor.chain().focus().unsetMark("s1000dSup");
+    if (subscriptActive) {
+      chain.unsetMark("s1000dSub").run();
+    } else {
+      chain.setMark("s1000dSub").run();
+    }
+  };
+
+  const toggleSuperscript = () => {
+    const chain = editor.chain().focus().unsetMark("s1000dSub");
+    if (superscriptActive) {
+      chain.unsetMark("s1000dSup").run();
+    } else {
+      chain.setMark("s1000dSup").run();
+    }
+  };
+
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
       <div className="ietm-format-toolbar__cluster">
@@ -238,17 +259,19 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         </button>
         <button
           type="button"
-          className="ietm-icon-btn"
-          onClick={() => editor.chain().focus().toggleSubscript().run()}
+          className={`ietm-toggle-btn ${subscriptActive ? "is-active" : ""}`}
+          onClick={toggleSubscript}
           title="下标"
+          aria-pressed={subscriptActive}
         >
           <Subscript size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
-          className="ietm-icon-btn"
-          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          className={`ietm-toggle-btn ${superscriptActive ? "is-active" : ""}`}
+          onClick={toggleSuperscript}
           title="上标"
+          aria-pressed={superscriptActive}
         >
           <Superscript size={16} aria-hidden className="shrink-0" />
         </button>
