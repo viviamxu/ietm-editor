@@ -102,7 +102,7 @@ function makeMockRows(): PublicationRow[] {
         code: `ICN-XXX-${String(n).padStart(6, "0")}-${String((n % 99999) + 10000).slice(0, 5)}`,
         version: String(1 + (n % 3)).padStart(3, "0"),
         security: String(1 + (n % 2)).padStart(2, "0"),
-        preview: `https://picsum.photos/seed/ietm${n}/96/96`,
+        preview: `https://picsum.photos/seed/ietm${n}/300/200`,
       });
     }
   }

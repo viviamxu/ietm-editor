@@ -24,6 +24,8 @@ import {
   TextAlignCenter,
   TextAlignEnd,
   TextAlignJustify,
+  Subscript,
+  Superscript,
 } from "lucide-react";
 import { Button } from "@arco-design/web-react";
 
@@ -234,14 +236,22 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         >
           <TextAlignJustify size={16} aria-hidden className="shrink-0" />
         </button>
-        {/* <button
+        <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => print(editor)}
-          title="导出 XML"
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+          title="下标"
         >
-          导出 XML
-        </button> */}
+          <Subscript size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          title="上标"
+        >
+          <Superscript size={16} aria-hidden className="shrink-0" />
+        </button>
         <Button type="primary" onClick={() => print(editor)}>
           导出 XML
         </Button>
