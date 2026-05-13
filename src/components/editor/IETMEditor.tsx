@@ -45,10 +45,21 @@ import {
   Trash2,
 } from 'lucide-react'
 
+export interface InsertTableOptions {
+  rows?: number
+  cols?: number
+  withHeaderRow?: boolean
+}
+
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void
   getJSON: () => JSONContent
   focus: () => void
+  insertTable: (options?: InsertTableOptions) => boolean
+  addTableRowBefore: () => boolean
+  addTableRowAfter: () => boolean
+  addTableColumnBefore: () => boolean
+  addTableColumnAfter: () => boolean
 }
 
 interface IETMEditorProps {
@@ -164,6 +175,20 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         focus: () => {
           editor?.commands.focus()
         },
+        insertTable: (options) =>
+          !!editor?.chain().focus().insertTable({
+            rows: options?.rows ?? 3,
+            cols: options?.cols ?? 3,
+            withHeaderRow: options?.withHeaderRow ?? true,
+          }).run(),
+        addTableRowBefore: () =>
+          !!editor?.chain().focus().addRowBefore().run(),
+        addTableRowAfter: () =>
+          !!editor?.chain().focus().addRowAfter().run(),
+        addTableColumnBefore: () =>
+          !!editor?.chain().focus().addColumnBefore().run(),
+        addTableColumnAfter: () =>
+          !!editor?.chain().focus().addColumnAfter().run(),
       }),
       [editor],
     )
