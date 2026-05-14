@@ -1,16 +1,114 @@
 ﻿.ietm-editor-surface .tiptap .s1000d-levelled-para {
+  position: relative;
   margin: 12px 0;
   padding: 8px 12px;
   border-radius: 4px;
   background: #fafbfc;
 }
 
+/* hover / 选区在本块内 / 已整块选中：显示句柄（类似 Word 表格块控点） */
+.ietm-editor-surface .tiptap .s1000d-levelled-para__block-handle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6b7280;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.ietm-editor-surface .tiptap .s1000d-levelled-para:hover .s1000d-levelled-para__block-handle,
+.ietm-editor-surface .tiptap .s1000d-levelled-para--chrome .s1000d-levelled-para__block-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ietm-editor-surface .tiptap .s1000d-levelled-para__block-handle:hover {
+  color: #111827;
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.ietm-editor-surface .tiptap .s1000d-levelled-para__block-handle:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
 .ietm-editor-surface .tiptap .s1000d-levelled-para__content {
+  outline: none;
+}
+
+/* S1000D `figure` NodeView：与 levelledPara 相同的整块句柄 */
+.ietm-editor-surface .tiptap .s1000d-figure {
+  position: relative;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__block-handle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6b7280;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure:hover .s1000d-figure__block-handle,
+.ietm-editor-surface .tiptap .s1000d-figure--chrome .s1000d-figure__block-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__block-handle:hover {
+  color: #111827;
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__block-handle:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__content {
   outline: none;
 }
 
 /* `warning` / `caution` NodeView 共用 */
 .ietm-editor-surface .tiptap .s1000d-attention-block {
+  position: relative;
   --s1000d-attn-accent: #f5222d;
   --s1000d-attn-bg: #fff1f0;
   --s1000d-attn-border: #e8e8e8;
@@ -31,6 +129,49 @@
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__block-handle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6b7280;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block:hover .s1000d-attention-block__block-handle,
+.ietm-editor-surface .tiptap .s1000d-attention-block--chrome .s1000d-attention-block__block-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__block-handle:hover {
+  color: #111827;
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__block-handle:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
 }
 
 .ietm-editor-surface .tiptap .s1000d-attention-block--caution {

@@ -6,6 +6,7 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 
 import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
+import { FigureNodeView } from "./s1000d/FigureNodeView";
 import { LevelledParaNodeView } from "./s1000d/LevelledParaNodeView";
 import { s1000dTableNodes } from "./s1000d/s1000dTableNodes";
 import { S1000DSub, S1000DSup } from "./s1000d/subSuperMarks";
@@ -827,6 +828,10 @@ export const S1000DFigure = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["figure", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(FigureNodeView);
   },
 });
 

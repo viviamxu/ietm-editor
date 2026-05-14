@@ -10,7 +10,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
-function selectionOnThisLevelledPara(props: NodeViewProps): {
+function selectionOnThisFigure(props: NodeViewProps): {
   nodeSelected: boolean;
   caretInside: boolean;
 } {
@@ -33,7 +33,7 @@ function selectionOnThisLevelledPara(props: NodeViewProps): {
 
   for (let d = $from.depth; d > 0; d--) {
     if (
-      $from.node(d).type.name === "levelledPara" &&
+      $from.node(d).type.name === "figure" &&
       $from.before(d) === pos
     ) {
       return { nodeSelected: false, caretInside: true };
@@ -43,12 +43,10 @@ function selectionOnThisLevelledPara(props: NodeViewProps): {
 }
 
 /**
- * `levelledPara` 的 WYSIWYG 外壳：保留 ProseMirror 内容区，便于继续编辑子节点。
- * 输出 XML 时由 `serializeASTToXML` 负责还原为 `<levelledPara>...</levelledPara>`。
- *
- * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块（便于属性面板编辑外壳）。
+ * S1000D `figure`：保留 ProseMirror 内容区（`title?` + `graphic+`）。
+ * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块。
  */
-export function LevelledParaNodeView(props: NodeViewProps) {
+export function FigureNodeView(props: NodeViewProps) {
   const { editor, getPos } = props;
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
@@ -61,7 +59,7 @@ export function LevelledParaNodeView(props: NodeViewProps) {
     };
   }, [editor]);
 
-  const { nodeSelected, caretInside } = selectionOnThisLevelledPara(props);
+  const { nodeSelected, caretInside } = selectionOnThisFigure(props);
   const showChrome = hovered || caretInside || nodeSelected;
 
   const selectWholeBlock = useCallback(
@@ -77,28 +75,28 @@ export function LevelledParaNodeView(props: NodeViewProps) {
 
   return (
     <NodeViewWrapper
-      as="section"
+      as="figure"
       className={
         showChrome
-          ? "s1000d-levelled-para s1000d-levelled-para--chrome"
-          : "s1000d-levelled-para"
+          ? "s1000d-figure s1000d-figure--chrome"
+          : "s1000d-figure"
       }
-      data-s1000d-node="levelledPara"
+      data-s1000d-node="figure"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <button
         type="button"
-        className="s1000d-levelled-para__block-handle"
+        className="s1000d-figure__block-handle"
         contentEditable={false}
         tabIndex={-1}
-        aria-label="选中整块 levelledPara"
+        aria-label="选中整块 figure"
         title="选中整块"
         onMouseDown={selectWholeBlock}
       >
         <Brackets size={14} strokeWidth={2} aria-hidden />
       </button>
-      <NodeViewContent className="s1000d-levelled-para__content" />
+      <NodeViewContent className="s1000d-figure__content" />
     </NodeViewWrapper>
   );
 }

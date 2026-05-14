@@ -65,7 +65,8 @@
 }
 
 /* figure 等块内短标题（任意层级）略微缩小 */
-.ietm-editor-surface .tiptap figure > .s1000d-title-display {
+.ietm-editor-surface .tiptap figure > .s1000d-title-display,
+.ietm-editor-surface .tiptap figure.s1000d-figure .s1000d-figure__content > .s1000d-title-display {
   font-size: 1.05em;
   font-weight: 600;
   margin: 0.35em 0 0.2em;
