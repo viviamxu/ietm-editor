@@ -27,7 +27,9 @@ function requireSchemaNode(schema: DescriptionSchema, name: string): boolean {
 function focusFirstCellByMouseLikeClick(editor: Editor): void {
   setTimeout(() => {
     const root = editor.view.dom as HTMLElement;
-    const tables = root.querySelectorAll(".s1000d-table-wrap, .s1000d-tgroup-table");
+    const tables = root.querySelectorAll(
+      ".s1000d-table-wrap, .s1000d-tgroup-table",
+    );
     const latestTable = tables.item(tables.length - 1) as HTMLElement | null;
     if (!latestTable) return;
 
@@ -37,7 +39,11 @@ function focusFirstCellByMouseLikeClick(editor: Editor): void {
     if (!firstCell) return;
 
     firstCell.dispatchEvent(
-      new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 }),
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+      }),
     );
     firstCell.dispatchEvent(
       new MouseEvent("mouseup", { bubbles: true, cancelable: true, button: 0 }),
@@ -229,7 +235,13 @@ function hasEffectiveContent(node: JSONContent): boolean {
   return false;
 }
 
-const ignoredExportAttrs = ["class", "rawXml", "displayLevel", "start"];
+const ignoredExportAttrs = [
+  "class",
+  "rawXml",
+  "displayLevel",
+  "start",
+  "sourceXmlAttrKeys",
+];
 const listNodeTypes = [
   "bulletList",
   "orderedList",
@@ -555,7 +567,11 @@ ${doctypeXml}
   URL.revokeObjectURL(url);
 }
 
-export function save(editor: Editor): void {
-  void editor;
+export function save(_editor: Editor): void {
   //TODO: 保存到本地
+  void _editor;
+}
+export function internalRef(editor: Editor): void {
+  void editor;
+  //TODO: 内部引用
 }

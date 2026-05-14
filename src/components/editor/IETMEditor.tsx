@@ -3,6 +3,7 @@ import {
   useEffect,
   useImperativeHandle,
   type MouseEvent as ReactMouseEvent,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -15,6 +16,7 @@ import Highlight from "@tiptap/extension-highlight";
 import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
+import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
 import {
   getDescriptionInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
@@ -23,11 +25,8 @@ import {
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import bikeDmSampleXml from "../../data/bikeDmSample.xml?raw";
 import { FormatToolbar } from "./FormatToolbar";
-import {
-  resolveInspectable,
-  tableDimensions,
-  type InspectTarget,
-} from "../../lib/editor/resolveInspectable";
+import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
+import { resolveInspectable, type InspectTarget } from "../../lib/editor/resolveInspectable";
 import {
   canRunS1000dTableAction,
   runS1000dTableAction,
@@ -98,8 +97,6 @@ const FALLBACK_DOCUMENT: JSONContent = {
 
 const DOC_TITLE_PLACEHOLDER = "数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D";
 
-const UNIT_PRESETS = ["ph01(h)", "mm", "in", "deg"];
-
 function focusFirstCellByMouseLikeClick(
   editor: NonNullable<ReturnType<typeof useEditor>>,
 ): void {
@@ -144,6 +141,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     >("file");
 
     const [propertiesDismissed, setPropertiesDismissed] = useState(false);
+    const [editorSurfaceEngaged, setEditorSurfaceEngaged] = useState(false);
+    /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
+    const [, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
     const editor = useEditor({
       immediatelyRender: false,
@@ -161,6 +161,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           types: ["heading", "paragraph"],
         }),
         Highlight.configure({ multicolor: true }),
+        SourceXmlAttrKeysExtension,
         IETMImage.configure({
           resize: false,
         }),
@@ -176,7 +177,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           spellcheck: "false",
         },
       },
-      onUpdate: ({ editor }) => props.onUpdate(editor.getJSON()),
+      onUpdate: ({ editor }) => {
+        props.onUpdate(editor.getJSON());
+      },
       onSelectionUpdate: ({ editor }) => {
         props.onSelectionChange({
           from: editor.state.selection.from,
@@ -188,6 +191,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           selectionAnchorRef.current = anchorKey;
           setPropertiesDismissed(false);
         }
+        bumpSelectionUi();
       },
     });
 
@@ -271,14 +275,17 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ? resolveInspectable(editor)
       : null;
 
-    const showPropertyPanel = resolvedTarget !== null && !propertiesDismissed;
+    const showPropertyPanel =
+      editorSurfaceEngaged &&
+      resolvedTarget !== null &&
+      !propertiesDismissed;
 
     const inspectStableKey = resolvedTarget
-      ? `${resolvedTarget.kind}-${resolvedTarget.pos}`
+      ? `${resolvedTarget.nodeType}-${resolvedTarget.pos}`
       : null;
 
     useEffect(() => {
-      if (inspectStableKey === null) setPropertiesDismissed(false);
+      setPropertiesDismissed(false);
     }, [inspectStableKey]);
 
     if (!editor) {
@@ -287,6 +294,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
 
     const handleEditorPaneMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
       if (e.button !== 0) return;
+      setEditorSurfaceEngaged(true);
       const el = e.target as Element | null;
       const clickedTable = el?.closest?.(
         ".s1000d-table-wrap, .s1000d-tgroup-table",
@@ -321,16 +329,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       const url = window.prompt("请输入图片 URL");
       if (!url) return;
       editor.chain().focus().setImage({ src: url }).run();
-    };
-
-    const applyImageAttrs = (attrs: Record<string, unknown>) => {
-      if (!resolvedTarget || resolvedTarget.kind !== "image") return;
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(resolvedTarget.pos)
-        .updateAttributes("image", attrs)
-        .run();
     };
 
     const runTableAction = (
@@ -540,121 +538,19 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           <div
             className="ietm-editor-pane"
             onMouseDown={handleEditorPaneMouseDown}
+            onFocusCapture={() => setEditorSurfaceEngaged(true)}
           >
             <EditorContent editor={editor} className="ietm-editor-surface" />
           </div>
 
           <aside className="ietm-right-pane">
             {showPropertyPanel && resolvedTarget ? (
-              <div className="ietm-property-panel">
-                <div className="ietm-property-panel__head">
-                  <h2 className="ietm-property-panel__title">属性设置</h2>
-                  <button
-                    type="button"
-                    className="ietm-property-panel__close"
-                    onClick={() => setPropertiesDismissed(true)}
-                    aria-label="关闭属性面板"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="ietm-property-panel__body">
-                  {resolvedTarget.kind === "image" ? (
-                    <>
-                      <label className="ietm-prop-field">
-                        <span>ID</span>
-                        <input
-                          type="text"
-                          value={String(resolvedTarget.attrs.figureId ?? "")}
-                          onChange={(e) =>
-                            applyImageAttrs({ figureId: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>unitOfMeasure</span>
-                        <select
-                          value={String(
-                            resolvedTarget.attrs.unitOfMeasure ?? "",
-                          )}
-                          onChange={(e) =>
-                            applyImageAttrs({
-                              unitOfMeasure: e.target.value,
-                            })
-                          }
-                        >
-                          {UNIT_PRESETS.map((u) => (
-                            <option key={u} value={u}>
-                              {u}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>宽度（px）</span>
-                        <input
-                          type="text"
-                          value={
-                            resolvedTarget.attrs.width != null
-                              ? String(resolvedTarget.attrs.width)
-                              : ""
-                          }
-                          placeholder="自动"
-                          onChange={(e) => {
-                            const v = e.target.value.trim();
-                            const n = Number.parseInt(v, 10);
-                            applyImageAttrs({
-                              width: v === "" || Number.isNaN(n) ? null : n,
-                            });
-                          }}
-                        />
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>高度（px）</span>
-                        <input
-                          type="text"
-                          value={
-                            resolvedTarget.attrs.height != null
-                              ? String(resolvedTarget.attrs.height)
-                              : ""
-                          }
-                          placeholder="自动"
-                          onChange={(e) => {
-                            const v = e.target.value.trim();
-                            const n = Number.parseInt(v, 10);
-                            applyImageAttrs({
-                              height: v === "" || Number.isNaN(n) ? null : n,
-                            });
-                          }}
-                        />
-                      </label>
-                    </>
-                  ) : null}
-
-                  {resolvedTarget.kind === "table" ? (
-                    <>
-                      <p className="ietm-prop-hint">
-                        表格结构与样式可通过编辑器直接调整。
-                      </p>
-                      {(() => {
-                        const dim = tableDimensions(editor, resolvedTarget.pos);
-                        return dim ? (
-                          <>
-                            <div className="ietm-prop-readonly">
-                              <span>行数</span>
-                              <span>{dim.rows}</span>
-                            </div>
-                            <div className="ietm-prop-readonly">
-                              <span>列数</span>
-                              <span>{dim.cols}</span>
-                            </div>
-                          </>
-                        ) : null;
-                      })()}
-                    </>
-                  ) : null}
-                </div>
-              </div>
+              <S1000DPropertyPanel
+                key={inspectStableKey ?? "none"}
+                editor={editor}
+                target={resolvedTarget}
+                onDismiss={() => setPropertiesDismissed(true)}
+              />
             ) : (
               <div className="ietm-preview-placeholder">
                 <p>功能开发中，敬请期待</p>

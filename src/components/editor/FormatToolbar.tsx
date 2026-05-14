@@ -10,6 +10,7 @@ import {
   insertTableFromSchema,
   print,
   save,
+  internalRef,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import {
@@ -28,6 +29,7 @@ import {
   Subscript,
   Superscript,
   Save,
+  Link2,
 } from "lucide-react";
 import { Button } from "@arco-design/web-react";
 
@@ -334,6 +336,23 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <Button type="primary" onClick={() => print(editor)}>
           导出 XML
         </Button>
+      </div>
+      <span
+        className="ietm-format-toolbar__divider"
+        style={{ display: showTableTools ? "none" : undefined }}
+      />
+      <div
+        className="ietm-format-toolbar__cluster"
+        style={{ display: showTableTools ? "none" : undefined }}
+      >
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => internalRef(editor)}
+          title="内部引用"
+        >
+          <Link2 size={16} aria-hidden className="shrink-0" />
+        </button>
       </div>
     </div>
   );
