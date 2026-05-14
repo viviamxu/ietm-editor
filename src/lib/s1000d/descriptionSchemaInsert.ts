@@ -541,7 +541,12 @@ ${doctypeXml}
   const a = document.createElement("a");
   a.href = url;
 
-  const dateStr = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+  const dateStr = new Date()
+    .toISOString()
+    .replace(/-/g, "")
+    .replace(/:/g, "")
+    .replace(/T/g, "")
+    .slice(0, 14);
   a.download = `DMC-EXPORT-${dateStr}.xml`;
 
   document.body.appendChild(a);
@@ -551,5 +556,6 @@ ${doctypeXml}
 }
 
 export function save(editor: Editor): void {
+  void editor;
   //TODO: 保存到本地
 }

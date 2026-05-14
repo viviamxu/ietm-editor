@@ -5,6 +5,7 @@ import {
   IETMEditorRoot,
   type IETMEditorRootHandle,
 } from "./components/editor/IETMEditorRoot";
+import type { InsertTableOptions } from "./components/editor/IETMEditor";
 import {
   getDescriptionSchema,
   resetDescriptionSchema,

@@ -37,45 +37,38 @@ pnpm add @ccengine/ietm-editor
 
 ```vue
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { createIETMEditor, type IETMEditorInstance } from '@ccengine/ietm-editor'
-import '@ccengine/ietm-editor/style.css'
+import { onMounted, onBeforeUnmount, ref } from "vue";
+import {
+  createIETMEditor,
+  type IETMEditorInstance,
+} from "@ccengine/ietm-editor";
+import "@ccengine/ietm-editor/style.css";
 
-const containerEl = ref<HTMLElement | null>(null)
-const platform = ref<'A320' | 'B737' | 'C919'>('A320')
-const showOnlyApplicable = ref(false)
-let instance: IETMEditorInstance | null = null
+const containerEl = ref<HTMLElement | null>(null);
+let instance: IETMEditorInstance | null = null;
 
 onMounted(() => {
-  if (!containerEl.value) return
+  if (!containerEl.value) return;
   instance = createIETMEditor({
     element: containerEl.value,
-    applicability: {
-      activePlatform: platform.value,
-      showOnlyApplicable: showOnlyApplicable.value,
-    },
-  })
-  instance.on('update', ({ json }) => console.log('changed', json))
-  instance.on('ready', () => {
+  });
+  instance.on("update", ({ json }) => console.log("changed", json));
+  instance.on("ready", () => {
     // 表格 API 需在编辑器就绪后调用；光标须在表格单元格内时增行/增列才会成功
     // instance.insertTable({ rows: 4, cols: 5, withHeaderRow: true })
     // instance.addTableRowAfter()
-  })
-})
+  });
+});
 
-watch([platform, showOnlyApplicable], () => {
-  instance?.setApplicability({
-    activePlatform: platform.value,
-    showOnlyApplicable: showOnlyApplicable.value,
-  })
-})
-
-onBeforeUnmount(() => instance?.destroy())
+onBeforeUnmount(() => instance?.destroy());
 </script>
 
 <template>
   <!-- 示例：占满父级可用高度；父级需为 flex 列且自身有高度 -->
-  <div ref="containerEl" style="flex: 1; min-height: 0; display: flex; flex-direction: column" />
+  <div
+    ref="containerEl"
+    style="flex: 1; min-height: 0; display: flex; flex-direction: column"
+  />
 </template>
 ```
 
@@ -83,15 +76,18 @@ onBeforeUnmount(() => instance?.destroy())
 
 ```html
 <!-- 示例：给挂载节点高度上限，壳内才会出现编辑区滚动条 -->
-<div id="editor" style="height: 100vh; min-height: 0; display: flex; flex-direction: column"></div>
+<div
+  id="editor"
+  style="height: 100vh; min-height: 0; display: flex; flex-direction: column"
+></div>
 <script type="module">
-  import { createIETMEditor } from '@ccengine/ietm-editor'
-  import '@ccengine/ietm-editor/style.css'
+  import { createIETMEditor } from "@ccengine/ietm-editor";
+  import "@ccengine/ietm-editor/style.css";
 
   const instance = createIETMEditor({
-    element: document.getElementById('editor'),
-  })
-  window.addEventListener('beforeunload', () => instance.destroy())
+    element: document.getElementById("editor"),
+  });
+  window.addEventListener("beforeunload", () => instance.destroy());
 </script>
 ```
 
@@ -101,13 +97,11 @@ onBeforeUnmount(() => instance?.destroy())
 
 ### `createIETMEditor(options): IETMEditorInstance`
 
-
-| Option          | 类型                                       | 默认                | 说明      |
-| --------------- | ---------------------------------------- | ----------------- | ------- |
-| `element`       | `HTMLElement`                            | 必填                | 挂载容器    |
-| `content`       | `JSONContent | string`                   | 内置示例              | 初始文档内容  |
-| `applicability` | `{ activePlatform, showOnlyApplicable }` | `{ A320, false }` | 适用性全局配置 |
-| `editable`      | `boolean`                                | `true`            | 是否可编辑   |
+| Option              | 类型                                                        | 默认     | 说明                                                                           |
+| ------------------- | ----------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
+| `element`           | `HTMLElement`                                               | 必填     | 挂载容器                                                                       |
+| `content`           | `JSONContent` 与 `string`（联合）                           | 内置示例 | 初始文档内容                                                                   |
+| `editable`          | `boolean`                                                   | `true`   | 是否可编辑                                                                     |
 | `descriptionSchema` | `DescriptionSchema`（与 `src/data/描述类Schema.json` 同形） | 内置默认 | 服务端下发的描述类规则；工具栏插入会据此校验。传入时卸载编辑器会恢复内置默认。 |
 
 宿主也可在挂载前调用 `setDescriptionSchema(schema)`，或与 `createIETMEditor({ descriptionSchema })` 二选一。
@@ -117,7 +111,6 @@ onBeforeUnmount(() => instance?.destroy())
 ```ts
 {
   setContent(content): void
-  setApplicability(next): void
   setEditable(value): void
   getJSON(): JSONContent
   focus(): void
