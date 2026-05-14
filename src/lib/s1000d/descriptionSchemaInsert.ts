@@ -24,6 +24,30 @@ function requireSchemaNode(schema: DescriptionSchema, name: string): boolean {
   return Object.prototype.hasOwnProperty.call(schema, name);
 }
 
+function focusFirstCellByMouseLikeClick(editor: Editor): void {
+  setTimeout(() => {
+    const root = editor.view.dom as HTMLElement;
+    const tables = root.querySelectorAll(".s1000d-table-wrap, .s1000d-tgroup-table");
+    const latestTable = tables.item(tables.length - 1) as HTMLElement | null;
+    if (!latestTable) return;
+
+    const firstCell = latestTable.querySelector(
+      ".s1000d-entry, td, th",
+    ) as HTMLElement | null;
+    if (!firstCell) return;
+
+    firstCell.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 }),
+    );
+    firstCell.dispatchEvent(
+      new MouseEvent("mouseup", { bubbles: true, cancelable: true, button: 0 }),
+    );
+    firstCell.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }),
+    );
+  }, 0);
+}
+
 /**
  * 按当前描述类 schema 的 `levelledPara.content` 组装最小可编辑片段。
  * 默认规则含 `title` 与 `para` 时各插入一个空块；无 `content` 字段时回退为 title + para。
@@ -143,7 +167,11 @@ export function insertTableFromSchema(
     bodyRows,
     includeEmptyTitle,
   );
-  return editor.chain().focus().insertContent(json).run();
+  const inserted = editor.chain().focus().insertContent(json).run();
+  if (inserted) {
+    focusFirstCellByMouseLikeClick(editor);
+  }
+  return inserted;
 }
 
 export function insertFilmFromSchema(
@@ -291,10 +319,7 @@ function buildGraphicEntityDoctype(contentXml: string): string {
   }
 
   const entities = [...new Set(graphicIds)]
-    .map(
-      (id) =>
-        `   <!ENTITY ${id} SYSTEM "${id}.CGM" NDATA cgm >`,
-    )
+    .map((id) => `   <!ENTITY ${id} SYSTEM "${id}.CGM" NDATA cgm >`)
     .join("\n");
 
   return `<!DOCTYPE dmodule [
@@ -306,6 +331,27 @@ ${entities}
 /**
  * 递归遍历 Tiptap JSON AST，将其还原为 S1000D XML 字符串
  */
+function getTgroupCols(node: JSONContent): number {
+  const attrCols = Number.parseInt(String(node.attrs?.cols ?? ""), 10);
+  if (!Number.isNaN(attrCols) && attrCols > 0) return attrCols;
+
+  const section = node.content?.find(
+    (child) => child.type === "tbody" || child.type === "thead",
+  );
+  const row = section?.content?.find((child) => child.type === "row");
+  return Math.max(
+    1,
+    row?.content?.filter((child) => child.type === "entry").length ?? 1,
+  );
+}
+
+function buildColspecXml(cols: number): string {
+  return Array.from({ length: cols }, (_, index) => {
+    const n = index + 1;
+    return `<colspec colname="col${n}" colnum="${n}" />`;
+  }).join("");
+}
+
 function serializeNodeToXml(node: JSONContent): string {
   // 1. 处理纯文本与行内样式 (Marks)
   if (node.type === "text") {
@@ -449,6 +495,10 @@ function serializeNodeToXml(node: JSONContent): string {
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
   }
 
+  if (xmlTag === "tgroup") {
+    return `<${xmlTag}${attrsStr}>${buildColspecXml(getTgroupCols(node))}${children}</${xmlTag}>`;
+  }
+
   if (!children && (xmlTag === "title" || xmlTag === "graphic")) {
     return `<${xmlTag}${attrsStr} />`;
   }
@@ -491,11 +541,21 @@ ${doctypeXml}
   const a = document.createElement("a");
   a.href = url;
 
-  const dateStr = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+  const dateStr = new Date()
+    .toISOString()
+    .replace(/-/g, "")
+    .replace(/:/g, "")
+    .replace(/T/g, "")
+    .slice(0, 14);
   a.download = `DMC-EXPORT-${dateStr}.xml`;
 
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function save(editor: Editor): void {
+  void editor;
+  //TODO: 保存到本地
 }

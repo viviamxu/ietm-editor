@@ -3,6 +3,26 @@ import type { JSONContent } from '@tiptap/core'
 
 const emptyPara: JSONContent = { type: 'para', content: [] }
 
+function colNumber(value: unknown): number | null {
+  if (typeof value !== 'string') return null
+  const match = /^col(\d+)$/.exec(value)
+  if (!match) return null
+  const n = Number.parseInt(match[1], 10)
+  return Number.isNaN(n) ? null : n
+}
+
+function htmlSpanAttrs(attrs: Record<string, unknown>) {
+  const start = colNumber(attrs.namest)
+  const end = colNumber(attrs.nameend)
+  const colSpan = start != null && end != null && end >= start ? end - start + 1 : 1
+  const moreRows = Number.parseInt(String(attrs.morerows ?? '0'), 10)
+  const rowSpan = Number.isNaN(moreRows) ? 1 : Math.max(1, moreRows + 1)
+  return {
+    ...(colSpan > 1 ? { colspan: String(colSpan) } : {}),
+    ...(rowSpan > 1 ? { rowspan: String(rowSpan) } : {}),
+  }
+}
+
 /**
  * 生成符合 `src/data/描述类Schema.json` 中表格定义的 JSON，供 `insertContent` 使用：
  * - `table`: `title? tgroup+`
@@ -94,7 +114,9 @@ export const S1000DTableEntry = Node.create({
   renderHTML({ HTMLAttributes }) {
     return [
       'td',
-      mergeAttributes(HTMLAttributes, { class: 's1000d-entry' }),
+      mergeAttributes(HTMLAttributes, htmlSpanAttrs(HTMLAttributes), {
+        class: 's1000d-entry',
+      }),
       0,
     ]
   },

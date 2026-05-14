@@ -9,6 +9,7 @@ import {
   insertSequentialListFromSchema,
   insertTableFromSchema,
   print,
+  save,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import {
@@ -26,14 +27,24 @@ import {
   TextAlignJustify,
   Subscript,
   Superscript,
+  Save,
 } from "lucide-react";
 import { Button } from "@arco-design/web-react";
 
+import {
+  canRunS1000dTableAction,
+  runS1000dTableAction,
+} from "../../lib/editor/s1000dTableCommands";
+import { TableEditToolbar } from "./TableEditToolbar";
+
+type MainTabKey = "file" | "edit" | "insert";
+
 interface FormatToolbarProps {
   editor: Editor;
+  activeTabKey: MainTabKey;
 }
 
-export function FormatToolbar({ editor }: FormatToolbarProps) {
+export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
   const schema = useDescriptionSchemaStore((s) => s.schema);
   const [, refresh] = useReducer((n: number) => n + 1, 0);
 
@@ -85,9 +96,24 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
     }
   };
 
+  const showTableTools = activeTabKey === "edit";
+
+  const runTableAction = (
+    action: Parameters<typeof runS1000dTableAction>[1],
+  ) => {
+    runS1000dTableAction(editor, action);
+  };
+
+  const tableActionDisabled = (
+    action: Parameters<typeof canRunS1000dTableAction>[1],
+  ) => !canRunS1000dTableAction(editor, action);
+
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
-      <div className="ietm-format-toolbar__cluster">
+      <div
+        className="ietm-format-toolbar__cluster"
+        style={{ display: showTableTools ? "none" : undefined }}
+      >
         <button
           type="button"
           className="ietm-icon-btn"
@@ -105,6 +131,14 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
           title="重做"
         >
           <Redo2 size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => save(editor)}
+          title="保存"
+        >
+          <Save size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"
@@ -162,11 +196,27 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         </button>
       </div>
 
-      <span className="ietm-format-toolbar__divider" />
+      <span
+        className="ietm-format-toolbar__divider"
+        style={{ display: showTableTools ? "none" : undefined }}
+      />
 
-      <span className="ietm-format-toolbar__divider" />
+      <span
+        className="ietm-format-toolbar__divider"
+        style={{ display: showTableTools ? "none" : undefined }}
+      />
 
-      <div className="ietm-format-toolbar__cluster">
+      {showTableTools ? (
+        <TableEditToolbar
+          tableActionDisabled={tableActionDisabled}
+          runTableAction={runTableAction}
+        />
+      ) : null}
+
+      <div
+        className="ietm-format-toolbar__cluster"
+        style={{ display: showTableTools ? "none" : undefined }}
+      >
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive("bold") ? "is-active" : ""}`}
@@ -222,9 +272,15 @@ export function FormatToolbar({ editor }: FormatToolbarProps) {
         </label>
       </div>
 
-      <span className="ietm-format-toolbar__divider" />
+      <span
+        className="ietm-format-toolbar__divider"
+        style={{ display: showTableTools ? "none" : undefined }}
+      />
 
-      <div className="ietm-format-toolbar__cluster">
+      <div
+        className="ietm-format-toolbar__cluster"
+        style={{ display: showTableTools ? "none" : undefined }}
+      >
         <button
           type="button"
           className={`ietm-toggle-btn ${alignLeft ? "is-active" : ""}`}
