@@ -23,7 +23,6 @@ import {
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
-import bikeDmSampleXml from "../../data/bikeDmSample.xml?raw";
 import { FormatToolbar } from "./FormatToolbar";
 import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
 import { resolveInspectable, type InspectTarget } from "../../lib/editor/resolveInspectable";
@@ -31,6 +30,11 @@ import {
   canRunS1000dTableAction,
   runS1000dTableAction,
 } from "../../lib/editor/s1000dTableCommands";
+import {
+  buildEmptyDescriptionDocJson,
+  fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
+} from "../../lib/s1000d/descriptionSchemaInsert";
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -53,6 +57,17 @@ export interface InsertTableOptions {
 
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void;
+  /**
+   * 用整段 DM XML（含 `<dmodule>`）替换正文：抽取 `<content>/<description>` 子树并导入编辑器。
+   * 若无合法 description 正文，则按当前 schema 写入最小合法稿。
+   * @returns 未就绪或写入失败时为 `false`
+   */
+  loadDmXml: (dmXml: string) => boolean;
+  /**
+   * 按当前 `getDescriptionSchema()`（含 `createIETMEditor({ descriptionSchema })` / `setDescriptionSchema`）
+   * 将正文设为 schema 约束下的最小合法文档。
+   */
+  fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
   focus: () => void;
   insertTable: (options?: InsertTableOptions) => boolean;
@@ -70,30 +85,12 @@ interface IETMEditorProps {
   onReady: () => void;
 }
 
-const DEFAULT_CONTENT_FROM_BIKE_DM_XML =
-  getDescriptionInnerXmlFromDmXml(bikeDmSampleXml);
-
 function normalizeEditorContentInput(
   content: JSONContent | string | undefined,
 ): JSONContent | string | undefined {
   if (typeof content !== "string") return content;
   return preprocessS1000dDescriptionHtmlFragment(content);
 }
-
-const FALLBACK_DOCUMENT: JSONContent = {
-  type: "doc",
-  content: [
-    {
-      type: "paragraph",
-      content: [
-        {
-          type: "text",
-          text: "（未能从 Bike DM XML 解析出 description，请检查 data/bikeDmSample.xml）",
-        },
-      ],
-    },
-  ],
-};
 
 const DOC_TITLE_PLACEHOLDER = "数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D";
 
@@ -169,8 +166,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
-        DEFAULT_CONTENT_FROM_BIKE_DM_XML ??
-        FALLBACK_DOCUMENT,
+        buildEmptyDescriptionDocJson(getDescriptionSchema()),
       editorProps: {
         attributes: {
           class: "ietm-tiptap-root",
@@ -213,6 +209,21 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           editor?.commands.setContent(
             normalizeEditorContentInput(content) ?? "",
           );
+        },
+        loadDmXml: (dmXml) => {
+          if (!editor) return false;
+          const inner = getDescriptionInnerXmlFromDmXml(dmXml);
+          if (inner == null) {
+            return applyFillEmptyContentFromSchema(editor, getDescriptionSchema());
+          }
+          editor.commands.setContent(
+            normalizeEditorContentInput(inner) ?? "",
+          );
+          return true;
+        },
+        fillEmptyContentFromSchema: () => {
+          if (!editor) return false;
+          return applyFillEmptyContentFromSchema(editor, getDescriptionSchema());
         },
         getJSON: () => editor?.getJSON() ?? { type: "doc", content: [] },
         focus: () => {

@@ -22,6 +22,9 @@ import { ReferencePublicationModal } from "./ReferencePublicationModal";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
+  /** @returns 解析失败时为 `false` */
+  loadDmXml: (dmXml: string) => boolean;
+  fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
   focus: () => void;
   insertTable: (options?: InsertTableOptions) => boolean;
@@ -60,6 +63,9 @@ export const IETMEditorRoot = forwardRef<
     () => ({
       setContent: (content) => editorRef.current?.setContent(content),
       setEditable: (value) => setEditable(value),
+      loadDmXml: (xml) => editorRef.current?.loadDmXml(xml) ?? false,
+      fillEmptyContentFromSchema: () =>
+        editorRef.current?.fillEmptyContentFromSchema() ?? false,
       getJSON: () =>
         editorRef.current?.getJSON() ?? { type: "doc", content: [] },
       focus: () => editorRef.current?.focus(),

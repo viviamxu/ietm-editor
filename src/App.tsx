@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import './App.css'
 import { createIETMEditor, type IETMEditorInstance } from './index'
+import bikeDmSampleXml from './data/bikeDmSample.xml?raw'
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -12,6 +13,7 @@ function App() {
 
     const instance = createIETMEditor({
       element: el,
+      dmXml: bikeDmSampleXml,
     })
     instanceRef.current = instance
 

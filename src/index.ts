@@ -2,6 +2,10 @@ import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { JSONContent } from "@tiptap/core";
 import {
+  getDescriptionInnerXmlFromDmXml,
+  preprocessS1000dDescriptionHtmlFragment,
+} from "./extensions/S1000DNodes";
+import {
   IETMEditorRoot,
   type IETMEditorRootHandle,
 } from "./components/editor/IETMEditorRoot";
@@ -17,7 +21,24 @@ import type {
   DescriptionSchema,
   DescriptionSchemaRule,
 } from "./types/descriptionSchema";
+import {
+  buildEmptyDescriptionBodyFromSchema,
+  buildEmptyDescriptionDocJson,
+  clearContent,
+  fillEmptyContentFromSchema,
+} from "./lib/s1000d/descriptionSchemaInsert";
 import "./style.css";
+
+export {
+  getDescriptionInnerXmlFromDmXml,
+  preprocessS1000dDescriptionHtmlFragment,
+};
+export {
+  buildEmptyDescriptionBodyFromSchema,
+  buildEmptyDescriptionDocJson,
+  clearContent,
+  fillEmptyContentFromSchema,
+};
 
 export type { JSONContent };
 export type { DescriptionSchema, DescriptionSchemaRule };
@@ -32,6 +53,11 @@ export { useInsertPublicationModalStore };
 export interface IETMEditorOptions {
   element: HTMLElement;
   content?: JSONContent | string;
+  /**
+   * 整段 DM XML（含 `<dmodule>`）。与 `content` 同时存在时以本字段为准。
+   * 若无 `<content>/<description>` 可导入正文：若同时传了 `content` 则用之；否则按 `descriptionSchema`（或 store 默认 schema）插入最小合法稿。
+   */
+  dmXml?: string;
   editable?: boolean;
   /** 服务端下发的描述类 schema；不传则使用内置默认，卸载实例时会恢复默认（若创建时传入了本字段） */
   descriptionSchema?: DescriptionSchema;
@@ -51,6 +77,18 @@ export type IETMEditorEventHandler<E extends IETMEditorEventName> = (
 
 export interface IETMEditorInstance {
   setContent(content: JSONContent | string): void;
+  /**
+   * 用整段 DM XML 替换正文（抽取 `<content>/<description>` 并导入）。须在 `ready` 后调用更稳妥。
+   * 若无合法 description 正文，则按当前 schema 写入最小合法稿（与 `fillEmptyContentFromSchema` 一致）。
+   * @returns 未就绪或写入失败时为 `false`
+   */
+  loadDmXml(dmXml: string): boolean;
+  /**
+   * 按当前描述类 schema（`getDescriptionSchema()`，含创建实例时传入的 `descriptionSchema`）
+   * 将正文设为最小合法 S1000D 文档。须在 `ready` 后调用更稳妥。
+   * @returns 未就绪时为 `false`
+   */
+  fillEmptyContentFromSchema(): boolean;
   setEditable(value: boolean): void;
   getJSON(): JSONContent;
   focus(): void;
@@ -115,6 +153,20 @@ function createEmitter(): {
   };
 }
 
+function resolveInitialEditorContent(
+  options: IETMEditorOptions,
+): JSONContent | string | undefined {
+  if (typeof options.dmXml === "string") {
+    const inner = getDescriptionInnerXmlFromDmXml(options.dmXml);
+    if (inner != null) return inner;
+    if (options.content !== undefined) return options.content;
+    return buildEmptyDescriptionDocJson(
+      options.descriptionSchema ?? getDescriptionSchema(),
+    );
+  }
+  return options.content;
+}
+
 export function createIETMEditor(
   options: IETMEditorOptions,
 ): IETMEditorInstance {
@@ -149,7 +201,7 @@ export function createIETMEditor(
   root.render(
     createElement(IETMEditorRoot, {
       ref: setHandle,
-      initialContent: options.content,
+      initialContent: resolveInitialEditorContent(options),
       initialEditable: options.editable ?? true,
       initialDescriptionSchema: options.descriptionSchema,
       onUpdate: (json) => emitter.emit("update", { json }),
@@ -160,6 +212,14 @@ export function createIETMEditor(
 
   return {
     setContent: (content) => withHandle((h) => h.setContent(content)),
+    loadDmXml: (dmXml) => {
+      if (disposed || !handleRef.current) return false;
+      return handleRef.current.loadDmXml(dmXml);
+    },
+    fillEmptyContentFromSchema: () =>
+      disposed || !handleRef.current
+        ? false
+        : handleRef.current.fillEmptyContentFromSchema(),
     setEditable: (value) => withHandle((h) => h.setEditable(value)),
     getJSON: () => handleRef.current?.getJSON() ?? { type: "doc", content: [] },
     focus: () => withHandle((h) => h.focus()),

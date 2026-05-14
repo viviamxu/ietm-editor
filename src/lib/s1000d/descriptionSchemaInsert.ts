@@ -697,13 +697,26 @@ export function internalRef(editor: Editor): void {
   //TODO: 内部引用
 }
 /**
- * 清空编辑器中的正文（对应 DM 的 `<content>/<description>`），并按当前描述类 schema
- * 的最小合法模型重新初始化（满足 `description.content` 中 `(para|attentionElemGroup|fmftElemGroup)+` 等约束）。
+ * 按描述类 schema 将编辑器正文替换为**最小合法**的 S1000D 结构（对应 `<description>` 下块序列）。
+ * 用于：DM 中 content/description 为空、`loadDmXml` 失败、或宿主需「空白稿」等场景。
+ *
+ * @see buildEmptyDescriptionDocJson — 仅生成 JSON、不写入编辑器
  */
-export function clearContent(
+export function fillEmptyContentFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
   const next = buildEmptyDescriptionDocJson(schema);
   return editor.chain().focus().setContent(next).run();
+}
+
+/**
+ * 清空编辑器中的正文（对应 DM 的 `<content>/<description>`），并按当前描述类 schema
+ * 的最小合法模型重新初始化（与 {@link fillEmptyContentFromSchema} 等价）。
+ */
+export function clearContent(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  return fillEmptyContentFromSchema(editor, schema);
 }
