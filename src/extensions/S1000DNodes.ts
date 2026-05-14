@@ -6,6 +6,7 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 
 import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
+import { GraphicNodeView } from "./s1000d/GraphicNodeView";
 import { FigureNodeView } from "./s1000d/FigureNodeView";
 import { LevelledParaNodeView } from "./s1000d/LevelledParaNodeView";
 import { s1000dTableNodes } from "./s1000d/s1000dTableNodes";
@@ -21,6 +22,7 @@ import {
   hasXmlAttr,
   xmlAttrsPresentOnElement,
 } from "../lib/s1000d/sourceXmlAttrKeys";
+import { readXlinkHrefFromElement } from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 
 export type { ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
@@ -746,11 +748,13 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
   if (hasXmlAttr(el, "infoEntityIdent") || hasXmlAttr(el, "infoentityident")) {
     keys.push("infoEntityIdent");
   }
+  if (readXlinkHrefFromElement(el)) keys.push("xlink:href");
   return keys;
 }
 
 /**
  * S1000D `graphic`：`figure` 下的媒体引用占位（无文本子节点）。
+ * 源 XML `xlink:href` 读入 `src`；编辑器内以标准 `<img>` 展示。
  */
 export const S1000DGraphic = Node.create({
   name: "graphic",
@@ -769,7 +773,38 @@ export const S1000DGraphic = Node.create({
             ? { id: (attrs as { id: string }).id }
             : {},
       },
-      infoEntityIdent: { default: null },
+      infoEntityIdent: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident") ??
+              el.getAttribute("data-info-entity-ident")
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { infoEntityIdent?: string | null })
+            .infoEntityIdent;
+          return v ? { "data-info-entity-ident": String(v) } : {};
+        },
+      },
+      /** 仅自源 XML `xlink:href`（或编辑器内 `<img>` 的 `src`）提取；无 `xlink:href` 则为 `""` */
+      src: {
+        default: "",
+        parseHTML: (el) => {
+          if (!(el instanceof Element)) return "";
+          if (el.tagName === "IMG" || el.localName.toLowerCase() === "img") {
+            const s = el.getAttribute("src");
+            return s?.trim() ? s.trim() : "";
+          }
+          const fromXlink = readXlinkHrefFromElement(el);
+          return fromXlink ? fromXlink : "";
+        },
+        renderHTML: (attrs) => {
+          const s = (attrs as { src?: string | null }).src;
+          const t = typeof s === "string" ? s.trim() : "";
+          return { src: t || "" };
+        },
+      },
     };
   },
 
@@ -779,20 +814,62 @@ export const S1000DGraphic = Node.create({
         tag: "graphic",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
+          const xlinkHref = readXlinkHrefFromElement(el);
           return {
             id: el.getAttribute("id"),
             infoEntityIdent:
               el.getAttribute("infoEntityIdent") ??
               el.getAttribute("infoentityident"),
+            src: xlinkHref ? xlinkHref : "",
             [SOURCE_XML_ATTR_KEYS]: readGraphicSourceXmlAttrKeys(el),
+          };
+        },
+      },
+      {
+        tag: "img",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
+          const src = el.getAttribute("src");
+          return {
+            id: el.getAttribute("data-graphic-id") ?? el.getAttribute("id"),
+            infoEntityIdent: el.getAttribute("data-info-entity-ident"),
+            src: src?.trim() ? src.trim() : "",
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "id",
+              "data-graphic-id",
+              "data-info-entity-ident",
+              "src",
+            ]),
           };
         },
       },
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ["graphic", mergeAttributes(HTMLAttributes)];
+  renderHTML({ node, HTMLAttributes }) {
+    const raw = node.attrs.src;
+    const src =
+      typeof raw === "string" ? raw.trim() : raw == null ? "" : String(raw).trim();
+    const ident = node.attrs.infoEntityIdent
+      ? String(node.attrs.infoEntityIdent)
+      : "";
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, {
+        class: "s1000d-graphic-img",
+        "data-s1000d-node": "graphic",
+        draggable: "false",
+        src: src || "",
+        alt: ident || "",
+        ...(ident ? { "data-info-entity-ident": ident } : {}),
+        ...(node.attrs.id ? { "data-graphic-id": String(node.attrs.id) } : {}),
+      }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(GraphicNodeView);
   },
 });
 

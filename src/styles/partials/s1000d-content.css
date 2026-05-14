@@ -107,6 +107,32 @@
   background: #f8fafc;
 }
 
+.ietm-editor-surface .tiptap .s1000d-graphic-node {
+  display: block;
+  margin: 8px 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ietm-editor-surface .tiptap .s1000d-graphic-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid #dbeafe;
+  background: #fff;
+}
+
+.ietm-editor-surface .tiptap .s1000d-graphic-img--empty {
+  min-height: 4.5rem;
+  object-fit: none;
+  object-position: center;
+  background: #f1f5f9;
+  border-style: dashed;
+  border-color: #cbd5e1;
+}
+
+/* 序列化 / 剪贴板等场景下仍可能出现裸 `<graphic>` */
 .ietm-editor-surface .tiptap graphic {
   display: block;
   margin: 8px 0;

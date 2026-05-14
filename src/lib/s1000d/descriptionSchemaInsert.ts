@@ -227,7 +227,12 @@ function escapeXml(unsafe: string): string {
  */
 function hasEffectiveContent(node: JSONContent): boolean {
   if (node.type === "text" && node.text?.trim() !== "") return true;
-  if (node.type === "image" || (node.attrs && node.attrs.rawXml)) return true;
+  if (
+    node.type === "image" ||
+    node.type === "graphic" ||
+    (node.attrs && node.attrs.rawXml)
+  )
+    return true;
   if (node.type === "table") return true; // 表格等大结构默认保留
   if (node.content && node.content.length > 0) {
     return node.content.some(hasEffectiveContent);
@@ -241,6 +246,7 @@ const ignoredExportAttrs = [
   "displayLevel",
   "start",
   "sourceXmlAttrKeys",
+  "src",
 ];
 const listNodeTypes = [
   "bulletList",
@@ -364,6 +370,30 @@ function buildColspecXml(cols: number): string {
   }).join("");
 }
 
+function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
+  if (!attrs) return "<graphic />";
+  const id =
+    attrs.id != null && String(attrs.id).trim() !== ""
+      ? ` id="${escapeXml(String(attrs.id))}"`
+      : "";
+  const iei =
+    attrs.infoEntityIdent != null &&
+    String(attrs.infoEntityIdent).trim() !== ""
+      ? ` infoEntityIdent="${escapeXml(String(attrs.infoEntityIdent))}"`
+      : "";
+  const srcRaw = attrs.src;
+  const srcTrim =
+    typeof srcRaw === "string"
+      ? srcRaw.trim()
+      : srcRaw != null
+        ? String(srcRaw).trim()
+        : "";
+  const xlink = srcTrim
+    ? ` xlink:href="${escapeXml(srcTrim)}"`
+    : "";
+  return `<graphic${id}${iei}${xlink} />`;
+}
+
 function serializeNodeToXml(node: JSONContent): string {
   // 1. 处理纯文本与行内样式 (Marks)
   if (node.type === "text") {
@@ -418,6 +448,10 @@ function serializeNodeToXml(node: JSONContent): string {
   // 2. 兜底与黑盒数据提取
   if (node.attrs && node.attrs.rawXml) return node.attrs.rawXml;
 
+  if (node.type === "graphic") {
+    return serializeGraphicToXml(node.attrs);
+  }
+
   // 3. 处理图片转换
   if (node.type === "image") {
     const id = node.attrs?.figureId || "ICN-UNKNOWN";
@@ -448,7 +482,9 @@ function serializeNodeToXml(node: JSONContent): string {
       if (firstRow && firstRow.content) {
         cols = firstRow.content.filter((c) => c.type === "entry").length || 1;
       }
-    } catch (e) {}
+    } catch {
+      /* ignore malformed table shape */
+    }
     attrsStr += ` cols="${cols}"`;
   }
 
