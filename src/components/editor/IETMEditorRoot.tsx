@@ -17,6 +17,7 @@ import {
   type IETMEditorRefValue,
   type InsertTableOptions,
 } from "./IETMEditor";
+import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import { ConfigProvider } from "@arco-design/web-react";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 export interface IETMEditorRootHandle {
@@ -38,6 +39,7 @@ interface IETMEditorRootProps {
   initialContent?: JSONContent | string;
   initialEditable: boolean;
   initialDescriptionSchema?: DescriptionSchema;
+  onSaveDmXml?: SaveDmXmlHandler;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
   onReady: () => void;
@@ -98,6 +100,7 @@ export const IETMEditorRoot = forwardRef<
           ref={editorRef}
           initialContent={props.initialContent}
           editable={editable}
+          onSaveDmXml={props.onSaveDmXml}
           onUpdate={props.onUpdate}
           onSelectionChange={props.onSelectionChange}
           onReady={props.onReady}

@@ -9,7 +9,10 @@ import {
   IETMEditorRoot,
   type IETMEditorRootHandle,
 } from "./components/editor/IETMEditorRoot";
-import type { InsertTableOptions } from "./components/editor/IETMEditor";
+import type {
+  InsertTableOptions,
+} from "./components/editor/IETMEditor";
+import type { SaveDmXmlHandler } from "./types/saveDmXmlHandler";
 import {
   getDescriptionSchema,
   resetDescriptionSchema,
@@ -25,6 +28,7 @@ import {
   buildEmptyDescriptionBodyFromSchema,
   buildEmptyDescriptionDocJson,
   clearContent,
+  exportEditorToDmXmlString,
   fillEmptyContentFromSchema,
 } from "./lib/s1000d/descriptionSchemaInsert";
 import "./style.css";
@@ -37,6 +41,7 @@ export {
   buildEmptyDescriptionBodyFromSchema,
   buildEmptyDescriptionDocJson,
   clearContent,
+  exportEditorToDmXmlString,
   fillEmptyContentFromSchema,
 };
 
@@ -50,6 +55,8 @@ export {
 };
 export { useInsertPublicationModalStore };
 
+export type { SaveDmXmlHandler };
+
 export interface IETMEditorOptions {
   element: HTMLElement;
   content?: JSONContent | string;
@@ -61,6 +68,10 @@ export interface IETMEditorOptions {
   editable?: boolean;
   /** 服务端下发的描述类 schema；不传则使用内置默认，卸载实例时会恢复默认（若创建时传入了本字段） */
   descriptionSchema?: DescriptionSchema;
+  /**
+   * 工具栏「保存」：传入时生成完整 DM XML 并调用本回调（不触发下载）；不传时与原先一致，触发本地下载。
+   */
+  onSaveDmXml?: SaveDmXmlHandler;
 }
 
 export interface IETMEditorEvents {
@@ -204,6 +215,7 @@ export function createIETMEditor(
       initialContent: resolveInitialEditorContent(options),
       initialEditable: options.editable ?? true,
       initialDescriptionSchema: options.descriptionSchema,
+      onSaveDmXml: options.onSaveDmXml,
       onUpdate: (json) => emitter.emit("update", { json }),
       onSelectionChange: (range) => emitter.emit("selectionChange", range),
       onReady: () => emitter.emit("ready", undefined),

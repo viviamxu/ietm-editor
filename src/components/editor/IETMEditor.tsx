@@ -48,6 +48,7 @@ import {
   TableCellsSplit,
   Trash2,
 } from "lucide-react";
+import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 
 export interface InsertTableOptions {
   rows?: number;
@@ -80,6 +81,7 @@ export interface IETMEditorRefValue {
 interface IETMEditorProps {
   initialContent?: JSONContent | string;
   editable: boolean;
+  onSaveDmXml?: SaveDmXmlHandler;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
   onReady: () => void;
@@ -542,7 +544,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             </div>
           </header>
 
-          <FormatToolbar editor={editor} activeTabKey={activeTabKey} />
+          <FormatToolbar
+            editor={editor}
+            activeTabKey={activeTabKey}
+            onSaveDmXml={props.onSaveDmXml}
+          />
         </div>
 
         <div className="ietm-app-main">

@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 
 import {
   insertFilmFromSchema,
@@ -8,12 +8,13 @@ import {
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
   insertTableFromSchema,
-  print,
+  exportEditorToDmXmlString,
   save,
   internalRef,
   clearContent,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
+import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
   List,
   ListOrdered,
@@ -33,7 +34,6 @@ import {
   Link2,
   CircleX,
 } from "lucide-react";
-import { Button } from "@arco-design/web-react";
 
 import {
   canRunS1000dTableAction,
@@ -46,11 +46,17 @@ type MainTabKey = "file" | "edit" | "insert";
 interface FormatToolbarProps {
   editor: Editor;
   activeTabKey: MainTabKey;
+  onSaveDmXml?: SaveDmXmlHandler;
 }
 
-export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
+export function FormatToolbar({
+  editor,
+  activeTabKey,
+  onSaveDmXml,
+}: FormatToolbarProps) {
   const schema = useDescriptionSchemaStore((s) => s.schema);
   const [, refresh] = useReducer((n: number) => n + 1, 0);
+  const [saveInFlight, setSaveInFlight] = useState(false);
 
   useEffect(() => {
     const onTxn = () => {
@@ -112,6 +118,23 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
     action: Parameters<typeof canRunS1000dTableAction>[1],
   ) => !canRunS1000dTableAction(editor, action);
 
+  const runHostOrDownloadSave = () => {
+    if (onSaveDmXml) {
+      void (async () => {
+        setSaveInFlight(true);
+        try {
+          await Promise.resolve(
+            onSaveDmXml(exportEditorToDmXmlString(editor)),
+          );
+        } finally {
+          setSaveInFlight(false);
+        }
+      })();
+      return;
+    }
+    save(editor);
+  };
+
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
       <div
@@ -139,8 +162,13 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => save(editor)}
-          title="保存"
+          disabled={saveInFlight}
+          onClick={runHostOrDownloadSave}
+          title={
+            onSaveDmXml
+              ? "保存（生成完整 DM XML 并交给宿主）"
+              : "保存（生成完整 DM XML 并下载）"
+          }
         >
           <Save size={16} aria-hidden className="shrink-0" />
         </button>
@@ -343,9 +371,6 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         >
           <Superscript size={16} aria-hidden className="shrink-0" />
         </button>
-        <Button type="primary" onClick={() => print(editor)}>
-          导出 XML
-        </Button>
       </div>
       <span
         className="ietm-format-toolbar__divider"

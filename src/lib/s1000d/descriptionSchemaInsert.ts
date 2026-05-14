@@ -644,9 +644,9 @@ function serializeNodeToXml(node: JSONContent): string {
 }
 
 /**
- * 导出编辑器内容为 S1000D XML 并触发浏览器下载
+ * 将当前编辑器内容序列化为完整 S1000D 数据模块 XML 字符串（与工具栏「保存」下载内容一致）。
  */
-export function print(editor: Editor): void {
+export function exportEditorToDmXmlString(editor: Editor): string {
   const jsonAST = editor.getJSON();
   const contentXml = serializeNodeToXml(jsonAST);
   const doctypeXml = buildGraphicEntityDoctype(contentXml);
@@ -655,8 +655,7 @@ export function print(editor: Editor): void {
   const finalIdentXml =
     identAndStatusXml || `<identAndStatusSection>\n  </identAndStatusSection>`;
 
-  // 🌟 核心防线 4: 补齐 S1000D 必须的全局 Namespaces (否则校验器会报 Fatal Error)
-  const finalXml = `<?xml version="1.0" encoding="utf-8"?>
+  return `<?xml version="1.0" encoding="utf-8"?>
 ${doctypeXml}
 <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xmlns:dc="http://www.purl.org/dc/elements/1.1/"
@@ -667,8 +666,14 @@ ${doctypeXml}
    ${finalIdentXml}
    ${contentXml}
 </dmodule>`;
+}
 
-  // 触发下载
+/**
+ * 保存：生成完整 DM XML 并触发浏览器下载（原「导出 XML」逻辑）。
+ */
+export function save(editor: Editor): void {
+  const finalXml = exportEditorToDmXmlString(editor);
+
   const blob = new Blob([finalXml], { type: "text/xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -686,11 +691,6 @@ ${doctypeXml}
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-export function save(_editor: Editor): void {
-  //TODO: 保存到本地
-  void _editor;
 }
 export function internalRef(editor: Editor): void {
   void editor;
