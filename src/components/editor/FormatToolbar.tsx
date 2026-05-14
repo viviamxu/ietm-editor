@@ -11,6 +11,7 @@ import {
   print,
   save,
   internalRef,
+  clearContent,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import {
@@ -30,6 +31,7 @@ import {
   Superscript,
   Save,
   Link2,
+  CircleX,
 } from "lucide-react";
 import { Button } from "@arco-design/web-react";
 
@@ -141,6 +143,14 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
           title="保存"
         >
           <Save size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          onClick={() => clearContent(editor, schema)}
+          title="清空内容"
+        >
+          <CircleX size={16} aria-hidden className="shrink-0" />
         </button>
         <button
           type="button"

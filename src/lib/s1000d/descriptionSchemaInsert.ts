@@ -197,7 +197,95 @@ export function insertImageFromSchema(
   useInsertPublicationModalStore.getState().openInsertPublication(editor);
 }
 
-// --- 从这里开始复制，替换 descriptionSchemaInsert.ts 底部剩余的所有代码 ---
+/** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */
+function buildMinimalAttentionElemChild(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (requireSchemaNode(schema, "warning")) {
+    return {
+      type: "warning",
+      content: [{ type: "warningAndCautionPara", content: [] }],
+    };
+  }
+  if (requireSchemaNode(schema, "caution")) {
+    return {
+      type: "caution",
+      content: [{ type: "warningAndCautionPara", content: [] }],
+    };
+  }
+  if (requireSchemaNode(schema, "note")) {
+    return {
+      type: "note",
+      content: [{ type: "notePara", content: [] }],
+    };
+  }
+  return null;
+}
+
+/** 满足 `fmftElemGroup` 的最小块：优先 `figure`（含一个 `graphic`），否则最小 `table`。 */
+function buildMinimalFmftElemChild(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (requireSchemaNode(schema, "figure")) {
+    return {
+      type: "figure",
+      content: [{ type: "graphic", attrs: { src: "" } }],
+    };
+  }
+  if (requireSchemaNode(schema, "table")) {
+    return createMinimalS1000dTableInsertJson(1, 0, 1, false);
+  }
+  return null;
+}
+
+/**
+ * 按描述类 schema 的 `description.content` 组装最小合法正文子节点数组
+ *（对应 DM 中 `<content>/<description>` 下的块序列，不含 `identAndStatusSection`）。
+ */
+export function buildEmptyDescriptionBodyFromSchema(
+  schema: DescriptionSchema,
+): JSONContent[] {
+  const rule = schema.description?.content ?? "";
+  const leading: JSONContent[] = [];
+
+  const wantsPara = rule === "" || contentRuleMentions(rule, "para");
+  const wantsAttention = contentRuleMentions(rule, "attentionElemGroup");
+  const wantsFmft = contentRuleMentions(rule, "fmftElemGroup");
+
+  if (wantsPara && requireSchemaNode(schema, "para")) {
+    leading.push({ type: "para", content: [] });
+  } else if (wantsAttention) {
+    const n = buildMinimalAttentionElemChild(schema);
+    if (n) leading.push(n);
+  } else if (wantsFmft) {
+    const n = buildMinimalFmftElemChild(schema);
+    if (n) leading.push(n);
+  }
+
+  if (leading.length === 0) {
+    if (requireSchemaNode(schema, "para")) {
+      leading.push({ type: "para", content: [] });
+    } else {
+      const n =
+        buildMinimalAttentionElemChild(schema) ??
+        buildMinimalFmftElemChild(schema);
+      if (n) leading.push(n);
+    }
+  }
+
+  if (leading.length === 0) {
+    leading.push({ type: "para", content: [] });
+  }
+
+  return leading;
+}
+
+/** 供 `setContent` 使用的整篇「仅 description 正文」文档 JSON（根为 `doc`）。 */
+export function buildEmptyDescriptionDocJson(
+  schema: DescriptionSchema,
+): JSONContent {
+  return { type: "doc", content: buildEmptyDescriptionBodyFromSchema(schema) };
+}
 
 /**
  * 转义 XML 特殊字符，防止破坏文档结构
@@ -377,8 +465,7 @@ function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
       ? ` id="${escapeXml(String(attrs.id))}"`
       : "";
   const iei =
-    attrs.infoEntityIdent != null &&
-    String(attrs.infoEntityIdent).trim() !== ""
+    attrs.infoEntityIdent != null && String(attrs.infoEntityIdent).trim() !== ""
       ? ` infoEntityIdent="${escapeXml(String(attrs.infoEntityIdent))}"`
       : "";
   const srcRaw = attrs.src;
@@ -388,9 +475,7 @@ function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
       : srcRaw != null
         ? String(srcRaw).trim()
         : "";
-  const xlink = srcTrim
-    ? ` xlink:href="${escapeXml(srcTrim)}"`
-    : "";
+  const xlink = srcTrim ? ` xlink:href="${escapeXml(srcTrim)}"` : "";
   return `<graphic${id}${iei}${xlink} />`;
 }
 
@@ -610,4 +695,15 @@ export function save(_editor: Editor): void {
 export function internalRef(editor: Editor): void {
   void editor;
   //TODO: 内部引用
+}
+/**
+ * 清空编辑器中的正文（对应 DM 的 `<content>/<description>`），并按当前描述类 schema
+ * 的最小合法模型重新初始化（满足 `description.content` 中 `(para|attentionElemGroup|fmftElemGroup)+` 等约束）。
+ */
+export function clearContent(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  const next = buildEmptyDescriptionDocJson(schema);
+  return editor.chain().focus().setContent(next).run();
 }
