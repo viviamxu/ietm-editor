@@ -12,6 +12,7 @@
 @import './styles/partials/s1000d-content.css';
 @import './styles/partials/s1000d-nodeviews.css';
 @import './styles/partials/reference-publication-modal.css';
+@import './styles/partials/internal-ref-modal.css';
 
 @tailwind base;
 @tailwind components;

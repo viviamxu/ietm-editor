@@ -21,6 +21,7 @@ import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import { ConfigProvider } from "@arco-design/web-react";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
+import { InternalRefModal } from "./InternalRefModal";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
@@ -127,6 +128,7 @@ export const IETMEditorRoot = forwardRef<
           footerStatusOverride={footerStatusOverride}
         />
         <ReferencePublicationModal />
+        <InternalRefModal />
       </ConfigProvider>
     </div>
   );

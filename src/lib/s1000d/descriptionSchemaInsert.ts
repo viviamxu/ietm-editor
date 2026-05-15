@@ -2,6 +2,7 @@ import type { Editor, JSONContent } from "@tiptap/core";
 
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
+import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 
@@ -693,8 +694,7 @@ export function save(editor: Editor): void {
   URL.revokeObjectURL(url);
 }
 export function internalRef(editor: Editor): void {
-  void editor;
-  //TODO: 内部引用
+  useInternalRefModalStore.getState().openInternalRef(editor);
 }
 /**
  * 按描述类 schema 将编辑器正文替换为**最小合法**的 S1000D 结构（对应 `<description>` 下块序列）。

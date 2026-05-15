@@ -30,6 +30,11 @@ import {
   type InspectTarget,
 } from "../../lib/editor/resolveInspectable";
 import {
+  consumeInternalRefJumpGuard,
+  consumeSuppressPropertyPanelOpen,
+  peekSuppressPropertyPanelOpen,
+} from "../../lib/editor/internalRefNavigate";
+import {
   canRunS1000dTableAction,
   runS1000dTableAction,
 } from "../../lib/editor/s1000dTableCommands";
@@ -262,6 +267,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           class: "ietm-tiptap-root",
           spellcheck: "false",
         },
+        handleDOMEvents: {
+          mousedown: (_view, event) => {
+            if (!consumeInternalRefJumpGuard()) return false;
+            event.preventDefault();
+            return true;
+          },
+        },
       },
       onUpdate: ({ editor }) => {
         props.onUpdate(editor.getJSON());
@@ -275,7 +287,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         const anchorKey = `${editor.state.selection.anchor}-${editor.state.selection.head}`;
         if (anchorKey !== selectionAnchorRef.current) {
           selectionAnchorRef.current = anchorKey;
-          setPropertiesDismissed(false);
+          if (peekSuppressPropertyPanelOpen()) {
+            setPropertiesDismissed(true);
+          } else {
+            setPropertiesDismissed(false);
+          }
         }
         bumpSelectionUi();
       },
@@ -388,6 +404,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       : null;
 
     useEffect(() => {
+      if (consumeSuppressPropertyPanelOpen()) return;
       setPropertiesDismissed(false);
     }, [inspectStableKey]);
 
