@@ -16,12 +16,15 @@ import type {
 } from "../../lib/editor/s1000dTableCommands";
 
 export function TableEditToolbar(props: {
+  /** 只读时整组表格操作按钮禁用 */
+  readOnly?: boolean;
   tableActionDisabled: (
     action: Parameters<typeof canRunS1000dTableAction>[1],
   ) => boolean;
   runTableAction: (action: Parameters<typeof runS1000dTableAction>[1]) => void;
 }) {
-  const { tableActionDisabled, runTableAction } = props;
+  const { readOnly, tableActionDisabled, runTableAction } = props;
+  const locked = Boolean(readOnly);
 
   return (
     <>
@@ -29,7 +32,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("insertRowAbove")}
+          disabled={locked || tableActionDisabled("insertRowAbove")}
           onClick={() => runTableAction("insertRowAbove")}
           title="上方插入行"
           aria-label="上方插入行"
@@ -39,7 +42,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("insertRowBelow")}
+          disabled={locked || tableActionDisabled("insertRowBelow")}
           onClick={() => runTableAction("insertRowBelow")}
           title="下方插入行"
           aria-label="下方插入行"
@@ -49,7 +52,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("deleteRow")}
+          disabled={locked || tableActionDisabled("deleteRow")}
           onClick={() => runTableAction("deleteRow")}
           title="删除行"
           aria-label="删除行"
@@ -64,7 +67,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("insertColLeft")}
+          disabled={locked || tableActionDisabled("insertColLeft")}
           onClick={() => runTableAction("insertColLeft")}
           title="左侧插入列"
           aria-label="左侧插入列"
@@ -74,7 +77,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("insertColRight")}
+          disabled={locked || tableActionDisabled("insertColRight")}
           onClick={() => runTableAction("insertColRight")}
           title="右侧插入列"
           aria-label="右侧插入列"
@@ -84,7 +87,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("deleteCol")}
+          disabled={locked || tableActionDisabled("deleteCol")}
           onClick={() => runTableAction("deleteCol")}
           title="删除列"
           aria-label="删除列"
@@ -99,7 +102,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("mergeCells")}
+          disabled={locked || tableActionDisabled("mergeCells")}
           onClick={() => runTableAction("mergeCells")}
           title="合并单元格"
           aria-label="合并单元格"
@@ -109,7 +112,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("splitCell")}
+          disabled={locked || tableActionDisabled("splitCell")}
           onClick={() => runTableAction("splitCell")}
           title="拆分单元格"
           aria-label="拆分单元格"
@@ -119,7 +122,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("deleteCell")}
+          disabled={locked || tableActionDisabled("deleteCell")}
           onClick={() => runTableAction("deleteCell")}
           title="删除单元格"
           aria-label="删除单元格"
@@ -129,7 +132,7 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={tableActionDisabled("clearCell")}
+          disabled={locked || tableActionDisabled("clearCell")}
           onClick={() => runTableAction("clearCell")}
           title="清空单元格"
           aria-label="清空单元格"

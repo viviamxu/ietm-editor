@@ -1,5 +1,14 @@
+import { NodeSelection } from '@tiptap/pm/state'
 import type { NodeViewProps } from '@tiptap/react'
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
+import { Brackets } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from 'react'
 
 /** 从文档位置向上解析，判断是否位于 `caution` 内（否则视为 `warning`）。 */
 function attentionKindFromPos(
@@ -22,6 +31,36 @@ function attentionKindFromPos(
     /* ignore */
   }
   return 'warning'
+}
+
+function selectionOnThisAttentionBlock(props: NodeViewProps): {
+  nodeSelected: boolean
+  caretInside: boolean
+} {
+  const { editor, getPos, node } = props
+  const blockType = node.type.name
+  const pos = typeof getPos === 'function' ? getPos() : undefined
+  if (pos == null) return { nodeSelected: false, caretInside: false }
+
+  const sel = editor.state.selection
+  if (sel instanceof NodeSelection && sel.from === pos) {
+    return { nodeSelected: true, caretInside: true }
+  }
+
+  const { from } = sel
+  let $from
+  try {
+    $from = editor.state.doc.resolve(from)
+  } catch {
+    return { nodeSelected: false, caretInside: false }
+  }
+
+  for (let d = $from.depth; d > 0; d--) {
+    if ($from.node(d).type.name === blockType && $from.before(d) === pos) {
+      return { nodeSelected: false, caretInside: true }
+    }
+  }
+  return { nodeSelected: false, caretInside: false }
 }
 
 export function WarningTriangleIcon() {
@@ -98,16 +137,62 @@ export function WarningAndCautionLeadNodeView(props: NodeViewProps) {
 
 /**
  * `warning` / `caution` 共用外壳：通过 `node.type.name` 区分皮肤与 `data-s1000d-node`。
+ * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块（与 `levelledPara` 一致）。
  */
 export function WarningNodeView(props: NodeViewProps) {
+  const { editor, getPos } = props
   const kind = props.node.type.name === 'caution' ? 'caution' : 'warning'
+  const [hovered, setHovered] = useState(false)
+  const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0)
+
+  useEffect(() => {
+    const bump = () => bumpFromSelection()
+    editor.on('selectionUpdate', bump)
+    return () => {
+      editor.off('selectionUpdate', bump)
+    }
+  }, [editor])
+
+  const { nodeSelected, caretInside } = selectionOnThisAttentionBlock(props)
+  const showChrome = hovered || caretInside || nodeSelected
+
+  const selectWholeBlock = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const p = getPos?.()
+      if (p == null) return
+      editor.chain().focus().setNodeSelection(p).run()
+    },
+    [editor, getPos],
+  )
+
+  const blockLabel = kind === 'caution' ? 'caution' : 'warning'
+
   return (
     <NodeViewWrapper
       as="aside"
-      className={`s1000d-attention-block s1000d-attention-block--${kind}`}
+      className={
+        showChrome
+          ? `s1000d-attention-block s1000d-attention-block--${kind} s1000d-attention-block--chrome`
+          : `s1000d-attention-block s1000d-attention-block--${kind}`
+      }
       data-s1000d-node={kind}
       role="note"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
+      <button
+        type="button"
+        className="s1000d-attention-block__block-handle"
+        contentEditable={false}
+        tabIndex={-1}
+        aria-label={`选中整块 ${blockLabel}`}
+        title="选中整块"
+        onMouseDown={selectWholeBlock}
+      >
+        <Brackets size={14} strokeWidth={2} aria-hidden />
+      </button>
       <NodeViewContent className="s1000d-attention-block__body" />
     </NodeViewWrapper>
   )

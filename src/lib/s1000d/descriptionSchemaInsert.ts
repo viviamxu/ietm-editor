@@ -27,7 +27,9 @@ function requireSchemaNode(schema: DescriptionSchema, name: string): boolean {
 function focusFirstCellByMouseLikeClick(editor: Editor): void {
   setTimeout(() => {
     const root = editor.view.dom as HTMLElement;
-    const tables = root.querySelectorAll(".s1000d-table-wrap, .s1000d-tgroup-table");
+    const tables = root.querySelectorAll(
+      ".s1000d-table-wrap, .s1000d-tgroup-table",
+    );
     const latestTable = tables.item(tables.length - 1) as HTMLElement | null;
     if (!latestTable) return;
 
@@ -37,7 +39,11 @@ function focusFirstCellByMouseLikeClick(editor: Editor): void {
     if (!firstCell) return;
 
     firstCell.dispatchEvent(
-      new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 }),
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+      }),
     );
     firstCell.dispatchEvent(
       new MouseEvent("mouseup", { bubbles: true, cancelable: true, button: 0 }),
@@ -191,7 +197,95 @@ export function insertImageFromSchema(
   useInsertPublicationModalStore.getState().openInsertPublication(editor);
 }
 
-// --- 从这里开始复制，替换 descriptionSchemaInsert.ts 底部剩余的所有代码 ---
+/** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */
+function buildMinimalAttentionElemChild(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (requireSchemaNode(schema, "warning")) {
+    return {
+      type: "warning",
+      content: [{ type: "warningAndCautionPara", content: [] }],
+    };
+  }
+  if (requireSchemaNode(schema, "caution")) {
+    return {
+      type: "caution",
+      content: [{ type: "warningAndCautionPara", content: [] }],
+    };
+  }
+  if (requireSchemaNode(schema, "note")) {
+    return {
+      type: "note",
+      content: [{ type: "notePara", content: [] }],
+    };
+  }
+  return null;
+}
+
+/** 满足 `fmftElemGroup` 的最小块：优先 `figure`（含一个 `graphic`），否则最小 `table`。 */
+function buildMinimalFmftElemChild(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (requireSchemaNode(schema, "figure")) {
+    return {
+      type: "figure",
+      content: [{ type: "graphic", attrs: { src: "" } }],
+    };
+  }
+  if (requireSchemaNode(schema, "table")) {
+    return createMinimalS1000dTableInsertJson(1, 0, 1, false);
+  }
+  return null;
+}
+
+/**
+ * 按描述类 schema 的 `description.content` 组装最小合法正文子节点数组
+ *（对应 DM 中 `<content>/<description>` 下的块序列，不含 `identAndStatusSection`）。
+ */
+export function buildEmptyDescriptionBodyFromSchema(
+  schema: DescriptionSchema,
+): JSONContent[] {
+  const rule = schema.description?.content ?? "";
+  const leading: JSONContent[] = [];
+
+  const wantsPara = rule === "" || contentRuleMentions(rule, "para");
+  const wantsAttention = contentRuleMentions(rule, "attentionElemGroup");
+  const wantsFmft = contentRuleMentions(rule, "fmftElemGroup");
+
+  if (wantsPara && requireSchemaNode(schema, "para")) {
+    leading.push({ type: "para", content: [] });
+  } else if (wantsAttention) {
+    const n = buildMinimalAttentionElemChild(schema);
+    if (n) leading.push(n);
+  } else if (wantsFmft) {
+    const n = buildMinimalFmftElemChild(schema);
+    if (n) leading.push(n);
+  }
+
+  if (leading.length === 0) {
+    if (requireSchemaNode(schema, "para")) {
+      leading.push({ type: "para", content: [] });
+    } else {
+      const n =
+        buildMinimalAttentionElemChild(schema) ??
+        buildMinimalFmftElemChild(schema);
+      if (n) leading.push(n);
+    }
+  }
+
+  if (leading.length === 0) {
+    leading.push({ type: "para", content: [] });
+  }
+
+  return leading;
+}
+
+/** 供 `setContent` 使用的整篇「仅 description 正文」文档 JSON（根为 `doc`）。 */
+export function buildEmptyDescriptionDocJson(
+  schema: DescriptionSchema,
+): JSONContent {
+  return { type: "doc", content: buildEmptyDescriptionBodyFromSchema(schema) };
+}
 
 /**
  * 转义 XML 特殊字符，防止破坏文档结构
@@ -221,7 +315,12 @@ function escapeXml(unsafe: string): string {
  */
 function hasEffectiveContent(node: JSONContent): boolean {
   if (node.type === "text" && node.text?.trim() !== "") return true;
-  if (node.type === "image" || (node.attrs && node.attrs.rawXml)) return true;
+  if (
+    node.type === "image" ||
+    node.type === "graphic" ||
+    (node.attrs && node.attrs.rawXml)
+  )
+    return true;
   if (node.type === "table") return true; // 表格等大结构默认保留
   if (node.content && node.content.length > 0) {
     return node.content.some(hasEffectiveContent);
@@ -229,7 +328,14 @@ function hasEffectiveContent(node: JSONContent): boolean {
   return false;
 }
 
-const ignoredExportAttrs = ["class", "rawXml", "displayLevel", "start"];
+const ignoredExportAttrs = [
+  "class",
+  "rawXml",
+  "displayLevel",
+  "start",
+  "sourceXmlAttrKeys",
+  "src",
+];
 const listNodeTypes = [
   "bulletList",
   "orderedList",
@@ -352,6 +458,27 @@ function buildColspecXml(cols: number): string {
   }).join("");
 }
 
+function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
+  if (!attrs) return "<graphic />";
+  const id =
+    attrs.id != null && String(attrs.id).trim() !== ""
+      ? ` id="${escapeXml(String(attrs.id))}"`
+      : "";
+  const iei =
+    attrs.infoEntityIdent != null && String(attrs.infoEntityIdent).trim() !== ""
+      ? ` infoEntityIdent="${escapeXml(String(attrs.infoEntityIdent))}"`
+      : "";
+  const srcRaw = attrs.src;
+  const srcTrim =
+    typeof srcRaw === "string"
+      ? srcRaw.trim()
+      : srcRaw != null
+        ? String(srcRaw).trim()
+        : "";
+  const xlink = srcTrim ? ` xlink:href="${escapeXml(srcTrim)}"` : "";
+  return `<graphic${id}${iei}${xlink} />`;
+}
+
 function serializeNodeToXml(node: JSONContent): string {
   // 1. 处理纯文本与行内样式 (Marks)
   if (node.type === "text") {
@@ -406,6 +533,10 @@ function serializeNodeToXml(node: JSONContent): string {
   // 2. 兜底与黑盒数据提取
   if (node.attrs && node.attrs.rawXml) return node.attrs.rawXml;
 
+  if (node.type === "graphic") {
+    return serializeGraphicToXml(node.attrs);
+  }
+
   // 3. 处理图片转换
   if (node.type === "image") {
     const id = node.attrs?.figureId || "ICN-UNKNOWN";
@@ -436,7 +567,9 @@ function serializeNodeToXml(node: JSONContent): string {
       if (firstRow && firstRow.content) {
         cols = firstRow.content.filter((c) => c.type === "entry").length || 1;
       }
-    } catch (e) {}
+    } catch {
+      /* ignore malformed table shape */
+    }
     attrsStr += ` cols="${cols}"`;
   }
 
@@ -511,9 +644,9 @@ function serializeNodeToXml(node: JSONContent): string {
 }
 
 /**
- * 导出编辑器内容为 S1000D XML 并触发浏览器下载
+ * 将当前编辑器内容序列化为完整 S1000D 数据模块 XML 字符串（与工具栏「保存」下载内容一致）。
  */
-export function print(editor: Editor): void {
+export function exportEditorToDmXmlString(editor: Editor): string {
   const jsonAST = editor.getJSON();
   const contentXml = serializeNodeToXml(jsonAST);
   const doctypeXml = buildGraphicEntityDoctype(contentXml);
@@ -522,8 +655,7 @@ export function print(editor: Editor): void {
   const finalIdentXml =
     identAndStatusXml || `<identAndStatusSection>\n  </identAndStatusSection>`;
 
-  // 🌟 核心防线 4: 补齐 S1000D 必须的全局 Namespaces (否则校验器会报 Fatal Error)
-  const finalXml = `<?xml version="1.0" encoding="utf-8"?>
+  return `<?xml version="1.0" encoding="utf-8"?>
 ${doctypeXml}
 <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xmlns:dc="http://www.purl.org/dc/elements/1.1/"
@@ -534,8 +666,14 @@ ${doctypeXml}
    ${finalIdentXml}
    ${contentXml}
 </dmodule>`;
+}
 
-  // 触发下载
+/**
+ * 保存：生成完整 DM XML 并触发浏览器下载（原「导出 XML」逻辑）。
+ */
+export function save(editor: Editor): void {
+  const finalXml = exportEditorToDmXmlString(editor);
+
   const blob = new Blob([finalXml], { type: "text/xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -554,8 +692,31 @@ ${doctypeXml}
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-export function save(editor: Editor): void {
+export function internalRef(editor: Editor): void {
   void editor;
-  //TODO: 保存到本地
+  //TODO: 内部引用
+}
+/**
+ * 按描述类 schema 将编辑器正文替换为**最小合法**的 S1000D 结构（对应 `<description>` 下块序列）。
+ * 用于：DM 中 content/description 为空、`loadDmXml` 失败、或宿主需「空白稿」等场景。
+ *
+ * @see buildEmptyDescriptionDocJson — 仅生成 JSON、不写入编辑器
+ */
+export function fillEmptyContentFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  const next = buildEmptyDescriptionDocJson(schema);
+  return editor.chain().focus().setContent(next).run();
+}
+
+/**
+ * 清空编辑器中的正文（对应 DM 的 `<content>/<description>`），并按当前描述类 schema
+ * 的最小合法模型重新初始化（与 {@link fillEmptyContentFromSchema} 等价）。
+ */
+export function clearContent(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  return fillEmptyContentFromSchema(editor, schema);
 }

@@ -6,6 +6,8 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 
 import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
+import { GraphicNodeView } from "./s1000d/GraphicNodeView";
+import { FigureNodeView } from "./s1000d/FigureNodeView";
 import { LevelledParaNodeView } from "./s1000d/LevelledParaNodeView";
 import { s1000dTableNodes } from "./s1000d/s1000dTableNodes";
 import { S1000DSub, S1000DSup } from "./s1000d/subSuperMarks";
@@ -15,6 +17,12 @@ import {
   WarningNodeView,
 } from "./s1000d/WarningNodeView";
 import type { ParaAttrs } from "./s1000d/types";
+import {
+  SOURCE_XML_ATTR_KEYS,
+  hasXmlAttr,
+  xmlAttrsPresentOnElement,
+} from "../lib/s1000d/sourceXmlAttrKeys";
+import { readXlinkHrefFromElement } from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 
 export type { ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
@@ -141,7 +149,16 @@ export const WarningAndCautionLead = Node.create({
   content: "inline*",
 
   parseHTML() {
-    return [{ tag: "warningAndCautionLead" }, { tag: "warningandcautionlead" }];
+    return [
+      {
+        tag: "warningAndCautionLead",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "warningandcautionlead",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -161,7 +178,16 @@ export const AttentionListItemPara = Node.create({
   content: "inline*",
 
   parseHTML() {
-    return [{ tag: "attentionListItemPara" }, { tag: "attentionlistitempara" }];
+    return [
+      {
+        tag: "attentionListItemPara",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "attentionlistitempara",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -178,8 +204,14 @@ export const AttentionRandomListItem = Node.create({
 
   parseHTML() {
     return [
-      { tag: "attentionRandomListItem" },
-      { tag: "attentionrandomlistitem" },
+      {
+        tag: "attentionRandomListItem",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "attentionrandomlistitem",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
     ];
   },
 
@@ -198,7 +230,16 @@ export const AttentionRandomList = Node.create({
   defining: true,
 
   parseHTML() {
-    return [{ tag: "attentionRandomList" }, { tag: "attentionrandomlist" }];
+    return [
+      {
+        tag: "attentionRandomList",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "attentionrandomlist",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -220,7 +261,7 @@ export const WarningAndCautionPara = Node.create({
     return [
       {
         tag: "warningAndCautionPara",
-        getAttrs: () => ({}),
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
       },
     ];
   },
@@ -245,8 +286,33 @@ export const S1000DWarning = Node.create({
   defining: true,
   isolating: true,
 
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+    };
+  },
+
   parseHTML() {
-    return [{ tag: "warning" }];
+    return [
+      {
+        tag: "warning",
+        getAttrs: (el) =>
+          el instanceof Element
+            ? {
+                id: el.getAttribute("id"),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+              }
+            : {},
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -268,8 +334,33 @@ export const S1000DCaution = Node.create({
   defining: true,
   isolating: true,
 
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+    };
+  },
+
   parseHTML() {
-    return [{ tag: "caution" }];
+    return [
+      {
+        tag: "caution",
+        getAttrs: (el) =>
+          el instanceof Element
+            ? {
+                id: el.getAttribute("id"),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+              }
+            : {},
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -288,7 +379,16 @@ export const NotePara = Node.create({
   content: "inline*",
 
   parseHTML() {
-    return [{ tag: "notePara" }, { tag: "notepara" }];
+    return [
+      {
+        tag: "notePara",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "notepara",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -306,14 +406,44 @@ export const S1000DNote = Node.create({
   defining: true,
   isolating: true,
 
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+    };
+  },
+
   parseHTML() {
-    return [{ tag: "note" }];
+    return [
+      {
+        tag: "note",
+        getAttrs: (el) =>
+          el instanceof Element
+            ? {
+                id: el.getAttribute("id"),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+              }
+            : {},
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
     return ["note", mergeAttributes(HTMLAttributes), 0];
   },
 });
+
+/** `displayLevel` 仅当源 HTML 上存在 `data-s1000d-title-level` 时视为「源上出现」并记入 `sourceXmlAttrKeys`。 */
+function titleSourceXmlAttrKeysFromEl(el: Element): string[] {
+  return hasXmlAttr(el, "data-s1000d-title-level") ? ["displayLevel"] : [];
+}
 
 /** h1～h6 + `data-s1000d-title`，层级数字由标签 / `data-s1000d-title-level` 经 `displayLevel.parseHTML` 读取。 */
 const s1000dTitleHeadingParseRules = ([1, 2, 3, 4, 5, 6] as const).map(
@@ -322,7 +452,12 @@ const s1000dTitleHeadingParseRules = ([1, 2, 3, 4, 5, 6] as const).map(
     priority: 100,
     getAttrs: (el: HTMLElement) => {
       if (!el || !(el instanceof Element)) return false;
-      return isS1000DTitleParent(el.parentElement) ? {} : false;
+      return isS1000DTitleParent(el.parentElement)
+        ? {
+            displayLevel: parseS1000dTitleDisplayLevelFromElement(el),
+            [SOURCE_XML_ATTR_KEYS]: titleSourceXmlAttrKeysFromEl(el),
+          }
+        : false;
     },
   }),
 );
@@ -367,7 +502,12 @@ export const S1000DTitle = Node.create({
         priority: 105,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return isS1000DTitleParent(el.parentElement) ? {} : false;
+          return isS1000DTitleParent(el.parentElement)
+            ? {
+                displayLevel: parseS1000dTitleDisplayLevelFromElement(el),
+                [SOURCE_XML_ATTR_KEYS]: titleSourceXmlAttrKeysFromEl(el),
+              }
+            : false;
         },
       },
       ...s1000dTitleHeadingParseRules,
@@ -376,7 +516,12 @@ export const S1000DTitle = Node.create({
         priority: 51,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return isS1000DTitleParent(el.parentElement) ? {} : false;
+          return isS1000DTitleParent(el.parentElement)
+            ? {
+                displayLevel: parseS1000dTitleDisplayLevelFromElement(el),
+                [SOURCE_XML_ATTR_KEYS]: titleSourceXmlAttrKeysFromEl(el),
+              }
+            : false;
         },
       },
     ];
@@ -432,6 +577,13 @@ export const S1000DPara = Node.create({
               "derivativeClassificationRefId",
             ),
             reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "id",
+              "securityClassification",
+              "caveat",
+              "derivativeClassificationRefId",
+              "reasonForUpdateRefIds",
+            ]),
           };
         },
       },
@@ -456,6 +608,25 @@ function readInternalRefAttrsFromDom(el: Element) {
   };
 }
 
+function readInternalRefSourceXmlAttrKeys(el: Element): string[] {
+  const keys: string[] = [];
+  if (
+    hasXmlAttr(el, "internalRefId") ||
+    hasXmlAttr(el, "internalrefid") ||
+    hasXmlAttr(el, "data-internal-ref-id")
+  ) {
+    keys.push("internalRefId");
+  }
+  if (
+    hasXmlAttr(el, "internalRefTargetType") ||
+    hasXmlAttr(el, "internalreftargettype") ||
+    hasXmlAttr(el, "data-internal-ref-target-type")
+  ) {
+    keys.push("internalRefTargetType");
+  }
+  return keys;
+}
+
 /** `dmRef` 行内占位：段落内整块 DM 引用若按块解析会破坏 `para` — 先吞成原子占位，后续可换完整 Node。 */
 export const S1000DDmRef = Node.create({
   name: "dmRef",
@@ -474,13 +645,15 @@ export const S1000DDmRef = Node.create({
       {
         tag: "dmref, dmRef", // HTML 会传小写，都拦截住
         getAttrs: (el) => {
-          // 尝试读取被保护的纯净 XML 字符串
-          const encoded = (el as Element).getAttribute("data-raw-xml");
-          if (encoded) {
-            return { rawXml: decodeURIComponent(encoded) };
-          }
-          // 兜底（以防万一）
-          return { rawXml: (el as Element).outerHTML };
+          const nodeEl = el as Element;
+          const encoded = nodeEl.getAttribute("data-raw-xml");
+          const rawXml = encoded
+            ? decodeURIComponent(encoded)
+            : nodeEl.outerHTML;
+          return {
+            rawXml,
+            [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
+          };
         },
       },
     ];
@@ -527,16 +700,23 @@ export const S1000DInternalRef = Node.create({
             internalRefTargetType:
               el.getAttribute("data-internal-ref-target-type") ??
               fromChip.internalRefTargetType,
+            [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el),
           };
         },
       },
       {
         tag: "internalRef",
-        getAttrs: (el) => readInternalRefAttrsFromDom(el),
+        getAttrs: (el) => ({
+          ...readInternalRefAttrsFromDom(el as Element),
+          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el as Element),
+        }),
       },
       {
         tag: "internalref",
-        getAttrs: (el) => readInternalRefAttrsFromDom(el),
+        getAttrs: (el) => ({
+          ...readInternalRefAttrsFromDom(el as Element),
+          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el as Element),
+        }),
       },
     ];
   },
@@ -562,8 +742,19 @@ export const S1000DInternalRef = Node.create({
   },
 });
 
+function readGraphicSourceXmlAttrKeys(el: Element): string[] {
+  const keys: string[] = [];
+  if (hasXmlAttr(el, "id")) keys.push("id");
+  if (hasXmlAttr(el, "infoEntityIdent") || hasXmlAttr(el, "infoentityident")) {
+    keys.push("infoEntityIdent");
+  }
+  if (readXlinkHrefFromElement(el)) keys.push("xlink:href");
+  return keys;
+}
+
 /**
  * S1000D `graphic`：`figure` 下的媒体引用占位（无文本子节点）。
+ * 源 XML `xlink:href` 读入 `src`；编辑器内以标准 `<img>` 展示。
  */
 export const S1000DGraphic = Node.create({
   name: "graphic",
@@ -573,7 +764,47 @@ export const S1000DGraphic = Node.create({
 
   addAttributes() {
     return {
-      infoEntityIdent: { default: null },
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+      infoEntityIdent: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident") ??
+              el.getAttribute("data-info-entity-ident")
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { infoEntityIdent?: string | null })
+            .infoEntityIdent;
+          return v ? { "data-info-entity-ident": String(v) } : {};
+        },
+      },
+      /** 仅自源 XML `xlink:href`（或编辑器内 `<img>` 的 `src`）提取；无 `xlink:href` 则为 `""` */
+      src: {
+        default: "",
+        parseHTML: (el) => {
+          if (!(el instanceof Element)) return "";
+          if (el.tagName === "IMG" || el.localName.toLowerCase() === "img") {
+            const s = el.getAttribute("src");
+            return s?.trim() ? s.trim() : "";
+          }
+          const fromXlink = readXlinkHrefFromElement(el);
+          return fromXlink ? fromXlink : "";
+        },
+        renderHTML: (attrs) => {
+          const s = (attrs as { src?: string | null }).src;
+          const t = typeof s === "string" ? s.trim() : "";
+          return { src: t || "" };
+        },
+      },
     };
   },
 
@@ -583,18 +814,62 @@ export const S1000DGraphic = Node.create({
         tag: "graphic",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
+          const xlinkHref = readXlinkHrefFromElement(el);
           return {
+            id: el.getAttribute("id"),
             infoEntityIdent:
               el.getAttribute("infoEntityIdent") ??
               el.getAttribute("infoentityident"),
+            src: xlinkHref ? xlinkHref : "",
+            [SOURCE_XML_ATTR_KEYS]: readGraphicSourceXmlAttrKeys(el),
+          };
+        },
+      },
+      {
+        tag: "img",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
+          const src = el.getAttribute("src");
+          return {
+            id: el.getAttribute("data-graphic-id") ?? el.getAttribute("id"),
+            infoEntityIdent: el.getAttribute("data-info-entity-ident"),
+            src: src?.trim() ? src.trim() : "",
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "id",
+              "data-graphic-id",
+              "data-info-entity-ident",
+              "src",
+            ]),
           };
         },
       },
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ["graphic", mergeAttributes(HTMLAttributes)];
+  renderHTML({ node, HTMLAttributes }) {
+    const raw = node.attrs.src;
+    const src =
+      typeof raw === "string" ? raw.trim() : raw == null ? "" : String(raw).trim();
+    const ident = node.attrs.infoEntityIdent
+      ? String(node.attrs.infoEntityIdent)
+      : "";
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, {
+        class: "s1000d-graphic-img",
+        "data-s1000d-node": "graphic",
+        draggable: "false",
+        src: src || "",
+        alt: ident || "",
+        ...(ident ? { "data-info-entity-ident": ident } : {}),
+        ...(node.attrs.id ? { "data-graphic-id": String(node.attrs.id) } : {}),
+      }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(GraphicNodeView);
   },
 });
 
@@ -619,7 +894,10 @@ export const S1000DFigure = Node.create({
         tag: "figure",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return { id: el.getAttribute("id") };
+          return {
+            id: el.getAttribute("id"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+          };
         },
       },
     ];
@@ -627,6 +905,10 @@ export const S1000DFigure = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["figure", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(FigureNodeView);
   },
 });
 
@@ -642,6 +924,20 @@ export const LevelledPara = Node.create({
   defining: true,
   isolating: true,
 
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+    };
+  },
+
   parseHTML() {
     return [
       {
@@ -650,12 +946,33 @@ export const LevelledPara = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           return el.getAttribute("data-s1000d-node") === "levelledPara"
-            ? {}
+            ? {
+                id: el.getAttribute("id"),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+              }
             : false;
         },
       },
-      { tag: "levelledPara" },
-      { tag: "levelledpara" },
+      {
+        tag: "levelledPara",
+        getAttrs: (el) =>
+          el instanceof Element
+            ? {
+                id: el.getAttribute("id"),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+              }
+            : {},
+      },
+      {
+        tag: "levelledpara",
+        getAttrs: (el) =>
+          el instanceof Element
+            ? {
+                id: el.getAttribute("id"),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+              }
+            : {},
+      },
     ];
   },
 

@@ -3,6 +3,7 @@ import {
   useEffect,
   useImperativeHandle,
   type MouseEvent as ReactMouseEvent,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -15,23 +16,28 @@ import Highlight from "@tiptap/extension-highlight";
 import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
+import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
 import {
   getDescriptionInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
-import bikeDmSampleXml from "../../data/bikeDmSample.xml?raw";
 import { FormatToolbar } from "./FormatToolbar";
+import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
 import {
   resolveInspectable,
-  tableDimensions,
   type InspectTarget,
 } from "../../lib/editor/resolveInspectable";
 import {
   canRunS1000dTableAction,
   runS1000dTableAction,
 } from "../../lib/editor/s1000dTableCommands";
+import {
+  buildEmptyDescriptionDocJson,
+  fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
+} from "../../lib/s1000d/descriptionSchemaInsert";
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -44,7 +50,12 @@ import {
   Split,
   TableCellsSplit,
   Trash2,
+  LockKeyhole,
+  Loader,
+  Check,
 } from "lucide-react";
+import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
+import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 
 export interface InsertTableOptions {
   rows?: number;
@@ -54,6 +65,17 @@ export interface InsertTableOptions {
 
 export interface IETMEditorRefValue {
   setContent: (content: JSONContent | string) => void;
+  /**
+   * 用整段 DM XML（含 `<dmodule>`）替换正文：抽取 `<content>/<description>` 子树并导入编辑器。
+   * 若无合法 description 正文，则按当前 schema 写入最小合法稿。
+   * @returns 未就绪或写入失败时为 `false`
+   */
+  loadDmXml: (dmXml: string) => boolean;
+  /**
+   * 按当前 `getDescriptionSchema()`（含 `createIETMEditor({ descriptionSchema })` / `setDescriptionSchema`）
+   * 将正文设为 schema 约束下的最小合法文档。
+   */
+  fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
   focus: () => void;
   insertTable: (options?: InsertTableOptions) => boolean;
@@ -66,13 +88,92 @@ export interface IETMEditorRefValue {
 interface IETMEditorProps {
   initialContent?: JSONContent | string;
   editable: boolean;
+  onEditableChange: (editable: boolean) => void;
+  onSaveDmXml?: SaveDmXmlHandler;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
   onReady: () => void;
+  /** 可编辑状态下「锁定」按钮的 `title`；默认「锁定（只读）」 */
+  lockReadonlyButtonTitle?: string;
+  /** 只读状态下「编辑」按钮的 `title`；默认「编辑」 */
+  editModeButtonTitle?: string;
+  /** `null` 表示按 `editable` 使用内置默认底栏状态 */
+  footerStatusOverride: IETMEditorFooterStatus | null;
 }
 
-const DEFAULT_CONTENT_FROM_BIKE_DM_XML =
-  getDescriptionInnerXmlFromDmXml(bikeDmSampleXml);
+const FOOTER_DEFAULT_SAVED_TEXT = "已保存";
+const FOOTER_DEFAULT_READONLY_TEXT = "只读：数据模块未检出";
+
+function resolveFooterStatus(
+  override: IETMEditorFooterStatus | null,
+  editable: boolean,
+): IETMEditorFooterStatus {
+  if (override != null) return override;
+  return editable
+    ? { variant: "saved", text: FOOTER_DEFAULT_SAVED_TEXT }
+    : { variant: "readonly", text: FOOTER_DEFAULT_READONLY_TEXT };
+}
+
+function IETMAppFooter(props: { status: IETMEditorFooterStatus }) {
+  const { status } = props;
+  switch (status.variant) {
+    case "saved":
+      return (
+        <span className="ietm-save-status">
+          <span className="ietm-save-status__icon" aria-hidden>
+            <Check size={16} aria-hidden className="shrink-0" />
+          </span>
+          {status.text}
+        </span>
+      );
+    case "saving":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--saving"
+          role="status"
+        >
+          <Loader
+            size={16}
+            aria-hidden
+            className="ietm-footer-status__icon shrink-0"
+          />
+          <span className="ietm-footer-status__text">{status.text}</span>
+        </span>
+      );
+    case "readonly":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--readonly"
+          role="status"
+        >
+          <LockKeyhole
+            size={16}
+            aria-hidden
+            className="ietm-footer-status__icon shrink-0"
+          />
+          <span className="ietm-footer-status__text">{status.text}</span>
+        </span>
+      );
+    case "error":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--error"
+          role="status"
+        >
+          {status.text}
+        </span>
+      );
+    case "custom":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--custom"
+          role="status"
+        >
+          {status.text}
+        </span>
+      );
+  }
+}
 
 function normalizeEditorContentInput(
   content: JSONContent | string | undefined,
@@ -81,24 +182,7 @@ function normalizeEditorContentInput(
   return preprocessS1000dDescriptionHtmlFragment(content);
 }
 
-const FALLBACK_DOCUMENT: JSONContent = {
-  type: "doc",
-  content: [
-    {
-      type: "paragraph",
-      content: [
-        {
-          type: "text",
-          text: "（未能从 Bike DM XML 解析出 description，请检查 data/bikeDmSample.xml）",
-        },
-      ],
-    },
-  ],
-};
-
 const DOC_TITLE_PLACEHOLDER = "数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D";
-
-const UNIT_PRESETS = ["ph01(h)", "mm", "in", "deg"];
 
 function focusFirstCellByMouseLikeClick(
   editor: NonNullable<ReturnType<typeof useEditor>>,
@@ -144,6 +228,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     >("file");
 
     const [propertiesDismissed, setPropertiesDismissed] = useState(false);
+    const [editorSurfaceEngaged, setEditorSurfaceEngaged] = useState(false);
+    /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
+    const [, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
     const editor = useEditor({
       immediatelyRender: false,
@@ -161,6 +248,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           types: ["heading", "paragraph"],
         }),
         Highlight.configure({ multicolor: true }),
+        SourceXmlAttrKeysExtension,
         IETMImage.configure({
           resize: false,
         }),
@@ -168,15 +256,16 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
-        DEFAULT_CONTENT_FROM_BIKE_DM_XML ??
-        FALLBACK_DOCUMENT,
+        buildEmptyDescriptionDocJson(getDescriptionSchema()),
       editorProps: {
         attributes: {
           class: "ietm-tiptap-root",
           spellcheck: "false",
         },
       },
-      onUpdate: ({ editor }) => props.onUpdate(editor.getJSON()),
+      onUpdate: ({ editor }) => {
+        props.onUpdate(editor.getJSON());
+      },
       onSelectionUpdate: ({ editor }) => {
         props.onSelectionChange({
           from: editor.state.selection.from,
@@ -188,6 +277,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           selectionAnchorRef.current = anchorKey;
           setPropertiesDismissed(false);
         }
+        bumpSelectionUi();
       },
     });
 
@@ -208,6 +298,25 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         setContent: (content) => {
           editor?.commands.setContent(
             normalizeEditorContentInput(content) ?? "",
+          );
+        },
+        loadDmXml: (dmXml) => {
+          if (!editor) return false;
+          const inner = getDescriptionInnerXmlFromDmXml(dmXml);
+          if (inner == null) {
+            return applyFillEmptyContentFromSchema(
+              editor,
+              getDescriptionSchema(),
+            );
+          }
+          editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
+          return true;
+        },
+        fillEmptyContentFromSchema: () => {
+          if (!editor) return false;
+          return applyFillEmptyContentFromSchema(
+            editor,
+            getDescriptionSchema(),
           );
         },
         getJSON: () => editor?.getJSON() ?? { type: "doc", content: [] },
@@ -271,14 +380,15 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ? resolveInspectable(editor)
       : null;
 
-    const showPropertyPanel = resolvedTarget !== null && !propertiesDismissed;
+    const showPropertyPanel =
+      editorSurfaceEngaged && resolvedTarget !== null && !propertiesDismissed;
 
     const inspectStableKey = resolvedTarget
-      ? `${resolvedTarget.kind}-${resolvedTarget.pos}`
+      ? `${resolvedTarget.nodeType}-${resolvedTarget.pos}`
       : null;
 
     useEffect(() => {
-      if (inspectStableKey === null) setPropertiesDismissed(false);
+      setPropertiesDismissed(false);
     }, [inspectStableKey]);
 
     if (!editor) {
@@ -287,12 +397,14 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
 
     const handleEditorPaneMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
       if (e.button !== 0) return;
+      setEditorSurfaceEngaged(true);
       const el = e.target as Element | null;
       const clickedTable = el?.closest?.(
         ".s1000d-table-wrap, .s1000d-tgroup-table",
       );
 
       if (clickedTable) {
+        if (!props.editable) return;
         if (activeTabKey === "edit") return;
         prevActiveTabKeyRef.current = activeTabKey;
         tableTabActivatedRef.current = true;
@@ -323,16 +435,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       editor.chain().focus().setImage({ src: url }).run();
     };
 
-    const applyImageAttrs = (attrs: Record<string, unknown>) => {
-      if (!resolvedTarget || resolvedTarget.kind !== "image") return;
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(resolvedTarget.pos)
-        .updateAttributes("image", attrs)
-        .run();
-    };
-
     const runTableAction = (
       action: Parameters<typeof runS1000dTableAction>[1],
     ) => {
@@ -342,6 +444,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const tableActionDisabled = (
       action: Parameters<typeof canRunS1000dTableAction>[1],
     ) => !canRunS1000dTableAction(editor, action);
+
+    const headerMenuLocked = !props.editable;
 
     return (
       <div className="ietm-editor-root">
@@ -376,7 +480,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertRowAbove")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertRowAbove")
+                        }
                         onClick={() => runTableAction("insertRowAbove")}
                         title="上方插入行"
                         aria-label="上方插入行"
@@ -386,7 +493,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertRowBelow")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertRowBelow")
+                        }
                         onClick={() => runTableAction("insertRowBelow")}
                         title="下方插入行"
                         aria-label="下方插入行"
@@ -396,7 +506,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteRow")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteRow")
+                        }
                         onClick={() => runTableAction("deleteRow")}
                         title="删除行"
                         aria-label="删除行"
@@ -411,7 +523,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertColLeft")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertColLeft")
+                        }
                         onClick={() => runTableAction("insertColLeft")}
                         title="左侧插入列"
                         aria-label="左侧插入列"
@@ -421,7 +536,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertColRight")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertColRight")
+                        }
                         onClick={() => runTableAction("insertColRight")}
                         title="右侧插入列"
                         aria-label="右侧插入列"
@@ -431,7 +549,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteCol")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteCol")
+                        }
                         onClick={() => runTableAction("deleteCol")}
                         title="删除列"
                         aria-label="删除列"
@@ -446,7 +566,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("mergeCells")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("mergeCells")
+                        }
                         onClick={() => runTableAction("mergeCells")}
                         title="合并单元格"
                         aria-label="合并单元格"
@@ -456,7 +578,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("splitCell")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("splitCell")
+                        }
                         onClick={() => runTableAction("splitCell")}
                         title="拆分单元格"
                         aria-label="拆分单元格"
@@ -466,7 +590,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteCell")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteCell")
+                        }
                         onClick={() => runTableAction("deleteCell")}
                         title="删除单元格"
                         aria-label="删除单元格"
@@ -476,7 +602,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("clearCell")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("clearCell")
+                        }
                         onClick={() => runTableAction("clearCell")}
                         title="清空单元格"
                         aria-label="清空单元格"
@@ -486,7 +614,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteTable")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteTable")
+                        }
                         onClick={() => runTableAction("deleteTable")}
                         title="删除表格"
                         aria-label="删除表格"
@@ -503,6 +633,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                   <button
                     type="button"
                     className="ietm-menu-item"
+                    disabled={headerMenuLocked}
                     onClick={() => {
                       insertTable();
                     }}
@@ -512,6 +643,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                   <button
                     type="button"
                     className="ietm-menu-item"
+                    disabled={headerMenuLocked}
                     onClick={() => {
                       insertImageFromPrompt();
                     }}
@@ -533,128 +665,35 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             </div>
           </header>
 
-          <FormatToolbar editor={editor} activeTabKey={activeTabKey} />
+          <FormatToolbar
+            editor={editor}
+            activeTabKey={activeTabKey}
+            editable={props.editable}
+            onEditableChange={props.onEditableChange}
+            onSaveDmXml={props.onSaveDmXml}
+            lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
+            editModeButtonTitle={props.editModeButtonTitle}
+          />
         </div>
 
         <div className="ietm-app-main">
           <div
             className="ietm-editor-pane"
             onMouseDown={handleEditorPaneMouseDown}
+            onFocusCapture={() => setEditorSurfaceEngaged(true)}
           >
             <EditorContent editor={editor} className="ietm-editor-surface" />
           </div>
 
           <aside className="ietm-right-pane">
             {showPropertyPanel && resolvedTarget ? (
-              <div className="ietm-property-panel">
-                <div className="ietm-property-panel__head">
-                  <h2 className="ietm-property-panel__title">属性设置</h2>
-                  <button
-                    type="button"
-                    className="ietm-property-panel__close"
-                    onClick={() => setPropertiesDismissed(true)}
-                    aria-label="关闭属性面板"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="ietm-property-panel__body">
-                  {resolvedTarget.kind === "image" ? (
-                    <>
-                      <label className="ietm-prop-field">
-                        <span>ID</span>
-                        <input
-                          type="text"
-                          value={String(resolvedTarget.attrs.figureId ?? "")}
-                          onChange={(e) =>
-                            applyImageAttrs({ figureId: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>unitOfMeasure</span>
-                        <select
-                          value={String(
-                            resolvedTarget.attrs.unitOfMeasure ?? "",
-                          )}
-                          onChange={(e) =>
-                            applyImageAttrs({
-                              unitOfMeasure: e.target.value,
-                            })
-                          }
-                        >
-                          {UNIT_PRESETS.map((u) => (
-                            <option key={u} value={u}>
-                              {u}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>宽度（px）</span>
-                        <input
-                          type="text"
-                          value={
-                            resolvedTarget.attrs.width != null
-                              ? String(resolvedTarget.attrs.width)
-                              : ""
-                          }
-                          placeholder="自动"
-                          onChange={(e) => {
-                            const v = e.target.value.trim();
-                            const n = Number.parseInt(v, 10);
-                            applyImageAttrs({
-                              width: v === "" || Number.isNaN(n) ? null : n,
-                            });
-                          }}
-                        />
-                      </label>
-                      <label className="ietm-prop-field">
-                        <span>高度（px）</span>
-                        <input
-                          type="text"
-                          value={
-                            resolvedTarget.attrs.height != null
-                              ? String(resolvedTarget.attrs.height)
-                              : ""
-                          }
-                          placeholder="自动"
-                          onChange={(e) => {
-                            const v = e.target.value.trim();
-                            const n = Number.parseInt(v, 10);
-                            applyImageAttrs({
-                              height: v === "" || Number.isNaN(n) ? null : n,
-                            });
-                          }}
-                        />
-                      </label>
-                    </>
-                  ) : null}
-
-                  {resolvedTarget.kind === "table" ? (
-                    <>
-                      <p className="ietm-prop-hint">
-                        表格结构与样式可通过编辑器直接调整。
-                      </p>
-                      {(() => {
-                        const dim = tableDimensions(editor, resolvedTarget.pos);
-                        return dim ? (
-                          <>
-                            <div className="ietm-prop-readonly">
-                              <span>行数</span>
-                              <span>{dim.rows}</span>
-                            </div>
-                            <div className="ietm-prop-readonly">
-                              <span>列数</span>
-                              <span>{dim.cols}</span>
-                            </div>
-                          </>
-                        ) : null;
-                      })()}
-                    </>
-                  ) : null}
-                </div>
-              </div>
+              <S1000DPropertyPanel
+                key={inspectStableKey ?? "none"}
+                editor={editor}
+                target={resolvedTarget}
+                readOnly={!props.editable}
+                onDismiss={() => setPropertiesDismissed(true)}
+              />
             ) : (
               <div className="ietm-preview-placeholder">
                 <p>功能开发中，敬请期待</p>
@@ -664,12 +703,12 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         </div>
 
         <footer className="ietm-app-footer">
-          <span className="ietm-save-status">
-            <span className="ietm-save-status__icon" aria-hidden>
-              ✓
-            </span>
-            已保存
-          </span>
+          <IETMAppFooter
+            status={resolveFooterStatus(
+              props.footerStatusOverride,
+              props.editable,
+            )}
+          />
         </footer>
 
         {/* The backdrop for old menu is no longer needed */}

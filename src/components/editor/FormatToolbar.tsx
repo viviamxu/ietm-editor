@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 
 import {
   insertFilmFromSchema,
@@ -8,10 +8,13 @@ import {
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
   insertTableFromSchema,
-  print,
+  exportEditorToDmXmlString,
   save,
+  internalRef,
+  clearContent,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
+import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
   List,
   ListOrdered,
@@ -28,8 +31,11 @@ import {
   Subscript,
   Superscript,
   Save,
+  Link2,
+  CircleX,
+  LockKeyhole,
+  Pencil,
 } from "lucide-react";
-import { Button } from "@arco-design/web-react";
 
 import {
   canRunS1000dTableAction,
@@ -42,12 +48,30 @@ type MainTabKey = "file" | "edit" | "insert";
 interface FormatToolbarProps {
   editor: Editor;
   activeTabKey: MainTabKey;
+  editable: boolean;
+  onEditableChange: (editable: boolean) => void;
+  onSaveDmXml?: SaveDmXmlHandler;
+  /** 可编辑状态下「锁定」按钮的 `title`；默认「锁定（只读）」 */
+  lockReadonlyButtonTitle?: string;
+  /** 只读状态下「编辑」按钮的 `title`；默认「编辑」 */
+  editModeButtonTitle?: string;
 }
 
-export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
+const DEFAULT_LOCK_READONLY_TITLE = "锁定（只读）";
+const DEFAULT_EDIT_MODE_TITLE = "编辑";
+
+export function FormatToolbar({
+  editor,
+  activeTabKey,
+  editable,
+  onEditableChange,
+  onSaveDmXml,
+  lockReadonlyButtonTitle = DEFAULT_LOCK_READONLY_TITLE,
+  editModeButtonTitle = DEFAULT_EDIT_MODE_TITLE,
+}: FormatToolbarProps) {
   const schema = useDescriptionSchemaStore((s) => s.schema);
   const [, refresh] = useReducer((n: number) => n + 1, 0);
-
+  const [saveInFlight, setSaveInFlight] = useState(false);
   useEffect(() => {
     const onTxn = () => {
       refresh();
@@ -108,16 +132,60 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
     action: Parameters<typeof canRunS1000dTableAction>[1],
   ) => !canRunS1000dTableAction(editor, action);
 
+  const runHostOrDownloadSave = () => {
+    if (onSaveDmXml) {
+      void (async () => {
+        setSaveInFlight(true);
+        try {
+          await Promise.resolve(onSaveDmXml(exportEditorToDmXmlString(editor)));
+        } finally {
+          setSaveInFlight(false);
+        }
+      })();
+      return;
+    }
+    save(editor);
+  };
+
+  /** 只读时除「切换为可编辑」外，工具栏其余控件均不可点 */
+  const formatBarLocked = !editable;
+
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
       <div
         className="ietm-format-toolbar__cluster"
         style={{ display: showTableTools ? "none" : undefined }}
       >
+        {editable ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            title={lockReadonlyButtonTitle}
+            aria-label="锁定，切换为只读"
+            onClick={() => onEditableChange(false)}
+          >
+            <LockKeyhole size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            title={editModeButtonTitle}
+            aria-label="编辑，切换为可编辑"
+            onClick={() => {
+              onEditableChange(true);
+              queueMicrotask(() => {
+                editor.chain().focus().run();
+              });
+            }}
+          >
+            <Pencil size={16} aria-hidden className="shrink-0" />
+          </button>
+        )}
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={!editor.can().undo()}
+          disabled={formatBarLocked || !editor.can().undo()}
           onClick={() => editor.chain().focus().undo().run()}
           title="撤销"
         >
@@ -126,7 +194,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={!editor.can().redo()}
+          disabled={formatBarLocked || !editor.can().redo()}
           onClick={() => editor.chain().focus().redo().run()}
           title="重做"
         >
@@ -135,7 +203,8 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
-          onClick={() => save(editor)}
+          disabled={formatBarLocked || saveInFlight}
+          onClick={runHostOrDownloadSave}
           title="保存"
         >
           <Save size={16} aria-hidden className="shrink-0" />
@@ -143,6 +212,16 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          disabled={formatBarLocked}
+          onClick={() => clearContent(editor, schema)}
+          title="清空内容"
+        >
+          <CircleX size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked}
           onClick={() => insertLevelledParaFromSchema(editor, schema)}
           title="插入段落"
           aria-label="插入段落"
@@ -153,6 +232,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          disabled={formatBarLocked}
           onClick={() => insertSequentialListFromSchema(editor, schema)}
           title="插入有序列表（sequentialList）"
           aria-label="插入有序列表"
@@ -162,6 +242,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          disabled={formatBarLocked}
           onClick={() => insertRandomOrAttentionListFromSchema(editor, schema)}
           title="插入无序列表（randomList / attentionRandomList）"
           aria-label="插入无序列表"
@@ -171,6 +252,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          disabled={formatBarLocked}
           onClick={() => insertTableFromSchema(editor, schema, 4, 1, 3)}
           title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
         >
@@ -179,6 +261,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          disabled={formatBarLocked}
           onClick={() => insertImageFromSchema(editor, schema)}
           title="插入图片"
           aria-label="插入图片"
@@ -188,6 +271,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className="ietm-icon-btn"
+          disabled={formatBarLocked}
           onClick={() => insertFilmFromSchema(editor, schema)}
           title="插入多媒体"
           aria-label="插入多媒体"
@@ -208,6 +292,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
 
       {showTableTools ? (
         <TableEditToolbar
+          readOnly={formatBarLocked}
           tableActionDisabled={tableActionDisabled}
           runTableAction={runTableAction}
         />
@@ -220,6 +305,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive("bold") ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().toggleBold().run()}
           title="加粗"
         >
@@ -228,6 +314,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive("italic") ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           title="斜体"
         >
@@ -236,6 +323,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive("underline") ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           title="下划线"
         >
@@ -246,6 +334,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
           <span className="ietm-color-swatch__glyph">A</span>
           <input
             type="color"
+            disabled={formatBarLocked}
             value={rgbToHex(textAttrs.color ?? "#1f2330")}
             onChange={(e) =>
               editor.chain().focus().setColor(e.target.value).run()
@@ -260,6 +349,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
           <span className="ietm-highlight-icon">▮</span>
           <input
             type="color"
+            disabled={formatBarLocked}
             value={rgbToHex(highlightAttrs.color ?? "#fef08a")}
             onChange={(e) =>
               editor
@@ -284,6 +374,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${alignLeft ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().setTextAlign("left").run()}
           title="左对齐"
         >
@@ -292,6 +383,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive({ textAlign: "center" }) ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().setTextAlign("center").run()}
           title="居中"
         >
@@ -300,6 +392,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive({ textAlign: "right" }) ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().setTextAlign("right").run()}
           title="右对齐"
         >
@@ -308,6 +401,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${editor.isActive({ textAlign: "justify" }) ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={() => editor.chain().focus().setTextAlign("justify").run()}
           title="两端对齐"
         >
@@ -316,6 +410,7 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${subscriptActive ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={toggleSubscript}
           title="下标"
           aria-pressed={subscriptActive}
@@ -325,15 +420,31 @@ export function FormatToolbar({ editor, activeTabKey }: FormatToolbarProps) {
         <button
           type="button"
           className={`ietm-toggle-btn ${superscriptActive ? "is-active" : ""}`}
+          disabled={formatBarLocked}
           onClick={toggleSuperscript}
           title="上标"
           aria-pressed={superscriptActive}
         >
           <Superscript size={16} aria-hidden className="shrink-0" />
         </button>
-        <Button type="primary" onClick={() => print(editor)}>
-          导出 XML
-        </Button>
+      </div>
+      <span
+        className="ietm-format-toolbar__divider"
+        style={{ display: showTableTools ? "none" : undefined }}
+      />
+      <div
+        className="ietm-format-toolbar__cluster"
+        style={{ display: showTableTools ? "none" : undefined }}
+      >
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked}
+          onClick={() => internalRef(editor)}
+          title="内部引用"
+        >
+          <Link2 size={16} aria-hidden className="shrink-0" />
+        </button>
       </div>
     </div>
   );

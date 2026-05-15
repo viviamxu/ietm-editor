@@ -1,4 +1,4 @@
-﻿.ietm-app-main {
+.ietm-app-main {
   flex: 1;
   display: flex;
   flex-direction: row;
@@ -116,12 +116,35 @@
   font-weight: 500;
 }
 
+.ietm-prop-hint--node {
+  margin-bottom: 8px;
+}
+
 .ietm-prop-field input,
-.ietm-prop-field select {
+.ietm-prop-field select,
+.ietm-prop-field textarea {
   padding: 8px 10px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
+}
+
+.ietm-prop-field input:disabled,
+.ietm-prop-field select:disabled,
+.ietm-prop-field textarea:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.ietm-prop-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .ietm-prop-readonly {
@@ -168,4 +191,47 @@
   background: #22c55e;
   color: #fff;
   font-size: 11px;
+}
+
+.ietm-footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.ietm-footer-status__icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.ietm-footer-status__text {
+  line-height: 1;
+}
+
+.ietm-footer-status--saving {
+  color: #2563eb;
+}
+
+.ietm-footer-status--saving .ietm-footer-status__icon {
+  animation: ietm-footer-spin 0.8s linear infinite;
+}
+
+.ietm-footer-status--readonly {
+  color: #d94a4a;
+}
+
+.ietm-footer-status--error {
+  color: #dc2626;
+}
+
+.ietm-footer-status--custom {
+  color: #374151;
+}
+
+@keyframes ietm-footer-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

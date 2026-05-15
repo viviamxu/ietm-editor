@@ -1,6 +1,12 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import type { JSONContent } from '@tiptap/core'
 
+import {
+  SOURCE_XML_ATTR_KEYS,
+  hasXmlAttr,
+  xmlAttrsPresentOnElement,
+} from '../../lib/s1000d/sourceXmlAttrKeys'
+
 const emptyPara: JSONContent = { type: 'para', content: [] }
 
 function colNumber(value: unknown): number | null {
@@ -84,6 +90,36 @@ export function createMinimalS1000dTableInsertJson(
   }
 }
 
+function readEntryAttrsFromDom(el: Element) {
+  return {
+    colname: el.getAttribute('colname'),
+    namest: el.getAttribute('namest'),
+    nameend: el.getAttribute('nameend'),
+    morerows: el.getAttribute('morerows'),
+    align: el.getAttribute('align'),
+  }
+}
+
+function readEntrySourceXmlAttrKeys(el: Element): string[] {
+  return ['colname', 'namest', 'nameend', 'morerows', 'align'].filter((n) =>
+    hasXmlAttr(el, n),
+  )
+}
+
+function readTgroupSourceXmlAttrKeys(el: Element): string[] {
+  const keys: string[] = []
+  if (hasXmlAttr(el, 'cols') || hasXmlAttr(el, 'data-s1000d-tgroup-cols')) {
+    keys.push('cols')
+  }
+  if (hasXmlAttr(el, 'colsep') || hasXmlAttr(el, 'data-s1000d-tgroup-colsep')) {
+    keys.push('colsep')
+  }
+  if (hasXmlAttr(el, 'rowsep') || hasXmlAttr(el, 'data-s1000d-tgroup-rowsep')) {
+    keys.push('rowsep')
+  }
+  return keys
+}
+
 /**
  * S1000D `entry`：表格单元格，内容以 `para+` 为主（与样例 XML 对齐）。
  */
@@ -105,9 +141,36 @@ export const S1000DTableEntry = Node.create({
 
   parseHTML() {
     return [
-      { tag: 'entry' },
-      { tag: 'td' },
-      { tag: 'th' },
+      {
+        tag: 'entry',
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false
+          return {
+            ...readEntryAttrsFromDom(el),
+            [SOURCE_XML_ATTR_KEYS]: readEntrySourceXmlAttrKeys(el),
+          }
+        },
+      },
+      {
+        tag: 'td',
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false
+          return {
+            ...readEntryAttrsFromDom(el),
+            [SOURCE_XML_ATTR_KEYS]: readEntrySourceXmlAttrKeys(el),
+          }
+        },
+      },
+      {
+        tag: 'th',
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false
+          return {
+            ...readEntryAttrsFromDom(el),
+            [SOURCE_XML_ATTR_KEYS]: readEntrySourceXmlAttrKeys(el),
+          }
+        },
+      },
     ]
   },
 
@@ -190,6 +253,7 @@ export const S1000DTgroup = Node.create({
             cols: el.getAttribute('cols'),
             colsep: el.getAttribute('colsep'),
             rowsep: el.getAttribute('rowsep'),
+            [SOURCE_XML_ATTR_KEYS]: readTgroupSourceXmlAttrKeys(el),
           }
         },
       },
@@ -203,6 +267,7 @@ export const S1000DTgroup = Node.create({
             cols: el.getAttribute('data-s1000d-tgroup-cols'),
             colsep: el.getAttribute('data-s1000d-tgroup-colsep'),
             rowsep: el.getAttribute('data-s1000d-tgroup-rowsep'),
+            [SOURCE_XML_ATTR_KEYS]: readTgroupSourceXmlAttrKeys(el),
           }
         },
       },
@@ -260,6 +325,7 @@ export const S1000DXmlTable = Node.create({
           if (!marked) return false
           return {
             id: el.getAttribute('id'),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ['id']),
           }
         },
       },
@@ -270,7 +336,10 @@ export const S1000DXmlTable = Node.create({
           if (!el || !(el instanceof Element)) return false
           // 由内层 `tgroup` 渲染生成的真实 HTML 表，不归入根级 XML table
           if (el.classList.contains('s1000d-tgroup-table')) return false
-          return { id: el.getAttribute('id') }
+          return {
+            id: el.getAttribute('id'),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ['id']),
+          }
         },
       },
     ]
