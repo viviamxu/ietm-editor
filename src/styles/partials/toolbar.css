@@ -66,6 +66,15 @@
   color: #37598e;
 }
 
+.ietm-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ietm-toggle-btn:disabled:hover {
+  background: transparent;
+}
+
 .ietm-underline-label {
   text-decoration: underline;
 }
@@ -103,6 +112,11 @@
   inset: 0;
   opacity: 0;
   cursor: pointer;
+}
+
+.ietm-color-swatch:has(input[type="color"]:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .ietm-color-swatch__glyph {

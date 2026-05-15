@@ -90,12 +90,15 @@ export interface S1000DPropertyPanelProps {
   editor: Editor;
   target: InspectTarget;
   onDismiss: () => void;
+  /** 只读时禁止修改属性；关闭按钮仍可用 */
+  readOnly?: boolean;
 }
 
 export function S1000DPropertyPanel({
   editor,
   target,
   onDismiss,
+  readOnly = false,
 }: S1000DPropertyPanelProps) {
   const nodeSpec = editor.schema.nodes[target.nodeType];
   const schemaAttrKeys = nodeSpec
@@ -115,6 +118,7 @@ export function S1000DPropertyPanel({
       : target.attrs;
 
   const applyPatch = (patch: Record<string, unknown>) => {
+    if (readOnly) return;
     const n = editor.state.doc.nodeAt(target.pos);
     if (!n || n.type.name !== target.nodeType) return;
     const merged = mergeSourceXmlAttrKeysAfterPatch({
@@ -181,6 +185,7 @@ export function S1000DPropertyPanel({
             <span>ID</span>
             <input
               type="text"
+              disabled={readOnly}
               value={stringifyAttr(liveAttrs[primaryKey])}
               onChange={(e) => {
                 const v = e.target.value;
@@ -223,6 +228,7 @@ export function S1000DPropertyPanel({
               <label key={key} className="ietm-prop-field">
                 <span>{key}</span>
                 <select
+                  disabled={readOnly}
                   value={s || options[0] || ""}
                   onChange={(e) =>
                     applyPatch({ unitOfMeasure: e.target.value })
@@ -246,6 +252,7 @@ export function S1000DPropertyPanel({
                   type="number"
                   min={1}
                   max={6}
+                  disabled={readOnly}
                   value={
                     typeof val === "number"
                       ? val
@@ -269,6 +276,7 @@ export function S1000DPropertyPanel({
                 <textarea
                   rows={6}
                   className="ietm-prop-textarea"
+                  disabled={readOnly}
                   value={String(val ?? "")}
                   onChange={(e) => applyPatch({ rawXml: e.target.value })}
                 />
@@ -281,6 +289,7 @@ export function S1000DPropertyPanel({
               <span>{key}</span>
               <input
                 type="text"
+                disabled={readOnly}
                 value={stringifyAttr(val)}
                 onChange={(e) =>
                   applyPatch({

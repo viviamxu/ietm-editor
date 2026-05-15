@@ -18,6 +18,7 @@ import {
   type InsertTableOptions,
 } from "./IETMEditor";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
+import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import { ConfigProvider } from "@arco-design/web-react";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 export interface IETMEditorRootHandle {
@@ -33,6 +34,7 @@ export interface IETMEditorRootHandle {
   addTableRowAfter: () => boolean;
   addTableColumnBefore: () => boolean;
   addTableColumnAfter: () => boolean;
+  setFooterStatus: (status: IETMEditorFooterStatus | null) => void;
 }
 
 interface IETMEditorRootProps {
@@ -44,6 +46,9 @@ interface IETMEditorRootProps {
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
   onReady: () => void;
+  lockReadonlyButtonTitle?: string;
+  editModeButtonTitle?: string;
+  footerStatus?: IETMEditorFooterStatus;
 }
 
 export const IETMEditorRoot = forwardRef<
@@ -51,6 +56,9 @@ export const IETMEditorRoot = forwardRef<
   IETMEditorRootProps
 >(function IETMEditorRoot(props, ref) {
   const [editable, setEditable] = useState(props.initialEditable);
+  const [footerStatusOverride, setFooterStatusOverride] = useState<
+    IETMEditorFooterStatus | null
+  >(() => props.footerStatus ?? null);
   const editorRef = useRef<IETMEditorRefValue>(null);
   const onEditableChangeRef = useRef(props.onEditableChange);
   onEditableChangeRef.current = props.onEditableChange;
@@ -87,6 +95,7 @@ export const IETMEditorRoot = forwardRef<
         editorRef.current?.addTableColumnBefore() ?? false,
       addTableColumnAfter: () =>
         editorRef.current?.addTableColumnAfter() ?? false,
+      setFooterStatus: (status) => setFooterStatusOverride(status),
     }),
     [applyEditable],
   );
@@ -113,6 +122,9 @@ export const IETMEditorRoot = forwardRef<
           onUpdate={props.onUpdate}
           onSelectionChange={props.onSelectionChange}
           onReady={props.onReady}
+          lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
+          editModeButtonTitle={props.editModeButtonTitle}
+          footerStatusOverride={footerStatusOverride}
         />
         <ReferencePublicationModal />
       </ConfigProvider>

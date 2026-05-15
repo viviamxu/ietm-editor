@@ -13,6 +13,7 @@ import type {
   InsertTableOptions,
 } from "./components/editor/IETMEditor";
 import type { SaveDmXmlHandler } from "./types/saveDmXmlHandler";
+import type { IETMEditorFooterStatus } from "./types/ietmEditorFooter";
 import {
   getDescriptionSchema,
   resetDescriptionSchema,
@@ -56,6 +57,10 @@ export {
 export { useInsertPublicationModalStore };
 
 export type { SaveDmXmlHandler };
+export type {
+  IETMEditorFooterStatus,
+  IETMEditorFooterVariant,
+} from "./types/ietmEditorFooter";
 
 export interface IETMEditorOptions {
   element: HTMLElement;
@@ -76,6 +81,15 @@ export interface IETMEditorOptions {
    * 可编辑状态变化时通知宿主（含工具栏锁定/编辑切换与 `instance.setEditable`）。
    */
   onEditableChange?: (editable: boolean) => void;
+  /** 工具栏可编辑状态下「锁定」按钮的 `title`；默认「锁定（只读）」 */
+  lockReadonlyButtonTitle?: string;
+  /** 工具栏只读状态下「编辑」按钮的 `title`；默认「编辑」 */
+  editModeButtonTitle?: string;
+  /**
+   * 覆盖底栏 `.ietm-app-footer` 展示：`variant` 决定样式，`text` 为宿主文案。
+   * 不传时按 `editable` 自动：`saved` +「已保存」或可编辑关闭时的 `readonly` + 默认只读提示。
+   */
+  footerStatus?: IETMEditorFooterStatus;
 }
 
 export interface IETMEditorEvents {
@@ -117,6 +131,10 @@ export interface IETMEditorInstance {
   addTableColumnBefore(): boolean;
   /** 相对当前单元格在其右侧插入一列。 */
   addTableColumnAfter(): boolean;
+  /**
+   * 设置底栏状态；传入 `null` 恢复为根据当前 `editable` 的内置默认。
+   */
+  setFooterStatus(status: IETMEditorFooterStatus | null): void;
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -221,6 +239,9 @@ export function createIETMEditor(
       initialDescriptionSchema: options.descriptionSchema,
       onSaveDmXml: options.onSaveDmXml,
       onEditableChange: options.onEditableChange,
+      lockReadonlyButtonTitle: options.lockReadonlyButtonTitle,
+      editModeButtonTitle: options.editModeButtonTitle,
+      footerStatus: options.footerStatus,
       onUpdate: (json) => emitter.emit("update", { json }),
       onSelectionChange: (range) => emitter.emit("selectionChange", range),
       onReady: () => emitter.emit("ready", undefined),
@@ -260,6 +281,8 @@ export function createIETMEditor(
       disposed || !handleRef.current
         ? false
         : handleRef.current.addTableColumnAfter(),
+    setFooterStatus: (status) =>
+      withHandle((h) => h.setFooterStatus(status)),
     on: emitter.on,
     off: emitter.off,
     destroy: () => {

@@ -25,7 +25,10 @@ import {
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
 import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
-import { resolveInspectable, type InspectTarget } from "../../lib/editor/resolveInspectable";
+import {
+  resolveInspectable,
+  type InspectTarget,
+} from "../../lib/editor/resolveInspectable";
 import {
   canRunS1000dTableAction,
   runS1000dTableAction,
@@ -47,8 +50,12 @@ import {
   Split,
   TableCellsSplit,
   Trash2,
+  LockKeyhole,
+  Loader,
+  Check,
 } from "lucide-react";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
+import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 
 export interface InsertTableOptions {
   rows?: number;
@@ -86,6 +93,86 @@ interface IETMEditorProps {
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
   onReady: () => void;
+  /** 可编辑状态下「锁定」按钮的 `title`；默认「锁定（只读）」 */
+  lockReadonlyButtonTitle?: string;
+  /** 只读状态下「编辑」按钮的 `title`；默认「编辑」 */
+  editModeButtonTitle?: string;
+  /** `null` 表示按 `editable` 使用内置默认底栏状态 */
+  footerStatusOverride: IETMEditorFooterStatus | null;
+}
+
+const FOOTER_DEFAULT_SAVED_TEXT = "已保存";
+const FOOTER_DEFAULT_READONLY_TEXT = "只读：数据模块未检出";
+
+function resolveFooterStatus(
+  override: IETMEditorFooterStatus | null,
+  editable: boolean,
+): IETMEditorFooterStatus {
+  if (override != null) return override;
+  return editable
+    ? { variant: "saved", text: FOOTER_DEFAULT_SAVED_TEXT }
+    : { variant: "readonly", text: FOOTER_DEFAULT_READONLY_TEXT };
+}
+
+function IETMAppFooter(props: { status: IETMEditorFooterStatus }) {
+  const { status } = props;
+  switch (status.variant) {
+    case "saved":
+      return (
+        <span className="ietm-save-status">
+          <span className="ietm-save-status__icon" aria-hidden>
+            <Check size={16} aria-hidden className="shrink-0" />
+          </span>
+          {status.text}
+        </span>
+      );
+    case "saving":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--saving"
+          role="status"
+        >
+          <Loader
+            size={16}
+            aria-hidden
+            className="ietm-footer-status__icon shrink-0"
+          />
+          <span className="ietm-footer-status__text">{status.text}</span>
+        </span>
+      );
+    case "readonly":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--readonly"
+          role="status"
+        >
+          <LockKeyhole
+            size={16}
+            aria-hidden
+            className="ietm-footer-status__icon shrink-0"
+          />
+          <span className="ietm-footer-status__text">{status.text}</span>
+        </span>
+      );
+    case "error":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--error"
+          role="status"
+        >
+          {status.text}
+        </span>
+      );
+    case "custom":
+      return (
+        <span
+          className="ietm-footer-status ietm-footer-status--custom"
+          role="status"
+        >
+          {status.text}
+        </span>
+      );
+  }
 }
 
 function normalizeEditorContentInput(
@@ -217,16 +304,20 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           if (!editor) return false;
           const inner = getDescriptionInnerXmlFromDmXml(dmXml);
           if (inner == null) {
-            return applyFillEmptyContentFromSchema(editor, getDescriptionSchema());
+            return applyFillEmptyContentFromSchema(
+              editor,
+              getDescriptionSchema(),
+            );
           }
-          editor.commands.setContent(
-            normalizeEditorContentInput(inner) ?? "",
-          );
+          editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           return true;
         },
         fillEmptyContentFromSchema: () => {
           if (!editor) return false;
-          return applyFillEmptyContentFromSchema(editor, getDescriptionSchema());
+          return applyFillEmptyContentFromSchema(
+            editor,
+            getDescriptionSchema(),
+          );
         },
         getJSON: () => editor?.getJSON() ?? { type: "doc", content: [] },
         focus: () => {
@@ -290,9 +381,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       : null;
 
     const showPropertyPanel =
-      editorSurfaceEngaged &&
-      resolvedTarget !== null &&
-      !propertiesDismissed;
+      editorSurfaceEngaged && resolvedTarget !== null && !propertiesDismissed;
 
     const inspectStableKey = resolvedTarget
       ? `${resolvedTarget.nodeType}-${resolvedTarget.pos}`
@@ -315,6 +404,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       );
 
       if (clickedTable) {
+        if (!props.editable) return;
         if (activeTabKey === "edit") return;
         prevActiveTabKeyRef.current = activeTabKey;
         tableTabActivatedRef.current = true;
@@ -355,6 +445,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       action: Parameters<typeof canRunS1000dTableAction>[1],
     ) => !canRunS1000dTableAction(editor, action);
 
+    const headerMenuLocked = !props.editable;
+
     return (
       <div className="ietm-editor-root">
         <div className="ietm-editor-chrome">
@@ -388,7 +480,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertRowAbove")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertRowAbove")
+                        }
                         onClick={() => runTableAction("insertRowAbove")}
                         title="上方插入行"
                         aria-label="上方插入行"
@@ -398,7 +493,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertRowBelow")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertRowBelow")
+                        }
                         onClick={() => runTableAction("insertRowBelow")}
                         title="下方插入行"
                         aria-label="下方插入行"
@@ -408,7 +506,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteRow")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteRow")
+                        }
                         onClick={() => runTableAction("deleteRow")}
                         title="删除行"
                         aria-label="删除行"
@@ -423,7 +523,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertColLeft")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertColLeft")
+                        }
                         onClick={() => runTableAction("insertColLeft")}
                         title="左侧插入列"
                         aria-label="左侧插入列"
@@ -433,7 +536,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("insertColRight")}
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("insertColRight")
+                        }
                         onClick={() => runTableAction("insertColRight")}
                         title="右侧插入列"
                         aria-label="右侧插入列"
@@ -443,7 +549,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteCol")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteCol")
+                        }
                         onClick={() => runTableAction("deleteCol")}
                         title="删除列"
                         aria-label="删除列"
@@ -458,7 +566,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("mergeCells")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("mergeCells")
+                        }
                         onClick={() => runTableAction("mergeCells")}
                         title="合并单元格"
                         aria-label="合并单元格"
@@ -468,7 +578,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("splitCell")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("splitCell")
+                        }
                         onClick={() => runTableAction("splitCell")}
                         title="拆分单元格"
                         aria-label="拆分单元格"
@@ -478,7 +590,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteCell")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteCell")
+                        }
                         onClick={() => runTableAction("deleteCell")}
                         title="删除单元格"
                         aria-label="删除单元格"
@@ -488,7 +602,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("clearCell")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("clearCell")
+                        }
                         onClick={() => runTableAction("clearCell")}
                         title="清空单元格"
                         aria-label="清空单元格"
@@ -498,7 +614,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                       <button
                         type="button"
                         className="ietm-menu-icon-btn"
-                        disabled={tableActionDisabled("deleteTable")}
+                        disabled={
+                          headerMenuLocked || tableActionDisabled("deleteTable")
+                        }
                         onClick={() => runTableAction("deleteTable")}
                         title="删除表格"
                         aria-label="删除表格"
@@ -515,6 +633,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                   <button
                     type="button"
                     className="ietm-menu-item"
+                    disabled={headerMenuLocked}
                     onClick={() => {
                       insertTable();
                     }}
@@ -524,6 +643,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                   <button
                     type="button"
                     className="ietm-menu-item"
+                    disabled={headerMenuLocked}
                     onClick={() => {
                       insertImageFromPrompt();
                     }}
@@ -551,6 +671,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             editable={props.editable}
             onEditableChange={props.onEditableChange}
             onSaveDmXml={props.onSaveDmXml}
+            lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
+            editModeButtonTitle={props.editModeButtonTitle}
           />
         </div>
 
@@ -569,6 +691,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                 key={inspectStableKey ?? "none"}
                 editor={editor}
                 target={resolvedTarget}
+                readOnly={!props.editable}
                 onDismiss={() => setPropertiesDismissed(true)}
               />
             ) : (
@@ -580,12 +703,12 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         </div>
 
         <footer className="ietm-app-footer">
-          <span className="ietm-save-status">
-            <span className="ietm-save-status__icon" aria-hidden>
-              ✓
-            </span>
-            已保存
-          </span>
+          <IETMAppFooter
+            status={resolveFooterStatus(
+              props.footerStatusOverride,
+              props.editable,
+            )}
+          />
         </footer>
 
         {/* The backdrop for old menu is no longer needed */}
