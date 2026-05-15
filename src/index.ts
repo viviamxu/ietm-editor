@@ -72,6 +72,10 @@ export interface IETMEditorOptions {
    * 工具栏「保存」：传入时生成完整 DM XML 并调用本回调（不触发下载）；不传时与原先一致，触发本地下载。
    */
   onSaveDmXml?: SaveDmXmlHandler;
+  /**
+   * 可编辑状态变化时通知宿主（含工具栏锁定/编辑切换与 `instance.setEditable`）。
+   */
+  onEditableChange?: (editable: boolean) => void;
 }
 
 export interface IETMEditorEvents {
@@ -216,6 +220,7 @@ export function createIETMEditor(
       initialEditable: options.editable ?? true,
       initialDescriptionSchema: options.descriptionSchema,
       onSaveDmXml: options.onSaveDmXml,
+      onEditableChange: options.onEditableChange,
       onUpdate: (json) => emitter.emit("update", { json }),
       onSelectionChange: (range) => emitter.emit("selectionChange", range),
       onReady: () => emitter.emit("ready", undefined),

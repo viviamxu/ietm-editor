@@ -81,6 +81,7 @@ export interface IETMEditorRefValue {
 interface IETMEditorProps {
   initialContent?: JSONContent | string;
   editable: boolean;
+  onEditableChange: (editable: boolean) => void;
   onSaveDmXml?: SaveDmXmlHandler;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
@@ -547,6 +548,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           <FormatToolbar
             editor={editor}
             activeTabKey={activeTabKey}
+            editable={props.editable}
+            onEditableChange={props.onEditableChange}
             onSaveDmXml={props.onSaveDmXml}
           />
         </div>

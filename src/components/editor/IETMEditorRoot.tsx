@@ -40,6 +40,7 @@ interface IETMEditorRootProps {
   initialEditable: boolean;
   initialDescriptionSchema?: DescriptionSchema;
   onSaveDmXml?: SaveDmXmlHandler;
+  onEditableChange?: (editable: boolean) => void;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
   onReady: () => void;
@@ -51,6 +52,13 @@ export const IETMEditorRoot = forwardRef<
 >(function IETMEditorRoot(props, ref) {
   const [editable, setEditable] = useState(props.initialEditable);
   const editorRef = useRef<IETMEditorRefValue>(null);
+  const onEditableChangeRef = useRef(props.onEditableChange);
+  onEditableChangeRef.current = props.onEditableChange;
+
+  const applyEditable = useCallback((value: boolean) => {
+    setEditable(value);
+    onEditableChangeRef.current?.(value);
+  }, []);
 
   useEffect(() => {
     if (!props.initialDescriptionSchema) return undefined;
@@ -64,7 +72,7 @@ export const IETMEditorRoot = forwardRef<
     ref,
     () => ({
       setContent: (content) => editorRef.current?.setContent(content),
-      setEditable: (value) => setEditable(value),
+      setEditable: (value) => applyEditable(value),
       loadDmXml: (xml) => editorRef.current?.loadDmXml(xml) ?? false,
       fillEmptyContentFromSchema: () =>
         editorRef.current?.fillEmptyContentFromSchema() ?? false,
@@ -80,7 +88,7 @@ export const IETMEditorRoot = forwardRef<
       addTableColumnAfter: () =>
         editorRef.current?.addTableColumnAfter() ?? false,
     }),
-    [],
+    [applyEditable],
   );
   // 定义所有内部浮层的安全挂载点
   const getPopupContainer = useCallback(() => {
@@ -100,6 +108,7 @@ export const IETMEditorRoot = forwardRef<
           ref={editorRef}
           initialContent={props.initialContent}
           editable={editable}
+          onEditableChange={applyEditable}
           onSaveDmXml={props.onSaveDmXml}
           onUpdate={props.onUpdate}
           onSelectionChange={props.onSelectionChange}

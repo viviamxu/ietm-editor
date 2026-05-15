@@ -33,6 +33,8 @@ import {
   Save,
   Link2,
   CircleX,
+  LockKeyhole,
+  Pencil,
 } from "lucide-react";
 
 import {
@@ -46,18 +48,21 @@ type MainTabKey = "file" | "edit" | "insert";
 interface FormatToolbarProps {
   editor: Editor;
   activeTabKey: MainTabKey;
+  editable: boolean;
+  onEditableChange: (editable: boolean) => void;
   onSaveDmXml?: SaveDmXmlHandler;
 }
 
 export function FormatToolbar({
   editor,
   activeTabKey,
+  editable,
+  onEditableChange,
   onSaveDmXml,
 }: FormatToolbarProps) {
   const schema = useDescriptionSchemaStore((s) => s.schema);
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   const [saveInFlight, setSaveInFlight] = useState(false);
-
   useEffect(() => {
     const onTxn = () => {
       refresh();
@@ -123,9 +128,7 @@ export function FormatToolbar({
       void (async () => {
         setSaveInFlight(true);
         try {
-          await Promise.resolve(
-            onSaveDmXml(exportEditorToDmXmlString(editor)),
-          );
+          await Promise.resolve(onSaveDmXml(exportEditorToDmXmlString(editor)));
         } finally {
           setSaveInFlight(false);
         }
@@ -141,6 +144,32 @@ export function FormatToolbar({
         className="ietm-format-toolbar__cluster"
         style={{ display: showTableTools ? "none" : undefined }}
       >
+        {editable ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            title="锁定（只读）"
+            aria-label="锁定，切换为只读"
+            onClick={() => onEditableChange(false)}
+          >
+            <LockKeyhole size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            title="编辑"
+            aria-label="编辑，切换为可编辑"
+            onClick={() => {
+              onEditableChange(true);
+              queueMicrotask(() => {
+                editor.chain().focus().run();
+              });
+            }}
+          >
+            <Pencil size={16} aria-hidden className="shrink-0" />
+          </button>
+        )}
         <button
           type="button"
           className="ietm-icon-btn"
@@ -164,11 +193,7 @@ export function FormatToolbar({
           className="ietm-icon-btn"
           disabled={saveInFlight}
           onClick={runHostOrDownloadSave}
-          title={
-            onSaveDmXml
-              ? "保存（生成完整 DM XML 并交给宿主）"
-              : "保存（生成完整 DM XML 并下载）"
-          }
+          title="保存"
         >
           <Save size={16} aria-hidden className="shrink-0" />
         </button>
