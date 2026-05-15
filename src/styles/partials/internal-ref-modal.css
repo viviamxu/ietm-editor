@@ -1,0 +1,63 @@
+/* 内部引用弹框 */
+
+.ietm-internal-ref-modal .ietm-arco-modal-header {
+  border-bottom: 1px solid var(--ietm-arco-color-border-2);
+}
+
+.ietm-internal-ref-modal .ietm-arco-modal-title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ietm-internal-ref-modal__body {
+  min-height: 400px;
+  max-height: min(480px, 60vh);
+  overflow: hidden;
+}
+
+.ietm-internal-ref-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ietm-internal-ref-modal__confirm.ietm-arco-btn-primary:not(.ietm-arco-btn-disabled) {
+  background: #ff8f1f !important;
+  border-color: #ff8f1f !important;
+  color: #fff !important;
+}
+
+.ietm-internal-ref-type-tag.ietm-arco-tag {
+  margin: 0;
+  color: #ff8f1f;
+  background: #f0f7ff;
+  border: 1px solid #b8d4f0;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.ietm-internal-ref-context-cell {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ietm-internal-ref-empty {
+  display: block;
+  padding: 48px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.ietm-internal-ref-modal .ietm-arco-table-th {
+  background: #f7f8fa;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.ietm-internal-ref-modal .ietm-arco-table-tr:hover .ietm-arco-table-td {
+  background: #f9fafb;
+  cursor: pointer;
+}
