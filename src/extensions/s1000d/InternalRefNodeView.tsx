@@ -1,31 +1,92 @@
-import type { MouseEvent as ReactMouseEvent } from 'react'
-import type { NodeViewProps } from '@tiptap/react'
-import { NodeViewWrapper } from '@tiptap/react'
+import { Popover } from "@arco-design/web-react";
+import type { NodeViewProps } from "@tiptap/react";
+import { NodeViewWrapper } from "@tiptap/react";
+import { ArrowRight } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 
-import { navigateInternalRefTarget } from '../../lib/editor/internalRefNavigate'
+import {
+  findInternalRefTargetById,
+  navigateInternalRefTarget,
+} from "../../lib/editor/internalRefNavigate";
 
-import { describeInternalRefTargetType } from './internalRefLabels'
+import {
+  describeInternalRefNodeType,
+  describeInternalRefTargetType,
+  formatInternalRefPopoverLabel,
+} from "./internalRefLabels";
+
+function resolveTypeLabel(
+  irrtt: string | null | undefined,
+  targetTypeName: string | null,
+): string {
+  if (irrtt) {
+    const fromIrrtt = describeInternalRefTargetType(irrtt);
+    if (fromIrrtt !== "内部引用") return fromIrrtt;
+  }
+  if (targetTypeName) return describeInternalRefNodeType(targetTypeName);
+  return "引用";
+}
 
 /**
- * `internalRef` 行内 NodeView：
- * — 整块 chip 原生 `title` 悬浮展示「类型 · ID」（符合「悬浮查看引用对象类型与 ID」）；
- * — 箭头按钮独占点击，执行跳转与目标闪烁；
- * — `mousedown` preventDefault，避免拖动/选区被按钮抢走焦点。
+ * `internalRef` 行内 NodeView：悬浮 Popover 展示「类型：ID」，橙色箭头跳转目标。
  */
 export function InternalRefNodeView(props: NodeViewProps) {
-  const { editor, node } = props
-  void props
+  const { editor, node } = props;
 
-  const refId = String(node.attrs.internalRefId ?? '').trim()
-  const irrtt = node.attrs.internalRefTargetType as string | undefined | null
-  const typeLabel = describeInternalRefTargetType(irrtt)
-  const titleText = `${typeLabel} · ID：${refId || '（未设置）'}`
+  const refId = String(node.attrs.internalRefId ?? "").trim();
+  const irrtt = node.attrs.internalRefTargetType as string | undefined | null;
+
+  const [targetTypeName, setTargetTypeName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sync = () => {
+      const meta = refId ? findInternalRefTargetById(editor, refId) : null;
+      setTargetTypeName(meta?.typeName ?? null);
+    };
+    sync();
+    editor.on("transaction", sync);
+    return () => {
+      editor.off("transaction", sync);
+    };
+  }, [editor, refId]);
+
+  const typeLabel = useMemo(
+    () => resolveTypeLabel(irrtt, targetTypeName),
+    [irrtt, targetTypeName],
+  );
+
+  const popoverText = formatInternalRefPopoverLabel(typeLabel, refId);
 
   const onArrowClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    navigateInternalRefTarget(editor, refId)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    navigateInternalRefTarget(editor, refId);
+  };
+
+  const popupContainer = useCallback(() => {
+    return document.getElementById("ietm-sdk-portal-root") || document.body;
+  }, []);
+
+  const popoverContent = (
+    <div className="s1000d-internal-ref-popover">
+      <span className="s1000d-internal-ref-popover__label">{popoverText}</span>
+      <button
+        type="button"
+        className="s1000d-internal-ref-popover__jump"
+        aria-label={`跳转至引用目标：${popoverText}`}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onArrowClick}
+      >
+        <ArrowRight size={12} aria-hidden strokeWidth={2.5} />
+      </button>
+    </div>
+  );
 
   return (
     <NodeViewWrapper
@@ -35,21 +96,21 @@ export function InternalRefNodeView(props: NodeViewProps) {
       data-internal-ref-type={irrtt ?? undefined}
       contentEditable={false}
     >
-      <span className="s1000d-internal-ref__chip" title={titleText}>
-        {refId ? <span className="s1000d-internal-ref__id">{refId}</span> : (
-          <span className="s1000d-internal-ref__missing">?</span>
-        )}
-      </span>
-      <button
-        type="button"
-        className="s1000d-internal-ref__jump"
-        title={titleText}
-        aria-label={`跳转至引用目标：${titleText}`}
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={onArrowClick}
+      <Popover
+        trigger="hover"
+        position="top"
+        content={popoverContent}
+        getPopupContainer={popupContainer}
+        className="s1000d-internal-ref-popover-shell"
       >
-        ↗
-      </button>
+        <span className="s1000d-internal-ref__chip">
+          {refId ? (
+            <span className="s1000d-internal-ref__id">{refId}</span>
+          ) : (
+            <span className="s1000d-internal-ref__missing">?</span>
+          )}
+        </span>
+      </Popover>
     </NodeViewWrapper>
-  )
+  );
 }
