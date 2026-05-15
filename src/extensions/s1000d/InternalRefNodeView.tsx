@@ -33,6 +33,12 @@ function resolveTypeLabel(
   return "引用";
 }
 
+function stopPointerToEditor(e: ReactMouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.nativeEvent.stopImmediatePropagation();
+}
+
 /**
  * `internalRef` 行内 NodeView：悬浮 Popover 展示「类型：ID」，橙色箭头跳转目标。
  */
@@ -63,9 +69,9 @@ export function InternalRefNodeView(props: NodeViewProps) {
 
   const popoverText = formatInternalRefPopoverLabel(typeLabel, refId);
 
-  const onArrowClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  /** 在 mousedown 阶段跳转，早于 Popover 收起后可能落到正文上的 click */
+  const onJumpPointerDown = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    stopPointerToEditor(e);
     navigateInternalRefTarget(editor, refId);
   };
 
@@ -74,14 +80,18 @@ export function InternalRefNodeView(props: NodeViewProps) {
   }, []);
 
   const popoverContent = (
-    <div className="s1000d-internal-ref-popover">
+    <div
+      className="s1000d-internal-ref-popover"
+      onMouseDown={stopPointerToEditor}
+      onClick={stopPointerToEditor}
+    >
       <span className="s1000d-internal-ref-popover__label">{popoverText}</span>
       <button
         type="button"
         className="s1000d-internal-ref-popover__jump"
         aria-label={`跳转至引用目标：${popoverText}`}
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={onArrowClick}
+        onMouseDown={onJumpPointerDown}
+        onClick={stopPointerToEditor}
       >
         <ArrowRight size={12} aria-hidden strokeWidth={2.5} />
       </button>
@@ -102,6 +112,8 @@ export function InternalRefNodeView(props: NodeViewProps) {
         content={popoverContent}
         getPopupContainer={popupContainer}
         className="s1000d-internal-ref-popover-shell"
+        blurToHide={false}
+        popupHoverStay
       >
         <span className="s1000d-internal-ref__chip">
           {refId ? (
