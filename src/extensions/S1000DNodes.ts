@@ -17,6 +17,7 @@ import {
   WarningNodeView,
 } from "./s1000d/WarningNodeView";
 import type { ParaAttrs } from "./s1000d/types";
+import { s1000dIdAttributeConfig } from "../lib/s1000d/s1000dIdAttribute";
 import {
   SOURCE_XML_ATTR_KEYS,
   hasXmlAttr,
@@ -554,7 +555,7 @@ export const S1000DPara = Node.create({
 
   addAttributes(): Record<keyof ParaAttrs, { default: string | null }> {
     return {
-      id: { default: null },
+      id: s1000dIdAttributeConfig(),
       securityClassification: { default: null },
       caveat: { default: null },
       derivativeClassificationRefId: { default: null },
@@ -570,7 +571,9 @@ export const S1000DPara = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           return {
-            id: el.getAttribute("id"),
+            id:
+              el.getAttribute("id") ??
+              el.getAttribute("data-s1000d-element-id"),
             securityClassification: el.getAttribute("securityClassification"),
             caveat: el.getAttribute("caveat"),
             derivativeClassificationRefId: el.getAttribute(
@@ -708,14 +711,18 @@ export const S1000DInternalRef = Node.create({
         tag: "internalRef",
         getAttrs: (el) => ({
           ...readInternalRefAttrsFromDom(el as Element),
-          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el as Element),
+          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(
+            el as Element,
+          ),
         }),
       },
       {
         tag: "internalref",
         getAttrs: (el) => ({
           ...readInternalRefAttrsFromDom(el as Element),
-          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el as Element),
+          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(
+            el as Element,
+          ),
         }),
       },
     ];
@@ -777,9 +784,9 @@ export const S1000DGraphic = Node.create({
         default: null,
         parseHTML: (el) =>
           el instanceof Element
-            ? el.getAttribute("infoEntityIdent") ??
+            ? (el.getAttribute("infoEntityIdent") ??
               el.getAttribute("infoentityident") ??
-              el.getAttribute("data-info-entity-ident")
+              el.getAttribute("data-info-entity-ident"))
             : null,
         renderHTML: (attrs) => {
           const v = (attrs as { infoEntityIdent?: string | null })
@@ -850,7 +857,11 @@ export const S1000DGraphic = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     const raw = node.attrs.src;
     const src =
-      typeof raw === "string" ? raw.trim() : raw == null ? "" : String(raw).trim();
+      typeof raw === "string"
+        ? raw.trim()
+        : raw == null
+          ? ""
+          : String(raw).trim();
     const ident = node.attrs.infoEntityIdent
       ? String(node.attrs.infoEntityIdent)
       : "";
@@ -926,19 +937,14 @@ export const LevelledPara = Node.create({
 
   addAttributes() {
     return {
-      id: {
-        default: null,
-        parseHTML: (el) =>
-          el instanceof Element ? el.getAttribute("id") : null,
-        renderHTML: (attrs) =>
-          (attrs as { id?: string | null }).id
-            ? { id: (attrs as { id: string }).id }
-            : {},
-      },
+      id: s1000dIdAttributeConfig(),
     };
   },
 
   parseHTML() {
+    const readLevelledParaId = (el: Element) =>
+      el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id");
+
     return [
       {
         tag: "section",
@@ -947,8 +953,11 @@ export const LevelledPara = Node.create({
           if (!el || !(el instanceof Element)) return false;
           return el.getAttribute("data-s1000d-node") === "levelledPara"
             ? {
-                id: el.getAttribute("id"),
-                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+                id: readLevelledParaId(el),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+                  "id",
+                  "data-s1000d-element-id",
+                ]),
               }
             : false;
         },
@@ -958,8 +967,11 @@ export const LevelledPara = Node.create({
         getAttrs: (el) =>
           el instanceof Element
             ? {
-                id: el.getAttribute("id"),
-                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+                id: readLevelledParaId(el),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+                  "id",
+                  "data-s1000d-element-id",
+                ]),
               }
             : {},
       },
@@ -968,8 +980,11 @@ export const LevelledPara = Node.create({
         getAttrs: (el) =>
           el instanceof Element
             ? {
-                id: el.getAttribute("id"),
-                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+                id: readLevelledParaId(el),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+                  "id",
+                  "data-s1000d-element-id",
+                ]),
               }
             : {},
       },

@@ -1,8 +1,10 @@
 import type { Editor } from "@tiptap/core";
-import { NodeSelection } from "@tiptap/pm/state";
 
 const FLASH_MS = 1000;
-const FLASH_CLASS = "s1000d-internal-ref-target-flash";
+const OVERLAY_CLASS = "s1000d-internal-ref-target-flash-overlay";
+
+const FLASH_TARGET_SELECTOR =
+  "section[data-s1000d-node], para, levelledpara, figure, warning, caution, note, table, [data-s1000d-xml-table]";
 
 /** 内部引用跳转后的下一次选区变化不自动展开属性面板 */
 let suppressNextPropertyPanelOpen = false;
@@ -11,6 +13,9 @@ let suppressNextPropertyPanelOpen = false;
 let jumpGuardUntil = 0;
 
 const JUMP_GUARD_MS = 400;
+
+let activeFlashOverlay: HTMLElement | null = null;
+let activeFlashOverlayTimer: ReturnType<typeof setTimeout> | null = null;
 
 export type InternalRefTargetMeta = {
   pos: number;
@@ -37,6 +42,15 @@ export function consumeInternalRefJumpGuard(): boolean {
 
 function armInternalRefJumpGuard(): void {
   jumpGuardUntil = Date.now() + JUMP_GUARD_MS;
+}
+
+function removeActiveFlashOverlay(): void {
+  if (activeFlashOverlayTimer != null) {
+    window.clearTimeout(activeFlashOverlayTimer);
+    activeFlashOverlayTimer = null;
+  }
+  activeFlashOverlay?.remove();
+  activeFlashOverlay = null;
 }
 
 /**
@@ -78,36 +92,165 @@ export function findDocPosByElementId(
   return findInternalRefTargetById(editor, refId)?.pos ?? null;
 }
 
-export function flashRefTargetInDom(editor: Editor, refId: string): void {
-  const root = editor.view.dom as HTMLElement;
-  const trimmed = refId.trim();
-  if (!trimmed) return;
+function pickFlashHost(el: HTMLElement): HTMLElement {
+  if (
+    el.hasAttribute("data-s1000d-element-id") ||
+    el.hasAttribute("id") ||
+    el.hasAttribute("data-s1000d-node")
+  ) {
+    return el;
+  }
+  const block = el.closest(FLASH_TARGET_SELECTOR);
+  return block instanceof HTMLElement ? block : el;
+}
 
-  let target: HTMLElement | null = null;
+/** 解析节点在文档中的「紧贴节点前」位置，供 nodeDOM / coords 使用。 */
+function resolveDomPosForMeta(
+  editor: Editor,
+  meta: InternalRefTargetMeta,
+): number {
+  const doc = editor.state.doc;
   try {
-    target = root.querySelector(
-      `[id="${CSS.escape(trimmed)}"]`,
-    ) as HTMLElement | null;
+    const $pos = doc.resolve(meta.pos);
+    if ($pos.nodeAfter?.type.name === meta.typeName) return meta.pos;
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === meta.typeName) {
+        return $pos.before(d);
+      }
+    }
   } catch {
-    for (const el of Array.from(root.querySelectorAll("[id]"))) {
-      if (el instanceof HTMLElement && el.id === trimmed) {
-        target = el;
-        break;
+    /* use meta.pos */
+  }
+  return meta.pos;
+}
+
+function domElementAtNodePos(editor: Editor, domPos: number): HTMLElement | null {
+  const direct = editor.view.nodeDOM(domPos);
+  if (direct instanceof HTMLElement) return direct;
+  if (direct?.parentElement instanceof HTMLElement) return direct.parentElement;
+
+  try {
+    const domAt = editor.view.domAtPos(domPos + 1);
+    const node = domAt.node;
+    if (node instanceof HTMLElement) return node;
+    if (node.parentElement instanceof HTMLElement) return node.parentElement;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function queryTargetByRefId(
+  root: HTMLElement,
+  trimmed: string,
+): HTMLElement | null {
+  try {
+    const byData = root.querySelector(
+      `[data-s1000d-element-id="${CSS.escape(trimmed)}"]`,
+    );
+    if (byData instanceof HTMLElement) return byData;
+  } catch {
+    for (const el of Array.from(
+      root.querySelectorAll("[data-s1000d-element-id]"),
+    )) {
+      if (
+        el instanceof HTMLElement &&
+        el.getAttribute("data-s1000d-element-id") === trimmed
+      ) {
+        return el;
       }
     }
   }
-  if (!target) return;
+
   try {
-    target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const byId = root.querySelector(`[id="${CSS.escape(trimmed)}"]`);
+    if (byId instanceof HTMLElement) return byId;
   } catch {
-    target.scrollIntoView();
+    for (const el of Array.from(root.querySelectorAll("[id]"))) {
+      if (el instanceof HTMLElement && el.id === trimmed) return el;
+    }
   }
-  target.classList.add(FLASH_CLASS);
-  window.setTimeout(() => target?.classList.remove(FLASH_CLASS), FLASH_MS);
+
+  return null;
+}
+
+function resolveRefTargetElement(
+  editor: Editor,
+  trimmed: string,
+  meta: InternalRefTargetMeta,
+): HTMLElement | null {
+  const root = editor.view.dom as HTMLElement;
+
+  const byAttr = queryTargetByRefId(root, trimmed);
+  if (byAttr) return pickFlashHost(byAttr);
+
+  const domPos = resolveDomPosForMeta(editor, meta);
+  const fromPos = domElementAtNodePos(editor, domPos);
+  if (fromPos) return pickFlashHost(fromPos);
+
+  return null;
+}
+
+function getFlashMount(editor: Editor): HTMLElement | null {
+  return (
+    (editor.view.dom.closest(".ietm-editor-pane") as HTMLElement | null) ??
+    (editor.view.dom.parentElement as HTMLElement | null)
+  );
 }
 
 /**
- * 定位到引用目标：NodeSelection 整块蓝色选中 + 滚动 + DOM 闪烁；不触发 internalRef 属性面板。
+ * 在编辑区滚动容器上叠加高亮层（不修改目标节点 DOM，避免 ProseMirror 重绘抹掉样式）。
+ */
+function showFlashOverlay(editor: Editor, target: HTMLElement): void {
+  const mount = getFlashMount(editor);
+  if (!mount) return;
+
+  removeActiveFlashOverlay();
+
+  const mountRect = mount.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+
+  const overlay = document.createElement("div");
+  overlay.className = OVERLAY_CLASS;
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.style.left = `${targetRect.left - mountRect.left + mount.scrollLeft}px`;
+  overlay.style.top = `${targetRect.top - mountRect.top + mount.scrollTop}px`;
+  overlay.style.width = `${Math.max(targetRect.width, 4)}px`;
+  overlay.style.height = `${Math.max(targetRect.height, 4)}px`;
+
+  mount.appendChild(overlay);
+  activeFlashOverlay = overlay;
+  activeFlashOverlayTimer = window.setTimeout(
+    () => removeActiveFlashOverlay(),
+    FLASH_MS,
+  );
+}
+
+export function flashRefTargetInDom(
+  editor: Editor,
+  refId: string,
+  meta?: InternalRefTargetMeta | null,
+): void {
+  const trimmed = refId.trim();
+  if (!trimmed) return;
+
+  const resolved = meta ?? findInternalRefTargetById(editor, trimmed);
+  if (!resolved) return;
+
+  const target = resolveRefTargetElement(editor, trimmed, resolved);
+  if (!target) return;
+
+  try {
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+  } catch {
+    target.scrollIntoView();
+  }
+
+  showFlashOverlay(editor, target);
+}
+
+/**
+ * 定位到引用目标：滚动至可见区域 + 叠加层高亮 1 秒（不改变选区）。
  */
 export function navigateInternalRefTarget(editor: Editor, refId: string): void {
   const trimmed = refId.trim();
@@ -116,18 +259,24 @@ export function navigateInternalRefTarget(editor: Editor, refId: string): void {
   const meta = findInternalRefTargetById(editor, trimmed);
   if (meta === null) return;
 
-  const targetNode = editor.state.doc.nodeAt(meta.pos);
-  if (!targetNode) return;
+  const domPos = resolveDomPosForMeta(editor, meta);
+  try {
+    const $pos = editor.state.doc.resolve(domPos);
+    if ($pos.nodeAfter?.type.name !== meta.typeName) return;
+  } catch {
+    return;
+  }
 
   armInternalRefJumpGuard();
   suppressNextPropertyPanelOpen = true;
 
-  const tr = editor.state.tr
-    .setSelection(NodeSelection.create(editor.state.doc, meta.pos))
-    .scrollIntoView();
-
-  editor.view.dispatch(tr);
   editor.view.focus();
 
-  requestAnimationFrame(() => flashRefTargetInDom(editor, trimmed));
+  const runFlash = () => flashRefTargetInDom(editor, trimmed, meta);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(runFlash);
+    // smooth scroll 结束后再对齐一次 overlay 位置
+    window.setTimeout(runFlash, 320);
+  });
 }

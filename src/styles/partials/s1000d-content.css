@@ -308,21 +308,25 @@
   margin-right: 4px;
 }
 
-.s1000d-internal-ref-target-flash {
-  animation: s1000d-internal-ref-flash-keyframes 1s ease-out 1 !important;
-  outline: 3px solid #f97316 !important;
-  outline-offset: 2px !important;
+/* 内部引用跳转：浮动高亮层（叠在 .ietm-editor-pane 内，不依赖改 para 节点 class） */
+.s1000d-internal-ref-target-flash-overlay {
+  position: absolute;
+  z-index: 40;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.9);
+  background-color: rgba(255, 237, 213, 0.65);
+  animation: s1000d-internal-ref-flash-overlay-keyframes 1s ease-out forwards;
 }
 
-@keyframes s1000d-internal-ref-flash-keyframes {
+@keyframes s1000d-internal-ref-flash-overlay-keyframes {
   0%,
-  100% {
-    outline-width: 0;
-    outline-color: transparent;
+  80% {
+    opacity: 1;
   }
-  15% {
-    outline-width: 5px;
-    outline-color: #ea580c;
+  100% {
+    opacity: 0;
   }
 }
 

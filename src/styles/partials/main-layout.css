@@ -9,6 +9,7 @@
 }
 
 .ietm-editor-pane {
+  position: relative;
   flex: 0 0 70%;
   max-width: 70%;
   min-height: 0;
