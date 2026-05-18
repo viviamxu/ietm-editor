@@ -1,6 +1,8 @@
 import type { Editor } from "@tiptap/core";
+import { useEffect, useState } from "react";
 import type { InspectTarget } from "../../lib/editor/resolveInspectable";
 import { tableDimensions } from "../../lib/editor/resolveInspectable";
+import { validatePrimaryIdForSave } from "../../lib/editor/validateDocumentNodeId";
 import {
   SOURCE_XML_ATTR_KEYS,
   mergeSourceXmlAttrKeysAfterPatch,
@@ -86,6 +88,17 @@ function parseAttrValue(key: string, raw: string): string | number | null {
   return t;
 }
 
+function readAttrsAtTarget(
+  editor: Editor,
+  target: InspectTarget,
+): Record<string, unknown> {
+  const liveNode = editor.state.doc.nodeAt(target.pos);
+  if (liveNode && liveNode.type.name === target.nodeType) {
+    return { ...liveNode.attrs } as Record<string, unknown>;
+  }
+  return { ...target.attrs };
+}
+
 export interface S1000DPropertyPanelProps {
   editor: Editor;
   target: InspectTarget;
@@ -111,28 +124,21 @@ export function S1000DPropertyPanel({
 
   const primaryKey = primaryIdKey(target.nodeType, nodeSpec?.spec.attrs ?? {});
 
-  const liveNode = editor.state.doc.nodeAt(target.pos);
-  const liveAttrs =
-    liveNode && liveNode.type.name === target.nodeType
-      ? ({ ...liveNode.attrs } as Record<string, unknown>)
-      : target.attrs;
+  const [draftAttrs, setDraftAttrs] = useState<Record<string, unknown>>(() =>
+    readAttrsAtTarget(editor, target),
+  );
+  const [primaryIdError, setPrimaryIdError] = useState<string | null>(null);
 
-  const applyPatch = (patch: Record<string, unknown>) => {
-    if (readOnly) return;
-    const n = editor.state.doc.nodeAt(target.pos);
-    if (!n || n.type.name !== target.nodeType) return;
-    const merged = mergeSourceXmlAttrKeysAfterPatch({
-      liveAttrs,
-      primaryKey,
-      patch,
-      schemaAttrKeys: schemaAttrKeysForMerge,
-    });
-    editor
-      .chain()
-      .focus()
-      .setNodeSelection(target.pos)
-      .updateAttributes(target.nodeType, merged)
-      .run();
+  useEffect(() => {
+    setDraftAttrs(readAttrsAtTarget(editor, target));
+    setPrimaryIdError(null);
+  }, [editor, target.pos, target.nodeType, target.attrs]);
+
+  const setDraftField = (key: string, value: unknown) => {
+    setDraftAttrs((prev) => ({ ...prev, [key]: value }));
+    if (primaryKey && key === primaryKey) {
+      setPrimaryIdError(null);
+    }
   };
 
   const orderedOtherKeys = sortOtherKeys(
@@ -147,10 +153,57 @@ export function S1000DPropertyPanel({
     shouldShowSecondaryPanelAttr({
       nodeType: target.nodeType,
       attrKey: key,
-      liveAttrs,
+      liveAttrs: draftAttrs,
       primaryKey,
     }),
   );
+
+  const commitDraft = () => {
+    const n = editor.state.doc.nodeAt(target.pos);
+    if (!n || n.type.name !== target.nodeType) return;
+
+    const liveAttrs = readAttrsAtTarget(editor, target);
+    const patch: Record<string, unknown> = {};
+    if (primaryKey) {
+      patch[primaryKey] = draftAttrs[primaryKey];
+    }
+    for (const key of otherKeys) {
+      patch[key] = draftAttrs[key];
+    }
+
+    const merged = mergeSourceXmlAttrKeysAfterPatch({
+      liveAttrs,
+      primaryKey,
+      patch,
+      schemaAttrKeys: schemaAttrKeysForMerge,
+    });
+
+    editor
+      .chain()
+      .focus()
+      .setNodeSelection(target.pos)
+      .updateAttributes(target.nodeType, merged)
+      .run();
+  };
+
+  const handleConfirm = () => {
+    if (!readOnly) {
+      if (primaryKey) {
+        const idError = validatePrimaryIdForSave(
+          editor,
+          stringifyAttr(draftAttrs[primaryKey]),
+          target.pos,
+        );
+        if (idError) {
+          setPrimaryIdError(idError);
+          return;
+        }
+      }
+      setPrimaryIdError(null);
+      commitDraft();
+    }
+    onDismiss();
+  };
 
   const dim =
     target.nodeType === "table"
@@ -186,14 +239,20 @@ export function S1000DPropertyPanel({
             <input
               type="text"
               disabled={readOnly}
-              value={stringifyAttr(liveAttrs[primaryKey])}
+              className={
+                primaryIdError ? "ietm-prop-field__input--invalid" : undefined
+              }
+              value={stringifyAttr(draftAttrs[primaryKey])}
               onChange={(e) => {
                 const v = e.target.value;
-                applyPatch({
-                  [primaryKey]: v === "" ? null : v,
-                } as Record<string, unknown>);
+                setDraftField(primaryKey, v === "" ? null : v);
               }}
             />
+            {primaryIdError ? (
+              <p className="ietm-prop-error" role="alert">
+                {primaryIdError}
+              </p>
+            ) : null}
           </label>
         ) : null}
 
@@ -219,7 +278,7 @@ export function S1000DPropertyPanel({
 
         {otherKeys.map((key) => {
           if (primaryKey && key === primaryKey) return null;
-          const val = liveAttrs[key];
+          const val = draftAttrs[key];
           if (key === "unitOfMeasure" && target.nodeType === "image") {
             const s = stringifyAttr(val);
             const options = [...UNIT_PRESETS];
@@ -231,7 +290,7 @@ export function S1000DPropertyPanel({
                   disabled={readOnly}
                   value={s || options[0] || ""}
                   onChange={(e) =>
-                    applyPatch({ unitOfMeasure: e.target.value })
+                    setDraftField("unitOfMeasure", e.target.value)
                   }
                 >
                   {options.map((u) => (
@@ -260,9 +319,10 @@ export function S1000DPropertyPanel({
                   }
                   onChange={(e) => {
                     const n = Number.parseInt(e.target.value, 10);
-                    applyPatch({
-                      displayLevel: Number.isNaN(n) ? 1 : n,
-                    });
+                    setDraftField(
+                      "displayLevel",
+                      Number.isNaN(n) ? 1 : n,
+                    );
                   }}
                 />
               </label>
@@ -278,7 +338,7 @@ export function S1000DPropertyPanel({
                   className="ietm-prop-textarea"
                   disabled={readOnly}
                   value={String(val ?? "")}
-                  onChange={(e) => applyPatch({ rawXml: e.target.value })}
+                  onChange={(e) => setDraftField("rawXml", e.target.value)}
                 />
               </label>
             );
@@ -292,15 +352,24 @@ export function S1000DPropertyPanel({
                 disabled={readOnly}
                 value={stringifyAttr(val)}
                 onChange={(e) =>
-                  applyPatch({
-                    [key]: parseAttrValue(key, e.target.value),
-                  } as Record<string, unknown>)
+                  setDraftField(key, parseAttrValue(key, e.target.value))
                 }
               />
             </label>
           );
         })}
       </div>
+      {!readOnly ? (
+        <div className="ietm-property-panel__footer">
+          <button
+            type="button"
+            className="ietm-property-panel__confirm"
+            onClick={handleConfirm}
+          >
+            确定
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
