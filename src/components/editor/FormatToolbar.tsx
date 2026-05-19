@@ -8,6 +8,8 @@ import {
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
   insertTableFromSchema,
+  insertWarningFromSchema,
+  insertCautionFromSchema,
   exportEditorToDmXmlString,
   save,
   internalRef,
@@ -35,6 +37,8 @@ import {
   CircleX,
   LockKeyhole,
   Pencil,
+  CircleAlert,
+  TriangleAlert,
 } from "lucide-react";
 
 import {
@@ -294,7 +298,9 @@ export function FormatToolbar({
             type="button"
             className="ietm-icon-btn"
             disabled={formatBarLocked}
-            onClick={() => insertRandomOrAttentionListFromSchema(editor, schema)}
+            onClick={() =>
+              insertRandomOrAttentionListFromSchema(editor, schema)
+            }
             title="插入无序列表（randomList / attentionRandomList）"
             aria-label="插入无序列表"
           >
@@ -508,6 +514,49 @@ export function FormatToolbar({
           </button>
         ) : null}
         <ToolbarCustomItems placement="reference" ctx={toolbarCtx} />
+      </div>
+      <span
+        className="ietm-format-toolbar__divider"
+        style={{ display: showTableTools ? "none" : undefined }}
+      />
+      <div style={{ display: showTableTools ? "none" : undefined }}>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked}
+          onClick={() => insertWarningFromSchema(editor, schema)}
+          title="插入警告（warning）"
+          aria-label="插入警告"
+        >
+          <TriangleAlert
+            size={16}
+            aria-hidden
+            className="shrink-0 text-red-500"
+          />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked}
+          onClick={() => insertCautionFromSchema(editor, schema)}
+          title="插入注意（caution）"
+          aria-label="插入注意"
+        >
+          <TriangleAlert
+            size={16}
+            aria-hidden
+            className="shrink-0 text-yellow-500"
+          />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked}
+          onClick={() => alert("alert")}
+          title="注"
+        >
+          <CircleAlert size={16} aria-hidden className="shrink-0" />
+        </button>
       </div>
     </div>
   );

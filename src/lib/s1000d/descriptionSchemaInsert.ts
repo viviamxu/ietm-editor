@@ -1,4 +1,6 @@
 import type { Editor, JSONContent } from "@tiptap/core";
+import { Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
+import { TextSelection } from "@tiptap/pm/state";
 
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
@@ -118,23 +120,111 @@ export function insertSequentialListFromSchema(
     .run();
 }
 
+const attentionRandomListInsertJson: JSONContent = {
+  type: "attentionRandomList",
+  content: [
+    {
+      type: "attentionRandomListItem",
+      content: [{ type: "attentionListItemPara", content: [] }],
+    },
+  ],
+};
+
+const attentionRandomListItemInsertJson: JSONContent = {
+  type: "attentionRandomListItem",
+  content: [{ type: "attentionListItemPara", content: [] }],
+};
+
+/**
+ * 在 `warningAndCautionPara` 内插入 attention 无序列表：必须用文档坐标插入，
+ * 否则选区若在 `warningAndCautionLead`（inline*）内，`insertContent` 会把块级列表挤到 para 外。
+ */
+function resolveAttentionInsertInWarningAndCautionPara(
+  $from: ResolvedPos,
+):
+  | { insertPos: number; json: JSONContent; inserted: "fullList" | "singleItem" }
+  | null {
+  let paraDepth = -1;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "warningAndCautionPara") {
+      paraDepth = d;
+      break;
+    }
+  }
+  if (paraDepth < 0) return null;
+
+  const paraNode = $from.node(paraDepth);
+  const paraStart = $from.before(paraDepth);
+
+  let childPos = paraStart + 1;
+  for (let i = 0; i < paraNode.childCount; i++) {
+    const child = paraNode.child(i);
+    if (child.type.name === "attentionRandomList") {
+      const insertPos = childPos + 1 + child.content.size;
+      return {
+        insertPos,
+        json: attentionRandomListItemInsertJson,
+        inserted: "singleItem",
+      };
+    }
+    childPos += child.nodeSize;
+  }
+
+  const insertPos = paraStart + 1 + paraNode.content.size;
+  return {
+    insertPos,
+    json: attentionRandomListInsertJson,
+    inserted: "fullList",
+  };
+}
+
+/** 光标落到新插入项的 `attentionListItemPara` 行内起点。 */
+function selectionAfterAttentionInsert(
+  doc: PMNode,
+  insertPos: number,
+  inserted: "fullList" | "singleItem",
+): TextSelection | null {
+  const itemStart = inserted === "fullList" ? insertPos + 1 : insertPos;
+  const item = doc.nodeAt(itemStart);
+  if (!item || item.type.name !== "attentionRandomListItem") return null;
+  const para = item.firstChild;
+  if (!para || para.type.name !== "attentionListItemPara") return null;
+  const caret = itemStart + 1 + 1;
+  if (caret < 0 || caret > doc.content.size) return null;
+  return TextSelection.create(doc, caret);
+}
+
 /** randomList；在 warning/caution 正文中插入 attentionRandomList（schema 未单独建模时仍允许）。 */
 export function insertRandomOrAttentionListFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
   if (isInsideNodeType(editor, "warningAndCautionPara")) {
+    const resolved = resolveAttentionInsertInWarningAndCautionPara(
+      editor.state.selection.$from,
+    );
+    if (!resolved) return false;
+
     return editor
       .chain()
       .focus()
-      .insertContent({
-        type: "attentionRandomList",
-        content: [
-          {
-            type: "attentionRandomListItem",
-            content: [{ type: "attentionListItemPara", content: [] }],
-          },
-        ],
+      .command(({ tr, state, dispatch }) => {
+        let node: PMNode;
+        try {
+          node = PMNode.fromJSON(state.schema, resolved.json);
+        } catch {
+          return false;
+        }
+        if (!dispatch) return true;
+        tr.insert(resolved.insertPos, node);
+        const sel = selectionAfterAttentionInsert(
+          tr.doc,
+          resolved.insertPos,
+          resolved.inserted,
+        );
+        if (sel) tr.setSelection(sel);
+        dispatch(tr);
+        return true;
       })
       .run();
   }
@@ -202,6 +292,58 @@ export function insertImageFromSchema(
     .openInsertPublication(editor, "image");
 }
 
+/** 可编辑前导正文（对应 schema `warningAndCautionPara` 的 `text*`，导出时剥壳） */
+function buildMinimalWarningAndCautionParaJson(): JSONContent {
+  return {
+    type: "warningAndCautionPara",
+    content: [{ type: "warningAndCautionLead", content: [] }],
+  };
+}
+
+/** `warning`：`warningAndCautionPara+`（schema 描述类规则） */
+export function buildInsertWarningJson(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (!requireSchemaNode(schema, "warning")) return null;
+  if (!contentRuleMentions(schema.warning?.content, "warningAndCautionPara"))
+    return null;
+  return {
+    type: "warning",
+    content: [buildMinimalWarningAndCautionParaJson()],
+  };
+}
+
+/** `caution`：与 `warning` 同形 */
+export function buildInsertCautionJson(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (!requireSchemaNode(schema, "caution")) return null;
+  if (!contentRuleMentions(schema.caution?.content, "warningAndCautionPara"))
+    return null;
+  return {
+    type: "caution",
+    content: [buildMinimalWarningAndCautionParaJson()],
+  };
+}
+
+export function insertWarningFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  const node = buildInsertWarningJson(schema);
+  if (!node) return false;
+  return editor.chain().focus().insertContent(node).run();
+}
+
+export function insertCautionFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  const node = buildInsertCautionJson(schema);
+  if (!node) return false;
+  return editor.chain().focus().insertContent(node).run();
+}
+
 /** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */
 function buildMinimalAttentionElemChild(
   schema: DescriptionSchema,
@@ -209,13 +351,13 @@ function buildMinimalAttentionElemChild(
   if (requireSchemaNode(schema, "warning")) {
     return {
       type: "warning",
-      content: [{ type: "warningAndCautionPara", content: [] }],
+      content: [buildMinimalWarningAndCautionParaJson()],
     };
   }
   if (requireSchemaNode(schema, "caution")) {
     return {
       type: "caution",
-      content: [{ type: "warningAndCautionPara", content: [] }],
+      content: [buildMinimalWarningAndCautionParaJson()],
     };
   }
   if (requireSchemaNode(schema, "note")) {
