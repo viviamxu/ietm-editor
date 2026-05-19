@@ -185,9 +185,11 @@ export function insertFilmFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): void {
-  void editor;
   void schema;
-  useInsertPublicationModalStore.getState().openInsertPublication(editor);
+  useInsertPublicationModalStore.getState().openInsertPublication(
+    editor,
+    "multimedia",
+  );
 }
 
 export function insertImageFromSchema(
@@ -195,7 +197,9 @@ export function insertImageFromSchema(
   schema: DescriptionSchema,
 ): void {
   void schema;
-  useInsertPublicationModalStore.getState().openInsertPublication(editor);
+  useInsertPublicationModalStore
+    .getState()
+    .openInsertPublication(editor, "image");
 }
 
 /** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */
@@ -227,6 +231,14 @@ function buildMinimalAttentionElemChild(
 function buildMinimalFmftElemChild(
   schema: DescriptionSchema,
 ): JSONContent | null {
+  if (requireSchemaNode(schema, "multimedia")) {
+    return {
+      type: "multimedia",
+      content: [
+        { type: "multimediaObject", attrs: { infoEntityIdent: "" } },
+      ],
+    };
+  }
   if (requireSchemaNode(schema, "figure")) {
     return {
       type: "figure",
@@ -319,6 +331,8 @@ function hasEffectiveContent(node: JSONContent): boolean {
   if (
     node.type === "image" ||
     node.type === "graphic" ||
+    node.type === "multimedia" ||
+    node.type === "multimediaObject" ||
     (node.attrs && node.attrs.rawXml)
   )
     return true;
@@ -459,6 +473,16 @@ function buildColspecXml(cols: number): string {
   }).join("");
 }
 
+function serializeMultimediaObjectToXml(attrs: JSONContent["attrs"]): string {
+  if (!attrs) return "<multimediaObject></multimediaObject>";
+  const iei =
+    attrs.infoEntityIdent != null &&
+    String(attrs.infoEntityIdent).trim() !== ""
+      ? ` infoEntityIdent="${escapeXml(String(attrs.infoEntityIdent))}"`
+      : "";
+  return `<multimediaObject${iei}></multimediaObject>`;
+}
+
 function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
   if (!attrs) return "<graphic />";
   const id =
@@ -538,11 +562,19 @@ function serializeNodeToXml(node: JSONContent): string {
     return serializeGraphicToXml(node.attrs);
   }
 
-  // 3. 处理图片转换
+  if (node.type === "multimediaObject") {
+    return serializeMultimediaObjectToXml(node.attrs);
+  }
+
+  // 3. 出版物 / IETMImage：转为 figure + graphic（路径写入 xlink:href）
   if (node.type === "image") {
-    const id = node.attrs?.figureId || "ICN-UNKNOWN";
-    const alt = node.attrs?.alt || "";
-    return `<figure id="fig-${id}">\n  <title>${escapeXml(alt)}</title>\n  <graphic infoEntityIdent="${escapeXml(id)}" />\n</figure>`;
+    const iei = String(node.attrs?.figureId ?? "ICN-UNKNOWN");
+    const alt = String(node.attrs?.alt ?? "");
+    const graphicXml = serializeGraphicToXml({
+      infoEntityIdent: iei,
+      src: node.attrs?.src,
+    });
+    return `<figure id="fig-${escapeXml(iei)}">\n  <title>${escapeXml(alt)}</title>\n  ${graphicXml}\n</figure>`;
   }
 
   // 4. 标准标签映射

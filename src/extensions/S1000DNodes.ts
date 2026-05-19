@@ -8,6 +8,8 @@ import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
 import { GraphicNodeView } from "./s1000d/GraphicNodeView";
 import { FigureNodeView } from "./s1000d/FigureNodeView";
+import { MultimediaNodeView } from "./s1000d/MultimediaNodeView";
+import { MultimediaObjectNodeView } from "./s1000d/MultimediaObjectNodeView";
 import { LevelledParaNodeView } from "./s1000d/LevelledParaNodeView";
 import { s1000dTableNodes } from "./s1000d/s1000dTableNodes";
 import { S1000DSub, S1000DSup } from "./s1000d/subSuperMarks";
@@ -885,6 +887,115 @@ export const S1000DGraphic = Node.create({
 });
 
 /**
+ * S1000D `multimediaObject`：`multimedia` 下的媒体实体引用（无文本子节点）。
+ */
+export const S1000DMultimediaObject = Node.create({
+  name: "multimediaObject",
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      infoEntityIdent: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? (el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident") ??
+              el.getAttribute("data-info-entity-ident"))
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { infoEntityIdent?: string | null })
+            .infoEntityIdent;
+          return v ? { infoEntityIdent: String(v) } : {};
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "multimediaObject",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return {
+            infoEntityIdent:
+              el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "infoEntityIdent",
+              "infoentityident",
+            ]),
+          };
+        },
+      },
+      {
+        tag: "multimediaobject",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return {
+            infoEntityIdent:
+              el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "infoEntityIdent",
+              "infoentityident",
+            ]),
+          };
+        },
+      },
+    ];
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    const ident = node.attrs.infoEntityIdent
+      ? String(node.attrs.infoEntityIdent)
+      : "";
+    return [
+      "multimediaObject",
+      mergeAttributes(HTMLAttributes, ident ? { infoEntityIdent: ident } : {}),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(MultimediaObjectNodeView);
+  },
+});
+
+/**
+ * S1000D `multimedia`：块级，`title?` + 至少一个 `multimediaObject`。
+ */
+export const S1000DMultimedia = Node.create({
+  name: "multimedia",
+  group: "block fmftElemGroup",
+  content: "(title?) multimediaObject+",
+  defining: true,
+
+  parseHTML() {
+    return [
+      {
+        tag: "multimedia",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return {
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, []),
+          };
+        },
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["multimedia", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(MultimediaNodeView);
+  },
+});
+
+/**
  * S1000D `figure`：块级，`title?` + 至少一个 `graphic`。
  */
 export const S1000DFigure = Node.create({
@@ -1019,6 +1130,8 @@ export const s1000dPhase1Nodes = [
   S1000DDmRef,
   S1000DInternalRef,
   S1000DGraphic,
+  S1000DMultimediaObject,
+  S1000DMultimedia,
   S1000DFigure,
   ...s1000dTableNodes,
   LevelledPara,
@@ -1197,6 +1310,7 @@ function normalizeMixedContentParas(description: Element) {
       if (
         isS1000dSequentialOrRandomListTag(ln) ||
         ln === "figure" ||
+        ln === "multimedia" ||
         ln === "table"
       ) {
         hasBlock = true;
@@ -1234,6 +1348,7 @@ function normalizeMixedContentParas(description: Element) {
         if (
           isS1000dSequentialOrRandomListTag(ln) ||
           ln === "figure" ||
+          ln === "multimedia" ||
           ln === "table"
         ) {
           flushPara();
@@ -1478,6 +1593,8 @@ export function getDescriptionInnerXmlFromDmXml(
     "row",
     "tr",
     "figure",
+    "multimedia",
+    "multimediaobject",
     "warning",
     "caution",
     "note",

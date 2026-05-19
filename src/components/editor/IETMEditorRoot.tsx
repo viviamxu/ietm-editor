@@ -19,6 +19,7 @@ import {
 } from "./IETMEditor";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
+import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
 import type { InsertImagePayload } from "../../types/toolbar";
 import { ConfigProvider } from "@arco-design/web-react";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
@@ -38,6 +39,7 @@ export interface IETMEditorRootHandle {
   addTableColumnAfter: () => boolean;
   setFooterStatus: (status: IETMEditorFooterStatus | null) => void;
   insertImages: (images: InsertImagePayload[]) => boolean;
+  insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
 }
 
 interface IETMEditorRootProps {
@@ -101,6 +103,8 @@ export const IETMEditorRoot = forwardRef<
       setFooterStatus: (status) => setFooterStatusOverride(status),
       insertImages: (images) =>
         editorRef.current?.insertImages(images) ?? false,
+      insertMultimedia: (items) =>
+        editorRef.current?.insertMultimedia(items) ?? false,
     }),
     [applyEditable],
   );

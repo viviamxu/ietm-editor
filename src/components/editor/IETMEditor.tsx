@@ -44,6 +44,10 @@ import {
   insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
+import {
+  insertMultimediaIntoEditor,
+  type InsertMultimediaPayload,
+} from "../../lib/editor/insertMultimedia";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
 import type { InsertImagePayload } from "../../types/toolbar";
@@ -94,6 +98,7 @@ export interface IETMEditorRefValue {
   addTableColumnAfter: () => boolean;
   /** 在光标处插入一张或多张 S1000D 图片节点 */
   insertImages: (images: InsertImagePayload[]) => boolean;
+  insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
 }
 
 interface IETMEditorProps {
@@ -397,6 +402,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         insertImages: (images) => {
           if (!editor) return false;
           return insertImagesIntoEditor(editor, images);
+        },
+        insertMultimedia: (items) => {
+          if (!editor) return false;
+          return insertMultimediaIntoEditor(editor, items);
         },
       }),
       [editor],

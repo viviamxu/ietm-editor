@@ -1,4 +1,4 @@
-﻿.ietm-editor-surface
+.ietm-editor-surface
   .tiptap
   .s1000d-title-display[data-s1000d-title-level="1"] {
   display: block;
@@ -134,6 +134,39 @@
   background: #f1f5f9;
   border-style: dashed;
   border-color: #cbd5e1;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-node {
+  display: block;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  color: #334155;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node__icon {
+  flex-shrink: 0;
+  color: #64748b;
 }
 
 /* 序列化 / 剪贴板等场景下仍可能出现裸 `<graphic>` */

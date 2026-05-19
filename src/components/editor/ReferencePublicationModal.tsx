@@ -11,6 +11,7 @@ import {
 } from "@arco-design/web-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 
 type ArcoTreeDataNode = NonNullable<TreeProps["treeData"]>[number];
@@ -113,9 +114,11 @@ const ALL_ROWS = makeMockRows();
 
 function ReferencePublicationDialog() {
   const editor = useInsertPublicationModalStore((s) => s.editor);
+  const mode = useInsertPublicationModalStore((s) => s.mode);
   const closeInsertPublication = useInsertPublicationModalStore(
     (s) => s.closeInsertPublication,
   );
+  const isMultimedia = mode === "multimedia";
 
   const [search, setSearch] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(() => LEAF_IDS[0] ?? "");
@@ -205,15 +208,22 @@ function ReferencePublicationDialog() {
       .map((id) => ALL_ROWS.find((r) => r.id === id))
       .filter((r): r is PublicationRow => r != null);
     if (rows.length > 0) {
-      const images = rows.map((row) => ({
-        type: "image" as const,
-        attrs: {
-          src: row.preview,
-          alt: row.title,
-          figureId: row.code,
-        },
-      }));
-      editor.chain().focus().insertContent(images).run();
+      if (isMultimedia) {
+        insertMultimediaIntoEditor(
+          editor,
+          rows.map((row) => ({ infoEntityIdent: row.code })),
+        );
+      } else {
+        const images = rows.map((row) => ({
+          type: "image" as const,
+          attrs: {
+            src: row.preview,
+            alt: row.title,
+            figureId: row.code,
+          },
+        }));
+        editor.chain().focus().insertContent(images).run();
+      }
     }
     closeInsertPublication();
   };
@@ -224,7 +234,7 @@ function ReferencePublicationDialog() {
 
   return (
     <Modal
-      title="插入 S1000D 出版物"
+      title={isMultimedia ? "插入多媒体" : "插入 S1000D 出版物"}
       visible
       maskClosable={false}
       onCancel={closeInsertPublication}

@@ -11,6 +11,8 @@ export const INSPECTABLE_NODE_TYPE_LIST = [
   'image',
   'internalRef',
   'levelledPara',
+  'multimedia',
+  'multimediaObject',
   'note',
   'notePara',
   'para',

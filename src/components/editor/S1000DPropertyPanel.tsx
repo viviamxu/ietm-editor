@@ -28,6 +28,8 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   image: ["src", "alt", "title", "unitOfMeasure", "width", "height"],
   title: ["displayLevel"],
   graphic: ["infoEntityIdent", "src"],
+  multimediaObject: ["infoEntityIdent"],
+  multimedia: [],
   tgroup: ["cols", "colsep", "rowsep"],
   entry: ["colname", "namest", "nameend", "morerows", "align"],
   internalRef: ["internalRefId", "internalRefTargetType"],

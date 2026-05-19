@@ -20,7 +20,6 @@ import {
   setDescriptionSchema,
   useDescriptionSchemaStore,
 } from "./store/descriptionSchemaStore";
-import { useInsertPublicationModalStore } from "./store/insertPublicationModalStore";
 import { useToolbarConfigStore } from "./store/toolbarConfigStore";
 import type {
   BuiltinToolbarItemId,
@@ -35,6 +34,7 @@ import type {
   DescriptionSchema,
   DescriptionSchemaRule,
 } from "./types/descriptionSchema";
+import type { InsertMultimediaPayload } from "./lib/editor/insertMultimedia";
 import {
   buildEmptyDescriptionBodyFromSchema,
   buildEmptyDescriptionDocJson,
@@ -64,12 +64,17 @@ export {
   setDescriptionSchema,
   useDescriptionSchemaStore,
 };
-export { useInsertPublicationModalStore };
+export {
+  useInsertPublicationModalStore,
+  type InsertPublicationMode,
+} from "./store/insertPublicationModalStore";
+export { insertMultimediaIntoEditor } from "./lib/editor/insertMultimedia";
 export { useToolbarConfigStore };
 export type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
   InsertImagePayload,
+  InsertMultimediaPayload,
   ToolbarConfig,
   ToolbarItemContext,
   ToolbarItemPlacement,
@@ -164,6 +169,8 @@ export interface IETMEditorInstance {
   setToolbarConfig(config: ToolbarConfig | null): void;
   /** 在光标处插入一张或多张 S1000D `image` 节点（宿主选图后调用） */
   insertImages(images: InsertImagePayload[]): boolean;
+  /** 在光标处插入 `multimedia` / `multimediaObject`（`infoEntityIdent`） */
+  insertMultimedia(items: InsertMultimediaPayload[]): boolean;
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -322,6 +329,10 @@ export function createIETMEditor(
     insertImages: (images) => {
       if (disposed || !handleRef.current) return false;
       return handleRef.current.insertImages(images);
+    },
+    insertMultimedia: (items) => {
+      if (disposed || !handleRef.current) return false;
+      return handleRef.current.insertMultimedia(items);
     },
     on: emitter.on,
     off: emitter.off,
