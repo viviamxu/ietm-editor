@@ -21,6 +21,16 @@ import {
   useDescriptionSchemaStore,
 } from "./store/descriptionSchemaStore";
 import { useInsertPublicationModalStore } from "./store/insertPublicationModalStore";
+import { useToolbarConfigStore } from "./store/toolbarConfigStore";
+import type {
+  BuiltinToolbarItemId,
+  CustomToolbarItem,
+  InsertImagePayload,
+  ToolbarConfig,
+  ToolbarItemContext,
+  ToolbarItemPlacement,
+  ToolbarTab,
+} from "./types/toolbar";
 import type {
   DescriptionSchema,
   DescriptionSchemaRule,
@@ -55,6 +65,16 @@ export {
   useDescriptionSchemaStore,
 };
 export { useInsertPublicationModalStore };
+export { useToolbarConfigStore };
+export type {
+  BuiltinToolbarItemId,
+  CustomToolbarItem,
+  InsertImagePayload,
+  ToolbarConfig,
+  ToolbarItemContext,
+  ToolbarItemPlacement,
+  ToolbarTab,
+};
 
 export type { SaveDmXmlHandler };
 export type {
@@ -90,6 +110,11 @@ export interface IETMEditorOptions {
    * 不传时按 `editable` 自动：`saved` +「已保存」或可编辑关闭时的 `readonly` + 默认只读提示。
    */
   footerStatus?: IETMEditorFooterStatus;
+  /**
+   * 格式工具栏配置：自定义按钮、隐藏内置项、宿主接管插入图片/多媒体等。
+   * 亦可通过 `instance.setToolbarConfig()` 在运行时更新。
+   */
+  toolbar?: ToolbarConfig;
 }
 
 export interface IETMEditorEvents {
@@ -135,6 +160,10 @@ export interface IETMEditorInstance {
    * 设置底栏状态；传入 `null` 恢复为根据当前 `editable` 的内置默认。
    */
   setFooterStatus(status: IETMEditorFooterStatus | null): void;
+  /** 更新工具栏配置；传 `null` 恢复默认 */
+  setToolbarConfig(config: ToolbarConfig | null): void;
+  /** 在光标处插入一张或多张 S1000D `image` 节点（宿主选图后调用） */
+  insertImages(images: InsertImagePayload[]): boolean;
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -214,6 +243,10 @@ export function createIETMEditor(
   const handleRef: { current: IETMEditorRootHandle | null } = { current: null };
   const pending: Array<(handle: IETMEditorRootHandle) => void> = [];
 
+  if (options.toolbar) {
+    useToolbarConfigStore.getState().setToolbarConfig(options.toolbar);
+  }
+
   const withHandle = (fn: (handle: IETMEditorRootHandle) => void) => {
     if (disposed) return;
     if (handleRef.current) {
@@ -283,6 +316,13 @@ export function createIETMEditor(
         : handleRef.current.addTableColumnAfter(),
     setFooterStatus: (status) =>
       withHandle((h) => h.setFooterStatus(status)),
+    setToolbarConfig: (config) => {
+      useToolbarConfigStore.getState().setToolbarConfig(config);
+    },
+    insertImages: (images) => {
+      if (disposed || !handleRef.current) return false;
+      return handleRef.current.insertImages(images);
+    },
     on: emitter.on,
     off: emitter.off,
     destroy: () => {
@@ -291,6 +331,7 @@ export function createIETMEditor(
       handleRef.current = null;
       pending.length = 0;
       emitter.clear();
+      useToolbarConfigStore.getState().resetToolbarConfig();
       queueMicrotask(() => root.unmount());
     },
   };

@@ -41,9 +41,16 @@ import {
   canRunS1000dTableAction,
   runS1000dTableAction,
 } from "../../lib/editor/s1000dTableCommands";
+import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
+import type {
+  BuiltinToolbarItemId,
+  ToolbarItemContext,
+  ToolbarTab,
+} from "../../types/toolbar";
 import { TableEditToolbar } from "./TableEditToolbar";
+import { ToolbarCustomItems } from "./ToolbarCustomItems";
 
-type MainTabKey = "file" | "edit" | "insert";
+type MainTabKey = ToolbarTab;
 
 interface FormatToolbarProps {
   editor: Editor;
@@ -70,6 +77,9 @@ export function FormatToolbar({
   editModeButtonTitle = DEFAULT_EDIT_MODE_TITLE,
 }: FormatToolbarProps) {
   const schema = useDescriptionSchemaStore((s) => s.schema);
+  const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
+  const onInsertImageClick = useToolbarConfigStore((s) => s.onInsertImageClick);
+  const onInsertFilmClick = useToolbarConfigStore((s) => s.onInsertFilmClick);
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   const [saveInFlight, setSaveInFlight] = useState(false);
   useEffect(() => {
@@ -150,13 +160,39 @@ export function FormatToolbar({
   /** 只读时除「切换为可编辑」外，工具栏其余控件均不可点 */
   const formatBarLocked = !editable;
 
+  const toolbarCtx: ToolbarItemContext = {
+    editor,
+    editable,
+    activeTabKey,
+    formatBarLocked,
+  };
+
+  const isBuiltinVisible = (id: BuiltinToolbarItemId) =>
+    !hideBuiltinItems?.includes(id);
+
+  const runInsertImage = () => {
+    if (onInsertImageClick) {
+      onInsertImageClick(toolbarCtx);
+      return;
+    }
+    insertImageFromSchema(editor, schema);
+  };
+
+  const runInsertFilm = () => {
+    if (onInsertFilmClick) {
+      onInsertFilmClick(toolbarCtx);
+      return;
+    }
+    insertFilmFromSchema(editor, schema);
+  };
+
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">
       <div
         className="ietm-format-toolbar__cluster"
         style={{ display: showTableTools ? "none" : undefined }}
       >
-        {editable ? (
+        {editable && isBuiltinVisible("lockReadonly") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -166,7 +202,8 @@ export function FormatToolbar({
           >
             <LockKeyhole size={16} aria-hidden className="shrink-0" />
           </button>
-        ) : (
+        ) : null}
+        {!editable && isBuiltinVisible("editMode") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -181,103 +218,125 @@ export function FormatToolbar({
           >
             <Pencil size={16} aria-hidden className="shrink-0" />
           </button>
-        )}
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked || !editor.can().undo()}
-          onClick={() => editor.chain().focus().undo().run()}
-          title="撤销"
-        >
-          <Undo2 size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked || !editor.can().redo()}
-          onClick={() => editor.chain().focus().redo().run()}
-          title="重做"
-        >
-          <Redo2 size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked || saveInFlight}
-          onClick={runHostOrDownloadSave}
-          title="保存"
-        >
-          <Save size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => clearContent(editor, schema)}
-          title="清空内容"
-        >
-          <CircleX size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertLevelledParaFromSchema(editor, schema)}
-          title="插入段落"
-          aria-label="插入段落"
-        >
-          <Pilcrow size={16} aria-hidden className="shrink-0" />
-        </button>
+        ) : null}
+        <ToolbarCustomItems placement="editToggle" ctx={toolbarCtx} />
+        {isBuiltinVisible("undo") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked || !editor.can().undo()}
+            onClick={() => editor.chain().focus().undo().run()}
+            title="撤销"
+          >
+            <Undo2 size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("redo") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked || !editor.can().redo()}
+            onClick={() => editor.chain().focus().redo().run()}
+            title="重做"
+          >
+            <Redo2 size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("save") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked || saveInFlight}
+            onClick={runHostOrDownloadSave}
+            title="保存"
+          >
+            <Save size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("clearContent") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => clearContent(editor, schema)}
+            title="清空内容"
+          >
+            <CircleX size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertLevelledPara") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => insertLevelledParaFromSchema(editor, schema)}
+            title="插入段落"
+            aria-label="插入段落"
+          >
+            <Pilcrow size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
 
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertSequentialListFromSchema(editor, schema)}
-          title="插入有序列表（sequentialList）"
-          aria-label="插入有序列表"
-        >
-          <ListOrdered size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertRandomOrAttentionListFromSchema(editor, schema)}
-          title="插入无序列表（randomList / attentionRandomList）"
-          aria-label="插入无序列表"
-        >
-          <List size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertTableFromSchema(editor, schema, 4, 1, 3)}
-          title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
-        >
-          <Table size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertImageFromSchema(editor, schema)}
-          title="插入图片"
-          aria-label="插入图片"
-        >
-          <Image size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertFilmFromSchema(editor, schema)}
-          title="插入多媒体"
-          aria-label="插入多媒体"
-        >
-          <Film size={16} aria-hidden className="shrink-0" />
-        </button>
+        {isBuiltinVisible("insertSequentialList") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => insertSequentialListFromSchema(editor, schema)}
+            title="插入有序列表（sequentialList）"
+            aria-label="插入有序列表"
+          >
+            <ListOrdered size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertRandomList") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => insertRandomOrAttentionListFromSchema(editor, schema)}
+            title="插入无序列表（randomList / attentionRandomList）"
+            aria-label="插入无序列表"
+          >
+            <List size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertTable") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => insertTableFromSchema(editor, schema, 4, 1, 3)}
+            title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
+          >
+            <Table size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertImage") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={runInsertImage}
+            title="插入图片"
+            aria-label="插入图片"
+          >
+            <Image size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertFilm") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={runInsertFilm}
+            title="插入多媒体"
+            aria-label="插入多媒体"
+          >
+            <Film size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        <ToolbarCustomItems placement="insert" ctx={toolbarCtx} />
       </div>
 
       <span
@@ -427,6 +486,7 @@ export function FormatToolbar({
         >
           <Superscript size={16} aria-hidden className="shrink-0" />
         </button>
+        <ToolbarCustomItems placement="format" ctx={toolbarCtx} />
       </div>
       <span
         className="ietm-format-toolbar__divider"
@@ -436,15 +496,18 @@ export function FormatToolbar({
         className="ietm-format-toolbar__cluster"
         style={{ display: showTableTools ? "none" : undefined }}
       >
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => internalRef(editor)}
-          title="内部引用"
-        >
-          <Link2 size={16} aria-hidden className="shrink-0" />
-        </button>
+        {isBuiltinVisible("internalRef") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => internalRef(editor)}
+            title="内部引用"
+          >
+            <Link2 size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        <ToolbarCustomItems placement="reference" ctx={toolbarCtx} />
       </div>
     </div>
   );

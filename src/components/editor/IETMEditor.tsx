@@ -41,8 +41,12 @@ import {
 import {
   buildEmptyDescriptionDocJson,
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
+  insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
+import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
+import type { InsertImagePayload } from "../../types/toolbar";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -88,6 +92,8 @@ export interface IETMEditorRefValue {
   addTableRowAfter: () => boolean;
   addTableColumnBefore: () => boolean;
   addTableColumnAfter: () => boolean;
+  /** 在光标处插入一张或多张 S1000D 图片节点 */
+  insertImages: (images: InsertImagePayload[]) => boolean;
 }
 
 interface IETMEditorProps {
@@ -388,6 +394,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           };
           return chain.addColumnAfter().run();
         },
+        insertImages: (images) => {
+          if (!editor) return false;
+          return insertImagesIntoEditor(editor, images);
+        },
       }),
       [editor],
     );
@@ -446,10 +456,20 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       return inserted;
     };
 
-    const insertImageFromPrompt = () => {
-      const url = window.prompt("请输入图片 URL");
-      if (!url) return;
-      editor.chain().focus().setImage({ src: url }).run();
+    const runInsertImageAction = () => {
+      if (!editor) return;
+      const onInsertImageClick =
+        useToolbarConfigStore.getState().onInsertImageClick;
+      if (onInsertImageClick) {
+        onInsertImageClick({
+          editor,
+          editable: props.editable,
+          activeTabKey,
+          formatBarLocked: !props.editable,
+        });
+        return;
+      }
+      insertImageFromSchema(editor, getDescriptionSchema());
     };
 
     const runTableAction = (
@@ -662,7 +682,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                     className="ietm-menu-item"
                     disabled={headerMenuLocked}
                     onClick={() => {
-                      insertImageFromPrompt();
+                      runInsertImageAction();
                     }}
                   >
                     插入图片
