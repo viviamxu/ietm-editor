@@ -145,17 +145,18 @@ const attentionRandomListItemInsertJson: JSONContent = {
 };
 
 /**
- * 在 `warningAndCautionPara` 内插入 attention 无序列表：必须用文档坐标插入，
- * 否则选区若在 `warningAndCautionLead`（inline*）内，`insertContent` 会把块级列表挤到 para 外。
+ * 在 `warningAndCautionPara` / `notePara` 内插入 attention 列表：必须用文档坐标插入，
+ * 否则选区若在 lead（inline*）内，`insertContent` 会把块级列表挤到 para 外。
  */
-function resolveAttentionInsertInWarningAndCautionPara(
+function resolveAttentionInsertInAttentionPara(
   $from: ResolvedPos,
+  paraTypeName: "warningAndCautionPara" | "notePara",
 ):
   | { insertPos: number; json: JSONContent; inserted: "fullList" | "singleItem" }
   | null {
   let paraDepth = -1;
   for (let d = $from.depth; d >= 0; d--) {
-    if ($from.node(d).type.name === "warningAndCautionPara") {
+    if ($from.node(d).type.name === paraTypeName) {
       paraDepth = d;
       break;
     }
@@ -208,9 +209,16 @@ export function insertRandomOrAttentionListFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  if (isInsideNodeType(editor, "warningAndCautionPara")) {
-    const resolved = resolveAttentionInsertInWarningAndCautionPara(
+  const attentionParaType = isInsideNodeType(editor, "warningAndCautionPara")
+    ? ("warningAndCautionPara" as const)
+    : isInsideNodeType(editor, "notePara")
+      ? ("notePara" as const)
+      : null;
+
+  if (attentionParaType) {
+    const resolved = resolveAttentionInsertInAttentionPara(
       editor.state.selection.$from,
+      attentionParaType,
     );
     if (!resolved) return false;
 
@@ -353,6 +361,50 @@ export function insertCautionFromSchema(
   return editor.chain().focus().insertContent(node).run();
 }
 
+const attentionListItemParaEmpty: JSONContent = {
+  type: "attentionListItemPara",
+  content: [],
+};
+
+function buildMinimalNoteParaJson(): JSONContent {
+  return {
+    type: "notePara",
+    content: [
+      { type: "noteLead", content: [] },
+      {
+        type: "attentionRandomList",
+        content: [
+          {
+            type: "attentionRandomListItem",
+            content: [attentionListItemParaEmpty],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/** `note`：`notePara+`（schema 描述类规则） */
+export function buildInsertNoteJson(
+  schema: DescriptionSchema,
+): JSONContent | null {
+  if (!requireSchemaNode(schema, "note")) return null;
+  if (!contentRuleMentions(schema.note?.content, "notePara")) return null;
+  return {
+    type: "note",
+    content: [buildMinimalNoteParaJson()],
+  };
+}
+
+export function insertNoteFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  const node = buildInsertNoteJson(schema);
+  if (!node) return false;
+  return editor.chain().focus().insertContent(node).run();
+}
+
 /** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */
 function buildMinimalAttentionElemChild(
   schema: DescriptionSchema,
@@ -372,7 +424,7 @@ function buildMinimalAttentionElemChild(
   if (requireSchemaNode(schema, "note")) {
     return {
       type: "note",
-      content: [{ type: "notePara", content: [] }],
+      content: [buildMinimalNoteParaJson()],
     };
   }
   return null;
@@ -810,7 +862,7 @@ function serializeNodeToXml(node: JSONContent): string {
   }
 
   // 7. 剥离辅助外壳
-  if (node.type === "warningAndCautionLead") {
+  if (node.type === "warningAndCautionLead" || node.type === "noteLead") {
     return children;
   }
 

@@ -14,6 +14,7 @@ export const INSPECTABLE_NODE_TYPE_LIST = [
   'multimedia',
   'multimediaObject',
   'note',
+  'noteLead',
   'notePara',
   'para',
   'table',

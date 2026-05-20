@@ -11,6 +11,7 @@ import {
   insertTableFromSchema,
   insertWarningFromSchema,
   insertCautionFromSchema,
+  insertNoteFromSchema,
   exportEditorToDmXmlString,
   save,
   internalRef,
@@ -556,8 +557,9 @@ export function FormatToolbar({
           type="button"
           className="ietm-icon-btn"
           disabled={formatBarLocked}
-          onClick={() => alert("alert")}
-          title="注"
+          onClick={() => insertNoteFromSchema(editor, schema)}
+          title="插入注（note）"
+          aria-label="插入注"
         >
           <CircleAlert size={16} aria-hidden className="shrink-0" />
         </button>

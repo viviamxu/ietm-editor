@@ -14,6 +14,11 @@ import { LevelledParaNodeView } from "./s1000d/LevelledParaNodeView";
 import { s1000dTableNodes } from "./s1000d/s1000dTableNodes";
 import { S1000DSub, S1000DSup } from "./s1000d/subSuperMarks";
 import {
+  NoteLeadNodeView,
+  NoteNodeView,
+  NoteParaNodeView,
+} from "./s1000d/NoteNodeView";
+import {
   WarningAndCautionLeadNodeView,
   WarningAndCautionParaNodeView,
   WarningNodeView,
@@ -375,11 +380,42 @@ export const S1000DCaution = Node.create({
   },
 });
 
-/** S1000D `notePara`（位于 `note` 内）。 */
+/** 编辑器内部块：`notePara` 内、位于 `attentionRandomList` 之前的前导正文（导出时剥壳）。 */
+export const NoteLead = Node.create({
+  name: "noteLead",
+  group: "block",
+
+  content: "inline*",
+
+  parseHTML() {
+    return [
+      {
+        tag: "noteLead",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "notelead",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["noteLead", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(NoteLeadNodeView);
+  },
+});
+
+/**
+ * S1000D `notePara`：前导 `noteLead` 与可选 `attentionRandomList`（与样例 XML 并排结构一致）。
+ */
 export const NotePara = Node.create({
   name: "notePara",
   group: "block",
-  content: "inline*",
+  content: "noteLead? attentionRandomList?",
 
   parseHTML() {
     return [
@@ -396,6 +432,10 @@ export const NotePara = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["notePara", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(NoteParaNodeView);
   },
 });
 
@@ -440,6 +480,10 @@ export const S1000DNote = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["note", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(NoteNodeView);
   },
 });
 
@@ -1123,6 +1167,7 @@ export const s1000dPhase1Nodes = [
   WarningAndCautionPara,
   S1000DWarning,
   S1000DCaution,
+  NoteLead,
   NotePara,
   S1000DNote,
   S1000DTitle,
@@ -1215,6 +1260,49 @@ function normalizeWarningAndCautionParasForEditor(descriptionRoot: Element) {
     const lead = ns
       ? owner.createElementNS(ns, "warningAndCautionLead")
       : owner.createElement("warningAndCautionLead");
+    for (const n of toWrap) lead.appendChild(n);
+    para.insertBefore(lead, para.firstChild);
+  }
+}
+
+/** 与 `normalizeWarningAndCautionParasForEditor` 同逻辑，用于 `notePara`。 */
+function normalizeNoteParasForEditor(descriptionRoot: Element) {
+  const paras = Array.from(descriptionRoot.querySelectorAll("notePara"));
+  const DOM_ELEMENT = globalThis.Node.ELEMENT_NODE;
+  const DOM_TEXT = globalThis.Node.TEXT_NODE;
+
+  for (const para of paras) {
+    if (para.querySelector(":scope > noteLead")) continue;
+    if (para.querySelector(":scope > notelead")) continue;
+
+    const toWrap: globalThis.ChildNode[] = [];
+    let ref: globalThis.ChildNode | null = para.firstChild;
+    while (ref) {
+      if (
+        ref.nodeType === DOM_ELEMENT &&
+        ((ref as Element).localName === "attentionRandomList" ||
+          (ref as Element).localName === "attentionrandomlist")
+      ) {
+        break;
+      }
+      const next = ref.nextSibling;
+      toWrap.push(ref);
+      ref = next;
+    }
+
+    const hasSubstance = toWrap.some((n) => {
+      if (n.nodeType === DOM_TEXT) {
+        return !!(n.textContent && n.textContent.trim());
+      }
+      return n.nodeType === DOM_ELEMENT;
+    });
+    if (!hasSubstance) continue;
+
+    const owner = para.ownerDocument;
+    const ns = para.namespaceURI;
+    const lead = ns
+      ? owner.createElementNS(ns, "noteLead")
+      : owner.createElement("noteLead");
     for (const n of toWrap) lead.appendChild(n);
     para.insertBefore(lead, para.firstChild);
   }
@@ -1583,6 +1671,7 @@ export function getDescriptionInnerXmlFromDmXml(
   if (!description) return null;
 
   normalizeWarningAndCautionParasForEditor(description);
+  normalizeNoteParasForEditor(description);
   normalizeS1000dListsForEditor(description);
 
   const BLOCK_TAGS = [
