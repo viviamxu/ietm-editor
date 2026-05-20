@@ -64,16 +64,38 @@
   color: #64748b;
 }
 
-/* figure 等块内短标题（任意层级）略微缩小 */
-.ietm-editor-surface .tiptap figure > .s1000d-title-display,
+/* figure 图题：displayLevel=0，不用 levelledPara 章节标题样式 */
+.ietm-editor-surface
+  .tiptap
+  figure
+  .s1000d-title-display[data-s1000d-title-level="0"],
+.ietm-editor-surface
+  .tiptap
+  figure.s1000d-figure
+  .s1000d-title-display[data-s1000d-title-level="0"],
+.ietm-editor-surface .tiptap figure .s1000d-figure__content .s1000d-title-display,
 .ietm-editor-surface
   .tiptap
   figure.s1000d-figure
   .s1000d-figure__content
-  > .s1000d-title-display {
-  font-size: 1.05em;
-  font-weight: 600;
-  margin: 0.35em 0 0.2em;
+  .s1000d-title-display,
+.ietm-editor-surface
+  .tiptap
+  figure
+  .s1000d-figure__content
+  s1000d-block-title.s1000d-title-display,
+.ietm-editor-surface
+  .tiptap
+  figure.s1000d-figure
+  .s1000d-figure__content
+  s1000d-block-title.s1000d-title-display {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #718199;
+  text-align: center;
+  margin: 0 0 8px;
 }
 
 /* table 标题：不使用 heading 语义，视觉按业务示例居中、浅灰并带短下划线 */

@@ -43,8 +43,18 @@ import {
   TriangleAlert,
   SquarePilcrow,
   Strikethrough as StrikethroughIcon,
+  Outdent,
+  Indent,
 } from "lucide-react";
 
+import {
+  canDemoteNesting,
+  demoteNesting,
+} from "../../lib/editor/demoteNesting";
+import {
+  canPromoteNesting,
+  promoteNesting,
+} from "../../lib/editor/promoteNesting";
 import {
   canRunS1000dTableAction,
   runS1000dTableAction,
@@ -121,6 +131,8 @@ export function FormatToolbar({
   const superscriptActive = editor.isActive("s1000dSup");
   const overlineActive = editor.isActive("overline");
   const strikethroughActive = editor.isActive("strikethrough");
+  const demoteEnabled = canDemoteNesting(editor);
+  const promoteEnabled = canPromoteNesting(editor);
 
   const toggleSubscript = () => {
     const chain = editor.chain().focus().unsetMark("s1000dSup");
@@ -286,6 +298,28 @@ export function FormatToolbar({
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked || !promoteEnabled}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => promoteNesting(editor)}
+          title="升级（变浅层级，如三级→二级）"
+          aria-label="升级"
+        >
+          <Indent size={16} aria-hidden className="shrink-0" />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked || !demoteEnabled}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => demoteNesting(editor)}
+          title="降级（加深层级，如二级→三级）"
+          aria-label="降级"
+        >
+          <Outdent size={16} aria-hidden className="shrink-0" />
+        </button>
 
         {isBuiltinVisible("insertSequentialList") ? (
           <button

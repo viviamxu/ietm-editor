@@ -11,6 +11,7 @@ import {
 } from "@arco-design/web-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 
@@ -214,15 +215,14 @@ function ReferencePublicationDialog() {
           rows.map((row) => ({ infoEntityIdent: row.code })),
         );
       } else {
-        const images = rows.map((row) => ({
-          type: "image" as const,
-          attrs: {
+        insertImagesIntoEditor(
+          editor,
+          rows.map((row) => ({
             src: row.preview,
             alt: row.title,
             figureId: row.code,
-          },
-        }));
-        editor.chain().focus().insertContent(images).run();
+          })),
+        );
       }
     }
     closeInsertPublication();

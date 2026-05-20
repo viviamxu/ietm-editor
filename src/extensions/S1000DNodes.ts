@@ -60,33 +60,59 @@ function isS1000DTitleParent(parent: Element | null): boolean {
 
 const S1000D_TITLE_LEVEL_CAP = 6;
 
+/** 图题/表题等：不参与 levelledPara 章节标题层级（对应 `data-s1000d-title-level="0"`） */
+const S1000D_TITLE_CAPTION_LEVEL = 0;
+
+const TITLE_CAPTION_PARENT_TYPES = new Set([
+  "figure",
+  "table",
+  "multimedia",
+]);
+
 const s1000dTitleLevelsKey = new PluginKey<{ forceInitialSync?: true }>(
   "s1000d-title-levels",
 );
 
 function clampS1000dTitleDisplayLevel(raw: number): number {
   if (!Number.isFinite(raw)) return 1;
-  return Math.min(S1000D_TITLE_LEVEL_CAP, Math.max(1, Math.round(raw)));
+  const rounded = Math.round(raw);
+  if (rounded === S1000D_TITLE_CAPTION_LEVEL) return S1000D_TITLE_CAPTION_LEVEL;
+  return Math.min(S1000D_TITLE_LEVEL_CAP, Math.max(1, rounded));
+}
+
+function normalizeTitleDisplayLevel(raw: number | null | undefined): number {
+  if (raw === S1000D_TITLE_CAPTION_LEVEL) return S1000D_TITLE_CAPTION_LEVEL;
+  return clampS1000dTitleDisplayLevel(Number(raw ?? 1));
 }
 
 /**
- * 统计包含该 `title` 节点的 `levelledPara` 祖先数量，用于对应 h1/h2/…（最外层为 1）。
- * 位于 figure/table 等下且路径上无 `levelledPara` 时得到 0，按一级标题处理。
+ * `levelledPara` 下 title：按祖先 `levelledPara` 深度 1~6。
+ * `figure` / `table` / `multimedia` 下 title：固定为 0（图题/表题，不用 levelledPara 深度）。
  */
-function ancestorLevelledParaDepthForTitle(
-  doc: PMNode,
-  titleStartPos: number,
-): number {
-  let count = 0;
+function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
   try {
     const $pos = doc.resolve(titleStartPos + 1);
+    let titleDepth = -1;
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === "title") {
+        titleDepth = d;
+        break;
+      }
+    }
+    if (titleDepth > 0) {
+      const parentType = $pos.node(titleDepth - 1).type.name;
+      if (TITLE_CAPTION_PARENT_TYPES.has(parentType)) {
+        return S1000D_TITLE_CAPTION_LEVEL;
+      }
+    }
+    let count = 0;
     for (let d = $pos.depth; d > 0; d--) {
       if ($pos.node(d).type.name === "levelledPara") count++;
     }
+    return clampS1000dTitleDisplayLevel(Math.max(1, count));
   } catch {
     return 1;
   }
-  return clampS1000dTitleDisplayLevel(Math.max(1, count));
 }
 
 function createS1000dTitleLevelsPlugin() {
@@ -107,9 +133,9 @@ function createS1000dTitleLevelsPlugin() {
       newState.doc.descendants((node, pos) => {
         if (node.type.name !== "title") return true;
 
-        const next = ancestorLevelledParaDepthForTitle(newState.doc, pos);
-        const curr = clampS1000dTitleDisplayLevel(
-          Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
+        const next = computeTitleDisplayLevel(newState.doc, pos);
+        const curr = normalizeTitleDisplayLevel(
+          (node.attrs as { displayLevel?: number }).displayLevel,
         );
 
         if (curr !== next) {
@@ -511,7 +537,7 @@ const s1000dTitleHeadingParseRules = ([1, 2, 3, 4, 5, 6] as const).map(
 
 /**
  * S1000D `title`：标题行块，Schema 为 `(text)*`；此处建模为 `inline*` 以支持后续行内标记扩展。
- * 展示级数由祖先 `levelledPara` 深度决定（上限 6），但渲染为统一块标签，避免输出语义 h1~h6。
+ * 展示级数：`levelledPara` 下按祖先深度 1~6；`figure` 等块内图题为 0（非章节标题）。
  */
 export const S1000DTitle = Node.create({
   name: "title",
@@ -529,8 +555,8 @@ export const S1000DTitle = Node.create({
             : 1,
         renderHTML: (attrs) => ({
           "data-s1000d-title-level": String(
-            clampS1000dTitleDisplayLevel(
-              Number((attrs as { displayLevel?: number }).displayLevel ?? 1),
+            normalizeTitleDisplayLevel(
+              (attrs as { displayLevel?: number }).displayLevel,
             ),
           ),
         }),
@@ -575,8 +601,8 @@ export const S1000DTitle = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const level = clampS1000dTitleDisplayLevel(
-      Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
+    const level = normalizeTitleDisplayLevel(
+      (node.attrs as { displayLevel?: number }).displayLevel,
     );
     return [
       "s1000d-block-title",
