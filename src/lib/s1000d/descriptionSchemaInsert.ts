@@ -96,6 +96,15 @@ export function insertLevelledParaFromSchema(
   return editor.chain().focus().insertContent(node).run();
 }
 
+/** 在光标处插入空 `para`（描述类正文段落块）。 */
+export function insertParagraphFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  if (!requireSchemaNode(schema, "para")) return false;
+  return editor.chain().focus().insertContent({ type: "para", content: [] }).run();
+}
+
 /** sequentialList：schema 要求 `listItem+`；编辑器映射为 orderedList → listItem → paragraph */
 export function insertSequentialListFromSchema(
   editor: Editor,
@@ -492,6 +501,8 @@ const ignoredExportAttrs = [
   "start",
   "sourceXmlAttrKeys",
   "src",
+  /** 仅编辑器 WYSIWYG；不写入 S1000D XML */
+  "textAlign",
 ];
 const listNodeTypes = [
   "bulletList",
@@ -658,6 +669,10 @@ function serializeNodeToXml(node: JSONContent): string {
           text = `<emphasis emphasisType="em02">${text}</emphasis>`;
         else if (mark.type === "underline")
           text = `<emphasis emphasisType="em03">${text}</emphasis>`;
+        else if (mark.type === "overline")
+          text = `<emphasis emphasisType="em04">${text}</emphasis>`;
+        else if (mark.type === "strikethrough" || mark.type === "strike")
+          text = `<emphasis emphasisType="em05">${text}</emphasis>`;
         else if (
           mark.type === "subscript" ||
           mark.type === "subScript" ||

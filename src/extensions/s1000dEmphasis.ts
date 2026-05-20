@@ -2,7 +2,7 @@ import { Mark, mergeAttributes } from '@tiptap/core'
 
 /**
  * S1000D `emphasis`：带 `emphasisType` 的特别强调（行内 Mark）。
- * 常见取值：`em01`（偏粗体强调）、`em02`（偏斜体强调）；缺省时按 `em01` 处理。
+ * 常见取值：`em01`（偏粗体强调）、`em02`（偏斜体强调）；`em03`–`em05` 由 Underline / Overline / Strikethrough 扩展承接。
  *
  * @see Bike 示例 XML `<emphasis emphasisType="em01">`、`em02`
  */
@@ -36,6 +36,7 @@ export const S1000DEmphasis = Mark.create({
           const raw =
             el.getAttribute('emphasisType') ??
             el.getAttribute('emphasistype')
+          if (raw === 'em03' || raw === 'em04' || raw === 'em05') return false
           return {
             emphasisType: raw ?? 'em01',
           }

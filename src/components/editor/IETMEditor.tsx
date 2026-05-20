@@ -11,6 +11,8 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Tabs } from "@arco-design/web-react";
 import Underline from "@tiptap/extension-underline";
+import { Overline } from "../../extensions/s1000d/overlineMark";
+import { Strikethrough } from "../../extensions/s1000d/strikethroughMark";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
@@ -255,13 +257,18 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         StarterKit.configure({
           bulletList: { keepMarks: true },
           orderedList: { keepMarks: true },
+          strike: false,
         }),
         TextStyleKit.configure({
           lineHeight: false,
         }),
         Underline,
+        Overline,
+        Strikethrough,
         TextAlign.configure({
-          types: ["heading", "paragraph"],
+          types: ["heading", "paragraph", "para"],
+          alignments: ["left", "center", "right", "justify"],
+          defaultAlignment: "left",
         }),
         Highlight.configure({ multicolor: true }),
         SourceXmlAttrKeysExtension,

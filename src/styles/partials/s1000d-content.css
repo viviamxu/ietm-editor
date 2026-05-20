@@ -379,7 +379,23 @@
 
 .ietm-editor-surface
   .tiptap
-  emphasis.s1000d-emphasis:not([data-emphasis-type="em02"]) {
+  emphasis.s1000d-emphasis:not([data-emphasis-type="em02"]):not(
+    [data-emphasis-type="em04"]
+  ):not([data-emphasis-type="em05"]) {
   font-weight: 700;
   color: #0f172a;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em04"],
+.ietm-editor-surface .tiptap emphasis.s1000d-overline {
+  text-decoration: overline;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em05"],
+.ietm-editor-surface .tiptap emphasis.s1000d-strikethrough {
+  text-decoration: line-through;
+  font-weight: inherit;
+  color: inherit;
 }

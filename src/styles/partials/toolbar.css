@@ -90,6 +90,14 @@
   text-decoration: underline;
 }
 
+.ietm-overline-label {
+  text-decoration: overline;
+}
+
+.ietm-strikethrough-label {
+  text-decoration: line-through;
+}
+
 .ietm-toolbar-select {
   height: 32px;
   padding: 0 8px;

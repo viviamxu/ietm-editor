@@ -5,6 +5,7 @@ import {
   insertFilmFromSchema,
   insertImageFromSchema,
   insertLevelledParaFromSchema,
+  insertParagraphFromSchema,
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
   insertTableFromSchema,
@@ -36,9 +37,11 @@ import {
   Link2,
   CircleX,
   LockKeyhole,
-  Pencil,
+  LockKeyholeOpen,
   CircleAlert,
   TriangleAlert,
+  SquarePilcrow,
+  Strikethrough as StrikethroughIcon,
 } from "lucide-react";
 
 import {
@@ -115,6 +118,8 @@ export function FormatToolbar({
 
   const subscriptActive = editor.isActive("s1000dSub");
   const superscriptActive = editor.isActive("s1000dSup");
+  const overlineActive = editor.isActive("overline");
+  const strikethroughActive = editor.isActive("strikethrough");
 
   const toggleSubscript = () => {
     const chain = editor.chain().focus().unsetMark("s1000dSup");
@@ -220,7 +225,7 @@ export function FormatToolbar({
               });
             }}
           >
-            <Pencil size={16} aria-hidden className="shrink-0" />
+            <LockKeyholeOpen size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
         <ToolbarCustomItems placement="editToggle" ctx={toolbarCtx} />
@@ -274,10 +279,10 @@ export function FormatToolbar({
             className="ietm-icon-btn"
             disabled={formatBarLocked}
             onClick={() => insertLevelledParaFromSchema(editor, schema)}
-            title="插入段落"
-            aria-label="插入段落"
+            title="插入层级段落"
+            aria-label="插入层级段落"
           >
-            <Pilcrow size={16} aria-hidden className="shrink-0" />
+            <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
 
@@ -343,6 +348,16 @@ export function FormatToolbar({
           </button>
         ) : null}
         <ToolbarCustomItems placement="insert" ctx={toolbarCtx} />
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={formatBarLocked}
+          onClick={() => insertParagraphFromSchema(editor, schema)}
+          title="插入段落"
+          aria-label="插入段落"
+        >
+          <Pilcrow size={16} aria-hidden className="shrink-0" />
+        </button>
       </div>
 
       <span
@@ -394,37 +409,26 @@ export function FormatToolbar({
         >
           <span className="ietm-underline-label">U</span>
         </button>
-
-        <label className="ietm-color-swatch" title="文字颜色">
-          <span className="ietm-color-swatch__glyph">A</span>
-          <input
-            type="color"
-            disabled={formatBarLocked}
-            value={rgbToHex(textAttrs.color ?? "#1f2330")}
-            onChange={(e) =>
-              editor.chain().focus().setColor(e.target.value).run()
-            }
-          />
-        </label>
-
-        <label
-          className="ietm-color-swatch ietm-color-swatch--highlight"
-          title="背景色"
+        <button
+          type="button"
+          className={`ietm-toggle-btn ${overlineActive ? "is-active" : ""}`}
+          disabled={formatBarLocked}
+          onClick={() => editor.chain().focus().toggleMark("overline").run()}
+          title="上横线"
+          aria-pressed={overlineActive}
         >
-          <span className="ietm-highlight-icon">▮</span>
-          <input
-            type="color"
-            disabled={formatBarLocked}
-            value={rgbToHex(highlightAttrs.color ?? "#fef08a")}
-            onChange={(e) =>
-              editor
-                .chain()
-                .focus()
-                .setHighlight({ color: e.target.value })
-                .run()
-            }
-          />
-        </label>
+          <span className="ietm-overline-label">A</span>
+        </button>
+        <button
+          type="button"
+          className={`ietm-toggle-btn ${strikethroughActive ? "is-active" : ""}`}
+          disabled={formatBarLocked}
+          onClick={() => editor.chain().focus().toggleMark("strikethrough").run()}
+          title="删除线"
+          aria-pressed={strikethroughActive}
+        >
+          <StrikethroughIcon size={16} aria-hidden className="shrink-0" />
+        </button>
       </div>
 
       <span
