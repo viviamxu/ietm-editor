@@ -10,7 +10,7 @@ import {
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Tabs } from "@arco-design/web-react";
-import Underline from "@tiptap/extension-underline";
+import { Underline } from "../../extensions/s1000d/underlineMark";
 import { Overline } from "../../extensions/s1000d/overlineMark";
 import { Strikethrough } from "../../extensions/s1000d/strikethroughMark";
 import TextAlign from "@tiptap/extension-text-align";
@@ -19,11 +19,14 @@ import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
+import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
+import { S1000DListItem } from "../../extensions/s1000d/s1000dListItem";
 import {
   getDescriptionInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
+import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
 import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
@@ -196,8 +199,11 @@ function IETMAppFooter(props: { status: IETMEditorFooterStatus }) {
 function normalizeEditorContentInput(
   content: JSONContent | string | undefined,
 ): JSONContent | string | undefined {
-  if (typeof content !== "string") return content;
-  return preprocessS1000dDescriptionHtmlFragment(content);
+  if (content == null) return content;
+  if (typeof content === "string") {
+    return preprocessS1000dDescriptionHtmlFragment(content);
+  }
+  return migrateParagraphInJson(content);
 }
 
 const DOC_TITLE_PLACEHOLDER = "数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D";
@@ -258,7 +264,19 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           bulletList: { keepMarks: true },
           orderedList: { keepMarks: true },
           strike: false,
+          paragraph: false,
+          listItem: false,
+          blockquote: false,
+          /** 描述类用 S1000D `title`，不用 StarterKit `heading`（否则会冒出空 `<h1>`） */
+          heading: false,
+          /** 描述类正文不用代码块；禁用后避免 TrailingNode/回车退化为 `<pre><code>` */
+          code: false,
+          codeBlock: false,
+          /** 不用尾随块（`paragraph` 关闭后易退化成 blockquote/codeBlock/heading） */
+          trailingNode: false,
         }),
+        S1000DListItem,
+        MigrateParagraphToParaExtension,
         TextStyleKit.configure({
           lineHeight: false,
         }),
@@ -266,7 +284,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         Overline,
         Strikethrough,
         TextAlign.configure({
-          types: ["heading", "paragraph", "para"],
+          types: ["para"],
           alignments: ["left", "center", "right", "justify"],
           defaultAlignment: "left",
         }),

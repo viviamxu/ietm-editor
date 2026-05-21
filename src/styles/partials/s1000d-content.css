@@ -434,10 +434,17 @@
 .ietm-editor-surface
   .tiptap
   emphasis.s1000d-emphasis:not([data-emphasis-type="em02"]):not(
-    [data-emphasis-type="em04"]
-  ):not([data-emphasis-type="em05"]) {
+    [data-emphasis-type="em03"]
+  ):not([data-emphasis-type="em04"]):not([data-emphasis-type="em05"]) {
   font-weight: 700;
   color: #0f172a;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em03"],
+.ietm-editor-surface .tiptap emphasis.s1000d-underline {
+  text-decoration: underline;
+  font-weight: inherit;
+  color: inherit;
 }
 
 .ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em04"],

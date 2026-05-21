@@ -176,10 +176,23 @@ function parseS1000dTitleDisplayLevelFromElement(el: Element): number {
   return 1;
 }
 
+/**
+ * 嵌套块专用组：不得使用 `block`，否则在 `paragraph` 关闭后会被 `doc` 的 `block+`
+ * 当成默认块（回车易出现 `attentionListItemPara` 等）。
+ */
+const WARNING_CAUTION_LEAD_GROUP = "warningAndCautionLeadBlock";
+const ATTENTION_LIST_ITEM_PARA_GROUP = "attentionListItemBlock";
+const ATTENTION_RANDOM_LIST_ITEM_GROUP = "attentionRandomListItemBlock";
+const ATTENTION_RANDOM_LIST_GROUP = "attentionRandomListBlock";
+const WARNING_CAUTION_PARA_GROUP = "warningAndCautionParaBlock";
+const NOTE_LEAD_GROUP = "noteLeadBlock";
+const NOTE_PARA_GROUP = "noteParaBlock";
+const S1000D_TITLE_GROUP = "s1000dTitleBlock";
+
 /** 编辑器内部块：承接 `warningAndCautionPara` 内、位于 `attentionRandomList` 之前的行内与前导内容（原装 XML 无此外壳，导入时写入）。 */
 export const WarningAndCautionLead = Node.create({
   name: "warningAndCautionLead",
-  group: "block",
+  group: WARNING_CAUTION_LEAD_GROUP,
 
   content: "inline*",
 
@@ -208,7 +221,7 @@ export const WarningAndCautionLead = Node.create({
 /** S1000D `attentionListItemPara`，位于 `attentionRandomListItem` 内。 */
 export const AttentionListItemPara = Node.create({
   name: "attentionListItemPara",
-  group: "block",
+  group: ATTENTION_LIST_ITEM_PARA_GROUP,
 
   content: "inline*",
 
@@ -233,7 +246,7 @@ export const AttentionListItemPara = Node.create({
 /** S1000D `attentionRandomListItem`。 */
 export const AttentionRandomListItem = Node.create({
   name: "attentionRandomListItem",
-  group: "block",
+  group: ATTENTION_RANDOM_LIST_ITEM_GROUP,
 
   content: "attentionListItemPara+",
 
@@ -258,7 +271,7 @@ export const AttentionRandomListItem = Node.create({
 /** S1000D `attentionRandomList`（attention 无序列表容器）。 */
 export const AttentionRandomList = Node.create({
   name: "attentionRandomList",
-  group: "block",
+  group: ATTENTION_RANDOM_LIST_GROUP,
 
   content: "attentionRandomListItem+",
 
@@ -288,7 +301,7 @@ export const AttentionRandomList = Node.create({
  */
 export const WarningAndCautionPara = Node.create({
   name: "warningAndCautionPara",
-  group: "block",
+  group: WARNING_CAUTION_PARA_GROUP,
 
   content: "warningAndCautionLead? attentionRandomList?",
 
@@ -410,7 +423,7 @@ export const S1000DCaution = Node.create({
 /** 编辑器内部块：`notePara` 内、位于 `attentionRandomList` 之前的前导正文（导出时剥壳）。 */
 export const NoteLead = Node.create({
   name: "noteLead",
-  group: "block",
+  group: NOTE_LEAD_GROUP,
 
   content: "inline*",
 
@@ -441,7 +454,7 @@ export const NoteLead = Node.create({
  */
 export const NotePara = Node.create({
   name: "notePara",
-  group: "block",
+  group: NOTE_PARA_GROUP,
   content: "noteLead? attentionRandomList?",
 
   parseHTML() {
@@ -542,7 +555,7 @@ const s1000dTitleHeadingParseRules = ([1, 2, 3, 4, 5, 6] as const).map(
  */
 export const S1000DTitle = Node.create({
   name: "title",
-  group: "block",
+  group: S1000D_TITLE_GROUP,
   content: "inline*",
 
   addAttributes() {
@@ -617,12 +630,42 @@ export const S1000DTitle = Node.create({
   },
 });
 
+const PARA_XML_ATTR_NAMES = [
+  "id",
+  "securityClassification",
+  "caveat",
+  "derivativeClassificationRefId",
+  "reasonForUpdateRefIds",
+] as const;
+
+function readParaAttrsFromDom(el: Element) {
+  return {
+    id: el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id"),
+    securityClassification: el.getAttribute("securityClassification"),
+    caveat: el.getAttribute("caveat"),
+    derivativeClassificationRefId: el.getAttribute(
+      "derivativeClassificationRefId",
+    ),
+    reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
+    [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+      ...PARA_XML_ATTR_NAMES,
+    ]),
+  };
+}
+
+function copyElementAttributes(src: Element, dest: Element) {
+  for (const { name, value } of Array.from(src.attributes)) {
+    dest.setAttribute(name, value);
+  }
+}
+
 /**
  * S1000D `para`：描述类正文的主要段落块；允许多种行内（Phase 1 仅 `inline*`，与 Schema 中 text 组对齐的第一步）。
  * 透传样例 XML 中出现的安全/衍生分类等属性，便于往返 XML。
  */
 export const S1000DPara = Node.create({
   name: "para",
+  priority: 1000,
   group: "block",
   content: "inline*",
 
@@ -643,24 +686,15 @@ export const S1000DPara = Node.create({
         priority: 200,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return {
-            id:
-              el.getAttribute("id") ??
-              el.getAttribute("data-s1000d-element-id"),
-            securityClassification: el.getAttribute("securityClassification"),
-            caveat: el.getAttribute("caveat"),
-            derivativeClassificationRefId: el.getAttribute(
-              "derivativeClassificationRefId",
-            ),
-            reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
-              "id",
-              "securityClassification",
-              "caveat",
-              "derivativeClassificationRefId",
-              "reasonForUpdateRefIds",
-            ]),
-          };
+          return readParaAttrsFromDom(el);
+        },
+      },
+      {
+        tag: "p",
+        priority: 100,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return readParaAttrsFromDom(el);
         },
       },
     ];
@@ -668,6 +702,24 @@ export const S1000DPara = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["para", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Enter: ({ editor }) => {
+        const { $from } = editor.state.selection;
+        for (let d = $from.depth; d > 0; d--) {
+          const name = $from.node(d).type.name;
+          if (name === "orderedList" || name === "bulletList" || name === "listItem") {
+            return false;
+          }
+          if (name === "para") {
+            return editor.chain().focus().splitBlock().run();
+          }
+        }
+        return false;
+      },
+    };
   },
 });
 
@@ -1424,9 +1476,10 @@ function normalizeListItemParasBeforeListRename(item: Element) {
       nonTextInline ||
       (inlineParts.length > 0 && blocks.length === 0)
     ) {
-      const p = doc.createElement("p");
-      for (const n of inlineParts) p.appendChild(n);
-      frag.appendChild(p);
+      const nextPara = doc.createElement("para");
+      copyElementAttributes(para, nextPara);
+      for (const n of inlineParts) nextPara.appendChild(n);
+      frag.appendChild(nextPara);
     } else {
       for (const n of inlineParts) frag.appendChild(n);
     }

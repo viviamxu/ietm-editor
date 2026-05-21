@@ -16,6 +16,8 @@ const UNIT_PRESETS = ["ph01(h)", "mm", "in", "deg"];
 const HIDDEN_ATTR_KEYS = new Set([
   "class",
   "start",
+  /** 工具栏 TextAlign 使用，不落 S1000D XML、不在属性面板展示 */
+  "textAlign",
   SOURCE_XML_ATTR_KEYS,
 ]);
 
