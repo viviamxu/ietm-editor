@@ -23,9 +23,10 @@ import {
   WarningAndCautionParaNodeView,
   WarningNodeView,
 } from "./s1000d/WarningNodeView";
-import type { ParaAttrs } from "./s1000d/types";
+import type { FigureAttrs, ParaAttrs } from "./s1000d/types";
 import { s1000dIdAttributeConfig } from "../lib/s1000d/s1000dIdAttribute";
 import {
+  FIGURE_XML_ATTR_NAMES,
   SOURCE_XML_ATTR_KEYS,
   hasXmlAttr,
   xmlAttrsPresentOnElement,
@@ -33,7 +34,7 @@ import {
 import { readXlinkHrefFromElement } from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 
-export type { ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
+export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
 export { S1000DEmphasis };
 
 /**
@@ -827,7 +828,7 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
   if (hasXmlAttr(el, "infoEntityIdent") || hasXmlAttr(el, "infoentityident")) {
     keys.push("infoEntityIdent");
   }
-  if (readXlinkHrefFromElement(el)) keys.push("xlink:href");
+  if (readXlinkHrefFromElement(el)) keys.push("src");
   return keys;
 }
 
@@ -1074,9 +1075,20 @@ export const S1000DFigure = Node.create({
   content: "(title?) graphic+",
   defining: true,
 
-  addAttributes() {
+  addAttributes(): Record<
+    keyof FigureAttrs,
+    { default: string | null }
+  > {
     return {
-      id: { default: null },
+      id: s1000dIdAttributeConfig(),
+      changeType: { default: null },
+      changeMark: { default: null },
+      reasonForUpdateRefIds: { default: null },
+      authorityName: { default: null },
+      authorityDocument: { default: null },
+      securityClassification: { default: null },
+      commercialClassification: { default: null },
+      caveat: { default: null },
     };
   },
 
@@ -1087,8 +1099,21 @@ export const S1000DFigure = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           return {
-            id: el.getAttribute("id"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+            id:
+              el.getAttribute("id") ??
+              el.getAttribute("data-s1000d-element-id"),
+            changeType: el.getAttribute("changeType"),
+            changeMark: el.getAttribute("changeMark"),
+            reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
+            authorityName: el.getAttribute("authorityName"),
+            authorityDocument: el.getAttribute("authorityDocument"),
+            securityClassification: el.getAttribute("securityClassification"),
+            commercialClassification: el.getAttribute("commercialClassification"),
+            caveat: el.getAttribute("caveat"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
+              el,
+              FIGURE_XML_ATTR_NAMES,
+            ),
           };
         },
       },

@@ -4,6 +4,7 @@ import type { InspectTarget } from "../../lib/editor/resolveInspectable";
 import { tableDimensions } from "../../lib/editor/resolveInspectable";
 import { validatePrimaryIdForSave } from "../../lib/editor/validateDocumentNodeId";
 import {
+  FIGURE_PANEL_ATTR_NAMES,
   SOURCE_XML_ATTR_KEYS,
   mergeSourceXmlAttrKeysAfterPatch,
   shouldShowSecondaryPanelAttr,
@@ -34,13 +35,22 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   entry: ["colname", "namest", "nameend", "morerows", "align"],
   internalRef: ["internalRefId", "internalRefTargetType"],
   table: [],
-  figure: [],
+  figure: [...FIGURE_PANEL_ATTR_NAMES],
   levelledPara: [],
   warning: [],
   caution: [],
   note: [],
   dmRef: ["rawXml"],
 };
+
+/** 属性面板展示名（schema 字段名 → 源 XML 语义） */
+const ATTR_LABEL: Partial<Record<string, Partial<Record<string, string>>>> = {
+  graphic: { src: "xlink:href" },
+};
+
+function attrPanelLabel(nodeType: string, key: string): string {
+  return ATTR_LABEL[nodeType]?.[key] ?? key;
+}
 
 function primaryIdKey(nodeType: string, schemaAttrs: Record<string, unknown>) {
   if (nodeType === "image" && "figureId" in schemaAttrs) return "figureId";
@@ -287,7 +297,7 @@ export function S1000DPropertyPanel({
             if (s && !options.includes(s)) options.unshift(s);
             return (
               <label key={key} className="ietm-prop-field">
-                <span>{key}</span>
+                <span>{attrPanelLabel(target.nodeType, key)}</span>
                 <select
                   disabled={readOnly}
                   value={s || options[0] || ""}
@@ -308,7 +318,7 @@ export function S1000DPropertyPanel({
           if (key === "displayLevel" && target.nodeType === "title") {
             return (
               <label key={key} className="ietm-prop-field">
-                <span>{key}</span>
+                <span>{attrPanelLabel(target.nodeType, key)}</span>
                 <input
                   type="number"
                   min={1}
@@ -334,7 +344,7 @@ export function S1000DPropertyPanel({
           if (key === "rawXml" && target.nodeType === "dmRef") {
             return (
               <label key={key} className="ietm-prop-field">
-                <span>{key}</span>
+                <span>{attrPanelLabel(target.nodeType, key)}</span>
                 <textarea
                   rows={6}
                   className="ietm-prop-textarea"
@@ -348,7 +358,7 @@ export function S1000DPropertyPanel({
 
           return (
             <label key={key} className="ietm-prop-field">
-              <span>{key}</span>
+              <span>{attrPanelLabel(target.nodeType, key)}</span>
               <input
                 type="text"
                 disabled={readOnly}

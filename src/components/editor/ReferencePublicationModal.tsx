@@ -234,7 +234,7 @@ function ReferencePublicationDialog() {
 
   return (
     <Modal
-      title={isMultimedia ? "插入多媒体" : "插入 S1000D 出版物"}
+      title={isMultimedia ? "插入多媒体" : "插入图片"}
       visible
       maskClosable={false}
       onCancel={closeInsertPublication}

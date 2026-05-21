@@ -4,6 +4,24 @@
  */
 export const SOURCE_XML_ATTR_KEYS = 'sourceXmlAttrKeys' as const
 
+/** `figure` 上可往返 S1000D XML 的属性名（含 `id`） */
+export const FIGURE_XML_ATTR_NAMES = [
+  'id',
+  'changeType',
+  'changeMark',
+  'reasonForUpdateRefIds',
+  'authorityName',
+  'authorityDocument',
+  'securityClassification',
+  'commercialClassification',
+  'caveat',
+] as const
+
+/** 属性面板中始终展示的非主键 `figure` 字段 */
+export const FIGURE_PANEL_ATTR_NAMES = FIGURE_XML_ATTR_NAMES.filter(
+  (k) => k !== 'id',
+)
+
 export type SourceXmlAttrKeysValue = string[] | null
 
 export function hasXmlAttr(el: Element, name: string): boolean {
@@ -58,11 +76,15 @@ export function mergeSourceXmlAttrKeysAfterPatch(input: {
     ...(primaryKey ? [primaryKey] : []),
   ])
 
+  const normalizeSourceXmlAttrKey = (k: string): string =>
+    k === "xlink:href" ? "src" : k;
+
   const next = new Set<string>()
   const prev = liveAttrs[SOURCE_XML_ATTR_KEYS]
   if (Array.isArray(prev)) {
     for (const x of prev) {
-      if (typeof x === 'string' && x !== primaryKey) next.add(x)
+      if (typeof x !== "string" || x === primaryKey) continue;
+      next.add(normalizeSourceXmlAttrKey(x));
     }
   } else {
     for (const k of schemaAttrKeys) {
@@ -86,6 +108,8 @@ export function mergeSourceXmlAttrKeysAfterPatch(input: {
   return out
 }
 
+const figurePanelAttrSet = new Set<string>(FIGURE_PANEL_ATTR_NAMES)
+
 export function shouldShowSecondaryPanelAttr(input: {
   nodeType: string
   attrKey: string
@@ -96,9 +120,20 @@ export function shouldShowSecondaryPanelAttr(input: {
   if (attrKey === SOURCE_XML_ATTR_KEYS) return false
   if (primaryKey && attrKey === primaryKey) return false
 
+  if (input.nodeType === 'figure' && figurePanelAttrSet.has(attrKey)) {
+    return true
+  }
+
   const present = liveAttrs[SOURCE_XML_ATTR_KEYS]
   if (Array.isArray(present)) {
-    return present.includes(attrKey)
+    if (
+      input.nodeType === "graphic" &&
+      attrKey === "src" &&
+      present.includes("xlink:href")
+    ) {
+      return true;
+    }
+    return present.includes(attrKey);
   }
 
   /** 编辑器内部级数，默认恒为数值；不得用「非空」兜底显示，否则会冒充源 XML 属性 */
