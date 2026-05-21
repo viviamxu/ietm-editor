@@ -8,7 +8,7 @@ import {
   Eraser,
   Rows3,
   Split,
-  TableCellsSplit,
+  Trash2,
 } from "lucide-react";
 import type {
   canRunS1000dTableAction,
@@ -122,12 +122,12 @@ export function TableEditToolbar(props: {
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={locked || tableActionDisabled("deleteCell")}
-          onClick={() => runTableAction("deleteCell")}
-          title="删除单元格"
-          aria-label="删除单元格"
+          disabled={locked || tableActionDisabled("deleteTable")}
+          onClick={() => runTableAction("deleteTable")}
+          title="删除表格"
+          aria-label="删除表格"
         >
-          <TableCellsSplit size={16} aria-hidden />
+          <Trash2 size={16} aria-hidden />
         </button>
         <button
           type="button"

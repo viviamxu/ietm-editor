@@ -8,7 +8,6 @@ import {
   insertParagraphFromSchema,
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
-  insertTableFromSchema,
   insertWarningFromSchema,
   insertCautionFromSchema,
   insertNoteFromSchema,
@@ -22,7 +21,6 @@ import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
   List,
   ListOrdered,
-  Table,
   Undo2,
   Redo2,
   Film,
@@ -65,6 +63,7 @@ import type {
   ToolbarItemContext,
   ToolbarTab,
 } from "../../types/toolbar";
+import { InsertTablePicker } from "./InsertTablePicker";
 import { TableEditToolbar } from "./TableEditToolbar";
 import { ToolbarCustomItems } from "./ToolbarCustomItems";
 
@@ -348,15 +347,11 @@ export function FormatToolbar({
           </button>
         ) : null}
         {isBuiltinVisible("insertTable") ? (
-          <button
-            type="button"
-            className="ietm-icon-btn"
+          <InsertTablePicker
+            editor={editor}
+            schema={schema}
             disabled={formatBarLocked}
-            onClick={() => insertTableFromSchema(editor, schema, 4, 1, 3)}
-            title="插入表格（S1000D：title?、tgroup、thead?、tbody、row+、entry+、para+）"
-          >
-            <Table size={16} aria-hidden className="shrink-0" />
-          </button>
+          />
         ) : null}
         {isBuiltinVisible("insertImage") ? (
           <button
@@ -458,7 +453,9 @@ export function FormatToolbar({
           type="button"
           className={`ietm-toggle-btn ${strikethroughActive ? "is-active" : ""}`}
           disabled={formatBarLocked}
-          onClick={() => editor.chain().focus().toggleMark("strikethrough").run()}
+          onClick={() =>
+            editor.chain().focus().toggleMark("strikethrough").run()
+          }
           title="删除线"
           aria-pressed={strikethroughActive}
         >

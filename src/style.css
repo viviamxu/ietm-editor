@@ -6,6 +6,7 @@
 
 @import './styles/partials/shell.css';
 @import './styles/partials/toolbar.css';
+@import './styles/partials/insert-table-picker.css';
 @import './styles/partials/main-layout.css';
 @import './styles/partials/tiptap-document.css';
 @import './styles/partials/s1000d-applicability.css';

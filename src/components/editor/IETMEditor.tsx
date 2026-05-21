@@ -21,6 +21,7 @@ import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
+import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
   getDescriptionInnerXmlFromDmXml,
@@ -67,7 +68,6 @@ import {
   Eraser,
   Rows3,
   Split,
-  TableCellsSplit,
   Trash2,
   LockKeyhole,
   Loader,
@@ -276,6 +276,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           trailingNode: false,
         }),
         S1000DParagraph,
+        S1000DListExitKeymap,
         S1000DNestingKeymap,
         MigrateParagraphToParaExtension,
         TextStyleKit.configure({
@@ -663,13 +664,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                         type="button"
                         className="ietm-menu-icon-btn"
                         disabled={
-                          headerMenuLocked || tableActionDisabled("deleteCell")
+                          headerMenuLocked || tableActionDisabled("deleteTable")
                         }
-                        onClick={() => runTableAction("deleteCell")}
-                        title="删除单元格"
-                        aria-label="删除单元格"
+                        onClick={() => runTableAction("deleteTable")}
+                        title="删除表格"
+                        aria-label="删除表格"
                       >
-                        <TableCellsSplit size={16} aria-hidden />
+                        <Trash2 size={16} aria-hidden />
                       </button>
                       <button
                         type="button"
@@ -682,18 +683,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                         aria-label="清空单元格"
                       >
                         <Eraser size={16} aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        className="ietm-menu-icon-btn"
-                        disabled={
-                          headerMenuLocked || tableActionDisabled("deleteTable")
-                        }
-                        onClick={() => runTableAction("deleteTable")}
-                        title="删除表格"
-                        aria-label="删除表格"
-                      >
-                        <Trash2 size={16} aria-hidden />
                       </button>
                     </div>
                   </div>
