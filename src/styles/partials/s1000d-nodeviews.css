@@ -1,9 +1,30 @@
-﻿.ietm-editor-surface .tiptap .s1000d-levelled-para {
+.ietm-editor-surface .tiptap .s1000d-levelled-para {
   position: relative;
   margin: 12px 0;
   padding: 8px 12px;
   border-radius: 4px;
   background: #fafbfc;
+}
+
+/* 嵌套 levelledPara：避免每层 margin/padding 在底部叠出过长留白 */
+.ietm-editor-surface .tiptap .s1000d-levelled-para .s1000d-levelled-para {
+  margin: 8px 0 0;
+  padding: 4px 12px 0;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para__content
+  > .s1000d-levelled-para:last-child {
+  margin-bottom: 0;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para:has(
+    > .s1000d-levelled-para__content > .s1000d-levelled-para:last-child
+  ) {
+  padding-bottom: 4px;
 }
 
 /* hover / 选区在本块内 / 已整块选中：显示句柄（类似 Word 表格块控点） */

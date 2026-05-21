@@ -9,9 +9,9 @@ import {
   TITLE_LEVEL_CAP,
   collectAncestorDepths,
   getInnermostLevelledParaDepth,
-  getListItemDepth,
   isInLevelledParaTitleOrPara,
   isInListNestingContext,
+  resolveListItemInList,
 } from "./nestingLevelShared";
 
 type ListSinkTarget = {
@@ -19,47 +19,33 @@ type ListSinkTarget = {
   itemIndex: number;
 };
 
-function targetFromListItem($pos: ResolvedPos): ListSinkTarget | null {
-  const itemDepth = getListItemDepth($pos);
-  if (itemDepth < 0) return null;
-
-  const listDepth = itemDepth - 1;
-  const listNode = $pos.node(listDepth);
-  if (!LIST_TYPES.has(listNode.type.name)) return null;
-
-  const itemIndex = $pos.index(itemDepth);
-  if (itemIndex === 0) return null;
-
-  return { listFrom: $pos.before(listDepth), itemIndex };
+function resolveListItemContext($pos: ResolvedPos): ListSinkTarget | null {
+  const ctx = resolveListItemInList($pos);
+  if (!ctx) return null;
+  return { listFrom: ctx.listFrom, itemIndex: ctx.itemIndex };
 }
 
-function targetFromListTail($pos: ResolvedPos): ListSinkTarget | null {
-  for (let d = $pos.depth; d >= 0; d--) {
-    const typeName = $pos.node(d).type.name;
-    if (!LIST_TYPES.has(typeName)) continue;
-    const list = $pos.node(d);
-    if (list.childCount < 2) return null;
-    return {
-      listFrom: $pos.before(d),
-      itemIndex: list.childCount - 1,
-    };
-  }
-  return null;
+function targetFromListItem($pos: ResolvedPos): ListSinkTarget | null {
+  const ctx = resolveListItemContext($pos);
+  if (!ctx || ctx.itemIndex === 0) return null;
+  return ctx;
 }
 
 /**
- * 解析应对其执行列表降级的目标：当前 listItem，或列表尾/列表缝隙处的最后一项（非首项）。
+ * 解析应对其执行列表降级的目标：当前 listItem，或列表块外的缝隙（紧前在可降级项内）。
+ * 禁止在「第 k 项开头、$pos-1 落在第 k-1 项末尾」时用「列表尾」误降级最后一项。
  */
 function resolveListSinkTarget($from: ResolvedPos): ListSinkTarget | null {
   const direct = targetFromListItem($from);
   if (direct) return direct;
 
+  // 已在某个 listItem 内（含首项）— 不再走 tail / nodeBefore 兜底
+  if (resolveListItemContext($from)) return null;
+
   if ($from.pos > 0) {
     const $prev = $from.doc.resolve($from.pos - 1);
     const fromPrevItem = targetFromListItem($prev);
     if (fromPrevItem) return fromPrevItem;
-    const fromPrevTail = targetFromListTail($prev);
-    if (fromPrevTail) return fromPrevTail;
   }
 
   const nodeBefore = $from.nodeBefore;
@@ -83,6 +69,47 @@ function resolveListSinkTarget($from: ResolvedPos): ListSinkTarget | null {
 function isInListDemoteContext($from: ResolvedPos): boolean {
   if (isInListNestingContext($from)) return true;
   return resolveListSinkTarget($from) !== null;
+}
+
+/** 降级后将光标放入刚并入上一项的嵌套 listItem 内，便于继续编辑或升级。 */
+function selectionAfterListSink(
+  doc: PMNode,
+  listFrom: number,
+  itemIndex: number,
+  newChildren: PMNode[],
+): TextSelection | null {
+  const mergedItem = newChildren[itemIndex - 1];
+  if (!mergedItem) return null;
+
+  let mergedStart = listFrom + 1;
+  for (let i = 0; i < itemIndex - 1; i++) {
+    mergedStart += newChildren[i]!.nodeSize;
+  }
+
+  let nestedList: PMNode | null = null;
+  let offsetInMerged = 1;
+  for (let i = 0; i < mergedItem.childCount; i++) {
+    const child = mergedItem.child(i);
+    if (LIST_TYPES.has(child.type.name)) {
+      nestedList = child;
+      break;
+    }
+    offsetInMerged += child.nodeSize;
+  }
+
+  if (!nestedList || nestedList.childCount === 0) {
+    const caret = Math.min(mergedStart + 1, doc.content.size);
+    if (caret < 0 || caret > doc.content.size) return null;
+    return TextSelection.create(doc, caret);
+  }
+
+  let caret = mergedStart + offsetInMerged + 1;
+  for (let i = 0; i < nestedList.childCount - 1; i++) {
+    caret += nestedList.child(i)!.nodeSize;
+  }
+  caret = Math.min(caret + 1, doc.content.size);
+  if (caret < 0 || caret > doc.content.size) return null;
+  return TextSelection.create(doc, caret);
 }
 
 function canWrapLevelledParaDeeper($from: ResolvedPos): boolean {
@@ -146,18 +173,8 @@ function sinkListItemAtTarget(editor: Editor, target: ListSinkTarget): boolean {
         listNode.type.create(listNode.attrs, newChildren),
       );
 
-      const itemStart = listFrom + 1;
-      let offset = 0;
-      for (let i = 0; i < itemIndex - 1; i++) {
-        offset += newChildren[i]!.nodeSize;
-      }
-      const mapped = tr.mapping.map(itemStart + offset + 1);
-      tr.setSelection(
-        TextSelection.near(
-          tr.doc.resolve(Math.min(mapped, tr.doc.content.size)),
-          1,
-        ),
-      );
+      const sel = selectionAfterListSink(tr.doc, listFrom, itemIndex, newChildren);
+      if (sel) tr.setSelection(sel);
       dispatch(tr);
       return true;
     })

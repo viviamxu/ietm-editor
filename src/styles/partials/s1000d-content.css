@@ -64,6 +64,38 @@
   color: #64748b;
 }
 
+/* levelledPara 空标题：纯样式占位（不写入 XML） */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  .s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  s1000d-block-title.s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  .s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):has(> br.ProseMirror-trailingBreak:only-child)::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  s1000d-block-title.s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):has(> br.ProseMirror-trailingBreak:only-child)::before {
+  content: "请输入标题";
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
 /* figure 图题：displayLevel=0，不用 levelledPara 章节标题样式 */
 .ietm-editor-surface
   .tiptap

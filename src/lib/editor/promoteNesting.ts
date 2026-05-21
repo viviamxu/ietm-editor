@@ -12,6 +12,7 @@ import {
   getListItemDepth,
   isInLevelledParaTitleOrPara,
   isInListNestingContext,
+  listItemIndexInParentList,
 } from "./nestingLevelShared";
 
 type ListLiftTarget = {
@@ -53,30 +54,6 @@ function findNestedListIndexInListItem(
   return -1;
 }
 
-function findPreviousListSiblingStart(
-  $pos: ResolvedPos,
-  lpDepth: number,
-  innerList: PMNode,
-): number {
-  const lp = $pos.node(lpDepth);
-  let innerIdx = -1;
-  for (let i = 0; i < lp.childCount; i++) {
-    if (lp.child(i) === innerList) {
-      innerIdx = i;
-      break;
-    }
-  }
-  if (innerIdx <= 0) return -1;
-
-  const lpStart = $pos.before(lpDepth);
-  for (let i = innerIdx - 1; i >= 0; i--) {
-    if (LIST_TYPES.has(lp.child(i).type.name)) {
-      return positionOfChildInParent(lpStart, lp, i);
-    }
-  }
-  return -1;
-}
-
 function buildLiftTarget(
   outerListFrom: number,
   parentItemIndex: number,
@@ -102,50 +79,30 @@ function targetFromNestedListItem($pos: ResolvedPos): ListLiftTarget | null {
   const innerList = $pos.node(innerListDepth);
   if (!LIST_TYPES.has(innerList.type.name)) return null;
 
-  const itemIndex = $pos.index(itemDepth);
+  const itemIndex = listItemIndexInParentList($pos, itemDepth);
   const innerListFrom = $pos.before(innerListDepth);
   const parentListItemDepth = innerListDepth - 1;
-  const parentType = $pos.node(parentListItemDepth).type.name;
+  // 内层 list 的父节点必须是 listItem（光标在外层 li 的 paragraph 时 itemDepth-1 是整表，此处为 null）
+  if ($pos.node(parentListItemDepth).type.name !== LIST_ITEM) return null;
 
-  if (parentType === LIST_ITEM) {
-    const outerListDepth = parentListItemDepth - 1;
-    if (outerListDepth < 0) return null;
-    if (!LIST_TYPES.has($pos.node(outerListDepth).type.name)) return null;
+  const outerListDepth = parentListItemDepth - 1;
+  if (outerListDepth < 0) return null;
+  if (!LIST_TYPES.has($pos.node(outerListDepth).type.name)) return null;
 
-    const parentItem = $pos.node(parentListItemDepth);
-    const innerListChildIndex = findNestedListIndexInListItem(
-      parentItem,
-      innerList,
-    );
-    if (innerListChildIndex < 0) return null;
+  const parentItem = $pos.node(parentListItemDepth);
+  const innerListChildIndex = findNestedListIndexInListItem(
+    parentItem,
+    innerList,
+  );
+  if (innerListChildIndex < 0) return null;
 
-    return buildLiftTarget(
-      $pos.before(outerListDepth),
-      $pos.index(parentListItemDepth),
-      innerListFrom,
-      innerListChildIndex,
-      itemIndex,
-    );
-  }
-
-  if (parentType === LEVELLED_PARA) {
-    const lpDepth = parentListItemDepth;
-    const outerListFrom = findPreviousListSiblingStart($pos, lpDepth, innerList);
-    if (outerListFrom < 0) return null;
-    const outerList = $pos.doc.nodeAt(outerListFrom);
-    if (!outerList || !LIST_TYPES.has(outerList.type.name)) return null;
-    if (outerList.childCount === 0) return null;
-
-    return buildLiftTarget(
-      outerListFrom,
-      outerList.childCount - 1,
-      innerListFrom,
-      -1,
-      itemIndex,
-    );
-  }
-
-  return null;
+  return buildLiftTarget(
+    $pos.before(outerListDepth),
+    listItemIndexInParentList($pos, parentListItemDepth),
+    innerListFrom,
+    innerListChildIndex,
+    itemIndex,
+  );
 }
 
 /**
@@ -182,7 +139,7 @@ function targetFromOuterListItemWithNestedList(
 
   return buildLiftTarget(
     $pos.before(listDepth),
-    $pos.index(itemDepth),
+    listItemIndexInParentList($pos, itemDepth),
     innerListFrom,
     innerListChildIndex,
     innerList.childCount - 1,
@@ -222,7 +179,7 @@ function targetFromNodeBeforeNestedList(
 
   return buildLiftTarget(
     $from.before(listDepth),
-    $from.index(itemDepth),
+    listItemIndexInParentList($from, itemDepth),
     innerListFrom,
     innerListChildIndex,
     innerList.childCount - 1,

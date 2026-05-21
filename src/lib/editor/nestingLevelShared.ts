@@ -34,6 +34,80 @@ export function getListItemDepth($from: ResolvedPos): number {
   return -1;
 }
 
+export type ListItemInListContext = {
+  listFrom: number;
+  itemIndex: number;
+  listDepth: number;
+  itemDepth: number;
+};
+
+/**
+ * 解析光标所在的最内层 listItem 及其外层 ordered/bullet 列表。
+ * 用 `from` 落在哪个 listItem 子树内计算下标，避免部分文档结构下 `$.index(d)` 与真实项不一致。
+ */
+export function resolveListItemInList(
+  $pos: ResolvedPos,
+): ListItemInListContext | null {
+  const from = $pos.pos;
+
+  for (let itemDepth = $pos.depth; itemDepth > 0; itemDepth--) {
+    if ($pos.node(itemDepth).type.name !== LIST_ITEM) continue;
+    const listDepth = itemDepth - 1;
+    if (!LIST_TYPES.has($pos.node(listDepth).type.name)) continue;
+
+    const listNode = $pos.node(listDepth);
+    const listFrom = $pos.before(listDepth);
+    const itemNode = $pos.node(itemDepth);
+
+    let offset = 1;
+    for (let i = 0; i < listNode.childCount; i++) {
+      const child = listNode.child(i);
+      const childStart = listFrom + offset;
+      const childEnd = childStart + child.nodeSize;
+      offset += child.nodeSize;
+
+      if (child === itemNode || (from >= childStart && from < childEnd)) {
+        return { listFrom, itemIndex: i, listDepth, itemDepth };
+      }
+    }
+  }
+
+  return null;
+}
+
+/** 已知 listItem 深度时，解析其在父级列表中的下标（与 {@link resolveListItemInList} 同一套位置算法）。 */
+export function listItemIndexInParentList(
+  $pos: ResolvedPos,
+  itemDepth: number,
+): number {
+  if (itemDepth <= 0 || $pos.node(itemDepth).type.name !== LIST_ITEM) {
+    return $pos.index(itemDepth);
+  }
+  const listDepth = itemDepth - 1;
+  if (!LIST_TYPES.has($pos.node(listDepth).type.name)) {
+    return $pos.index(itemDepth);
+  }
+
+  const listNode = $pos.node(listDepth);
+  const listFrom = $pos.before(listDepth);
+  const itemNode = $pos.node(itemDepth);
+  const from = $pos.pos;
+
+  let offset = 1;
+  for (let i = 0; i < listNode.childCount; i++) {
+    const child = listNode.child(i);
+    const childStart = listFrom + offset;
+    const childEnd = childStart + child.nodeSize;
+    offset += child.nodeSize;
+
+    if (child === itemNode || (from >= childStart && from < childEnd)) {
+      return i;
+    }
+  }
+
+  return $pos.index(itemDepth);
+}
+
 /** 光标在列表项、列表块内，或紧邻列表块。 */
 export function isInListNestingContext($from: ResolvedPos): boolean {
   if (getListItemDepth($from) >= 0) return true;

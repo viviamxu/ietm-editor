@@ -2,6 +2,11 @@ import type { Editor, JSONContent } from "@tiptap/core";
 import { Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
+import {
+  LEVELLED_PARA,
+  getInnermostLevelledParaDepth,
+  isInListNestingContext,
+} from "../editor/nestingLevelShared";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
@@ -87,13 +92,79 @@ export function buildInsertLevelledParaJson(
   return { type: "levelledPara", content: children };
 }
 
+/**
+ * 在父 `levelledPara` 内容末尾追加子 `levelledPara`（`levelledPara*` 槽位）。
+ * 避免在 `title` 行内光标处 `insertContent` 导致同级插入并掏空原 `para`。
+ */
+function resolveAppendChildLevelledParaPos($from: ResolvedPos): number | null {
+  const lpDepth = getInnermostLevelledParaDepth($from);
+  if (lpDepth < 0) return null;
+  if (isInListNestingContext($from)) return null;
+
+  const parent = $from.node(lpDepth);
+  return $from.before(lpDepth) + parent.nodeSize - 1;
+}
+
+function selectionInInsertedLevelledPara(
+  doc: PMNode,
+  insertPos: number,
+): TextSelection | null {
+  const inserted = doc.nodeAt(insertPos);
+  if (!inserted || inserted.type.name !== LEVELLED_PARA) return null;
+
+  let offset = insertPos + 1;
+  for (let i = 0; i < inserted.childCount; i++) {
+    const child = inserted.child(i);
+    if (child.type.name === "title") {
+      const caret = Math.min(offset + 1, doc.content.size);
+      if (caret < 0 || caret > doc.content.size) return null;
+      return TextSelection.create(doc, caret);
+    }
+    offset += child.nodeSize;
+  }
+  const fallback = Math.min(insertPos + 2, doc.content.size);
+  if (fallback < 0 || fallback > doc.content.size) return null;
+  return TextSelection.create(doc, fallback);
+}
+
 export function insertLevelledParaFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const node = buildInsertLevelledParaJson(schema);
-  if (!node) return false;
-  return editor.chain().focus().insertContent(node).run();
+  const json = buildInsertLevelledParaJson(schema);
+  if (!json) return false;
+
+  const appendPos = resolveAppendChildLevelledParaPos(
+    editor.state.selection.$from,
+  );
+  if (appendPos == null) {
+    return editor.chain().focus().insertContent(json).run();
+  }
+
+  return editor
+    .chain()
+    .focus()
+    .command(({ state, tr, dispatch }) => {
+      const lpType = state.schema.nodes.levelledPara;
+      if (!lpType) return false;
+
+      let pmNode: PMNode;
+      try {
+        pmNode = PMNode.fromJSON(state.schema, json);
+      } catch {
+        return false;
+      }
+
+      if (!dispatch) return true;
+
+      tr.insert(appendPos, pmNode);
+      const mapped = tr.mapping.map(appendPos);
+      const sel = selectionInInsertedLevelledPara(tr.doc, mapped);
+      if (sel) tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
 }
 
 /** 在光标处插入空 `para`（描述类正文段落块）。 */
@@ -593,25 +664,11 @@ function isParaNode(node: JSONContent): boolean {
   return node.type === "paragraph" || node.type === "para";
 }
 
-function serializeChildrenToXml(node: JSONContent): string {
-  if (node.type === "entry") {
-    const children = node.content || [];
-    if (children.length === 0) return "<para />";
-
-    return children
-      .map((child) => {
-        if (isParaNode(child) && !hasEffectiveContent(child)) {
-          return "<para />";
-        }
-        return serializeNodeToXml(child);
-      })
-      .join("");
-  }
-
-  if (node.type !== "levelledPara") {
-    return (node.content || []).map(serializeNodeToXml).join("");
-  }
-
+/**
+ * 将块级 sequentialList/randomList（编辑器中为 orderedList/bulletList）包入 `<para>` 再输出。
+ * S1000D 要求 listElemGroup 位于 `para` 内；导入时列表会被提升为与 `para` 并列的块，导出需还原。
+ */
+function serializeChildrenWithListsWrappedInPara(node: JSONContent): string {
   const parts: string[] = [];
   const listRun: string[] = [];
 
@@ -628,6 +685,28 @@ function serializeChildrenToXml(node: JSONContent): string {
 
   appendListRunAsPara(parts, listRun);
   return parts.join("");
+}
+
+function serializeChildrenToXml(node: JSONContent): string {
+  if (node.type === "entry") {
+    const children = node.content || [];
+    if (children.length === 0) return "<para />";
+
+    return children
+      .map((child) => {
+        if (isParaNode(child) && !hasEffectiveContent(child)) {
+          return "<para />";
+        }
+        return serializeNodeToXml(child);
+      })
+      .join("");
+  }
+
+  if (node.type === "levelledPara" || node.type === "doc") {
+    return serializeChildrenWithListsWrappedInPara(node);
+  }
+
+  return (node.content || []).map(serializeNodeToXml).join("");
 }
 
 function buildGraphicEntityDoctype(contentXml: string): string {
