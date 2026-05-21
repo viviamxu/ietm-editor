@@ -17,6 +17,7 @@ export const INSPECTABLE_NODE_TYPE_LIST = [
   'noteLead',
   'notePara',
   'para',
+  'paragraph',
   'table',
   'title',
   'tgroup',

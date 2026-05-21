@@ -7,6 +7,7 @@ import { INSPECTABLE_NODE_TYPES } from './inspectableNodeTypes'
 /** 位于容器内的「正文」块：优先展示外层结构（如 `entry`、`note`）而非内层段落。 */
 const INNER_INSPECT_DEFER = new Set<string>([
   'para',
+  'paragraph',
   'notePara',
   'warningAndCautionPara',
 ])

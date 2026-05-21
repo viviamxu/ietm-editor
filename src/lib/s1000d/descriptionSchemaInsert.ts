@@ -176,7 +176,7 @@ export function insertParagraphFromSchema(
   return editor.chain().focus().insertContent({ type: "para", content: [] }).run();
 }
 
-/** sequentialList：schema 要求 `listItem+`；编辑器映射为 orderedList → listItem → para */
+/** sequentialList：schema 要求 `listItem+`；编辑器映射为 orderedList → listItem → paragraph */
 export function insertSequentialListFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
@@ -193,7 +193,7 @@ export function insertSequentialListFromSchema(
       content: [
         {
           type: "listItem",
-          content: [{ type: "para", content: [] }],
+          content: [{ type: "paragraph", content: [] }],
         },
       ],
     })
@@ -329,7 +329,7 @@ export function insertRandomOrAttentionListFromSchema(
       content: [
         {
           type: "listItem",
-          content: [{ type: "para", content: [] }],
+          content: [{ type: "paragraph", content: [] }],
         },
       ],
     })

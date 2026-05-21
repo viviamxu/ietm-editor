@@ -28,6 +28,12 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
     "derivativeClassificationRefId",
     "reasonForUpdateRefIds",
   ],
+  paragraph: [
+    "securityClassification",
+    "caveat",
+    "derivativeClassificationRefId",
+    "reasonForUpdateRefIds",
+  ],
   image: ["src", "alt", "title", "unitOfMeasure", "width", "height"],
   title: ["displayLevel"],
   graphic: ["infoEntityIdent", "src"],
@@ -227,7 +233,9 @@ export function S1000DPropertyPanel({
   const typeLabel =
     target.nodeType === "image"
       ? "图片（figure / graphic）"
-      : target.nodeType;
+      : target.nodeType === "paragraph"
+        ? "段落（列表 / paragraph）"
+        : target.nodeType;
 
   return (
     <div className="ietm-property-panel">

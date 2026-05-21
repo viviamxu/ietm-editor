@@ -9,25 +9,49 @@ import {
 
 const migrateParagraphKey = new PluginKey<boolean>('migrateParagraphToPara')
 
-function collectParagraphReplacements(
-  doc: PMNode,
-): { pos: number; attrs: Record<string, unknown>; content: PMNode['content'] }[] {
-  const out: {
-    pos: number
-    attrs: Record<string, unknown>
-    content: PMNode['content']
-  }[] = []
+type BlockReplacement = {
+  pos: number
+  typeName: 'para' | 'paragraph'
+  attrs: Record<string, unknown>
+  content: PMNode['content']
+}
+
+function collectBlockNormalizations(doc: PMNode): BlockReplacement[] {
+  const out: BlockReplacement[] = []
 
   doc.forEach((node, offset) => {
     if (!INVALID_DOC_ROOT_BLOCK_TYPES.has(node.type.name)) return
-    out.push({ pos: offset, attrs: { ...node.attrs }, content: node.content })
+    out.push({
+      pos: offset,
+      typeName: 'para',
+      attrs: { ...node.attrs },
+      content: node.content,
+    })
   })
 
   doc.descendants((node, pos) => {
-    if (node.type.name !== 'paragraph') return
     const $pos = doc.resolve(pos)
-    if (!canMigrateParagraphUnderParent($pos.parent.type.name)) return
-    out.push({ pos, attrs: { ...node.attrs }, content: node.content })
+    const parent = $pos.parent.type.name
+
+    if (node.type.name === 'para' && parent === 'listItem') {
+      out.push({
+        pos,
+        typeName: 'paragraph',
+        attrs: { ...node.attrs },
+        content: node.content,
+      })
+      return
+    }
+
+    if (node.type.name !== 'paragraph') return
+    if (parent === 'listItem') return
+    if (!canMigrateParagraphUnderParent(parent)) return
+    out.push({
+      pos,
+      typeName: 'para',
+      attrs: { ...node.attrs },
+      content: node.content,
+    })
   })
 
   return out
@@ -38,7 +62,8 @@ function createMigrateParagraphPlugin() {
     key: migrateParagraphKey,
     appendTransaction(transactions, _oldState, newState) {
       const paraType = newState.schema.nodes.para
-      if (!paraType) return null
+      const paragraphType = newState.schema.nodes.paragraph
+      if (!paraType || !paragraphType) return null
 
       const docChanged = transactions.some((tr) => tr.docChanged)
       const forced = transactions.some(
@@ -46,13 +71,14 @@ function createMigrateParagraphPlugin() {
       )
       if (!docChanged && !forced) return null
 
-      const replacements = collectParagraphReplacements(newState.doc)
+      const replacements = collectBlockNormalizations(newState.doc)
       if (replacements.length === 0) return null
 
       replacements.sort((a, b) => b.pos - a.pos)
       let tr = newState.tr
-      for (const { pos, attrs, content } of replacements) {
-        tr = tr.setNodeMarkup(pos, paraType, attrs, content)
+      for (const { pos, typeName, attrs, content } of replacements) {
+        const target = typeName === 'paragraph' ? paragraphType : paraType
+        tr = tr.setNodeMarkup(pos, target, attrs, content)
       }
       tr.setMeta(migrateParagraphKey, false)
       return tr
@@ -62,8 +88,9 @@ function createMigrateParagraphPlugin() {
         update(view, prevState) {
           if (prevState.doc.eq(view.state.doc)) return
           const paraType = view.state.schema.nodes.para
-          if (!paraType) return
-          if (collectParagraphReplacements(view.state.doc).length === 0) return
+          const paragraphType = view.state.schema.nodes.paragraph
+          if (!paraType || !paragraphType) return
+          if (collectBlockNormalizations(view.state.doc).length === 0) return
           const tr = view.state.tr.setMeta(migrateParagraphKey, true)
           view.dispatch(tr)
         },

@@ -24,6 +24,7 @@ import {
   WarningNodeView,
 } from "./s1000d/WarningNodeView";
 import type { FigureAttrs, ParaAttrs } from "./s1000d/types";
+import { readParaAttrsFromDom, s1000dParaAttributeSpec } from "../lib/s1000d/paraAttributes";
 import { s1000dIdAttributeConfig } from "../lib/s1000d/s1000dIdAttribute";
 import {
   FIGURE_XML_ATTR_NAMES,
@@ -630,29 +631,6 @@ export const S1000DTitle = Node.create({
   },
 });
 
-const PARA_XML_ATTR_NAMES = [
-  "id",
-  "securityClassification",
-  "caveat",
-  "derivativeClassificationRefId",
-  "reasonForUpdateRefIds",
-] as const;
-
-function readParaAttrsFromDom(el: Element) {
-  return {
-    id: el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id"),
-    securityClassification: el.getAttribute("securityClassification"),
-    caveat: el.getAttribute("caveat"),
-    derivativeClassificationRefId: el.getAttribute(
-      "derivativeClassificationRefId",
-    ),
-    reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
-    [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
-      ...PARA_XML_ATTR_NAMES,
-    ]),
-  };
-}
-
 function copyElementAttributes(src: Element, dest: Element) {
   for (const { name, value } of Array.from(src.attributes)) {
     dest.setAttribute(name, value);
@@ -670,13 +648,7 @@ export const S1000DPara = Node.create({
   content: "inline*",
 
   addAttributes(): Record<keyof ParaAttrs, { default: string | null }> {
-    return {
-      id: s1000dIdAttributeConfig(),
-      securityClassification: { default: null },
-      caveat: { default: null },
-      derivativeClassificationRefId: { default: null },
-      reasonForUpdateRefIds: { default: null },
-    };
+    return s1000dParaAttributeSpec();
   },
 
   parseHTML() {
@@ -684,14 +656,6 @@ export const S1000DPara = Node.create({
       {
         tag: "para",
         priority: 200,
-        getAttrs: (el) => {
-          if (!el || !(el instanceof Element)) return false;
-          return readParaAttrsFromDom(el);
-        },
-      },
-      {
-        tag: "p",
-        priority: 100,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           return readParaAttrsFromDom(el);
@@ -709,13 +673,8 @@ export const S1000DPara = Node.create({
       Enter: ({ editor }) => {
         const { $from } = editor.state.selection;
         for (let d = $from.depth; d > 0; d--) {
-          const name = $from.node(d).type.name;
-          if (name === "orderedList" || name === "bulletList" || name === "listItem") {
-            return false;
-          }
-          if (name === "para") {
-            return editor.chain().focus().splitBlock().run();
-          }
+          if ($from.node(d).type.name !== "para") continue;
+          return editor.chain().focus().splitBlock().run();
         }
         return false;
       },
@@ -1476,10 +1435,10 @@ function normalizeListItemParasBeforeListRename(item: Element) {
       nonTextInline ||
       (inlineParts.length > 0 && blocks.length === 0)
     ) {
-      const nextPara = doc.createElement("para");
-      copyElementAttributes(para, nextPara);
-      for (const n of inlineParts) nextPara.appendChild(n);
-      frag.appendChild(nextPara);
+      const p = doc.createElement("p");
+      copyElementAttributes(para, p);
+      for (const n of inlineParts) p.appendChild(n);
+      frag.appendChild(p);
     } else {
       for (const n of inlineParts) frag.appendChild(n);
     }

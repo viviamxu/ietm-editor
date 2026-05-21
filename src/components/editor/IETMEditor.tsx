@@ -20,7 +20,8 @@ import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
-import { S1000DListItem } from "../../extensions/s1000d/s1000dListItem";
+import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
+import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
   getDescriptionInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
@@ -265,7 +266,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           orderedList: { keepMarks: true },
           strike: false,
           paragraph: false,
-          listItem: false,
           blockquote: false,
           /** 描述类用 S1000D `title`，不用 StarterKit `heading`（否则会冒出空 `<h1>`） */
           heading: false,
@@ -275,7 +275,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           /** 不用尾随块（`paragraph` 关闭后易退化成 blockquote/codeBlock/heading） */
           trailingNode: false,
         }),
-        S1000DListItem,
+        S1000DParagraph,
+        S1000DNestingKeymap,
         MigrateParagraphToParaExtension,
         TextStyleKit.configure({
           lineHeight: false,
@@ -284,7 +285,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         Overline,
         Strikethrough,
         TextAlign.configure({
-          types: ["para"],
+          types: ["para", "paragraph"],
           alignments: ["left", "center", "right", "justify"],
           defaultAlignment: "left",
         }),

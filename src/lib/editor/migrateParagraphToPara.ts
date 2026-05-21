@@ -1,10 +1,9 @@
 import type { JSONContent } from '@tiptap/core'
 
-/** 可将 `paragraph` 替换为 `para` 的父节点（与 S1000D schema / listItem 一致） */
+/** 可将误用的 `paragraph` 替换为 `para` 的父节点（不含 `listItem`，列表保留 `paragraph`） */
 export const PARA_BLOCK_PARENT_TYPES = new Set([
   'doc',
   'levelledPara',
-  'listItem',
   'entry',
 ])
 
@@ -36,8 +35,27 @@ function shouldMigrateTypeToPara(type: string | undefined, parentType?: string):
   return false
 }
 
-/** 将 JSON 文档树中的非法根块 / `paragraph` 改为 `para`（供 setContent / initialContent 使用） */
+/** 列表项内应使用 `paragraph`（带 S1000D 属性），非 `para` */
+export function migrateListItemParaToParagraphInJson(
+  doc: JSONContent,
+): JSONContent {
+  function walk(node: JSONContent, parentType?: string): JSONContent {
+    let type = node.type
+    if (type === 'para' && parentType === 'listItem') {
+      type = 'paragraph'
+    }
+    if (!node.content?.length) {
+      return type === node.type ? node : { ...node, type }
+    }
+    const content = node.content.map((child) => walk(child, type))
+    return { ...node, type, content }
+  }
+  return walk(doc)
+}
+
+/** 将 JSON 文档树中的非法根块 / 非列表 `paragraph` 改为 `para` */
 export function migrateParagraphInJson(doc: JSONContent): JSONContent {
+  const normalized = migrateListItemParaToParagraphInJson(doc)
   function walk(node: JSONContent, parentType?: string): JSONContent {
     let type = node.type
     if (shouldMigrateTypeToPara(type, parentType)) {
@@ -49,5 +67,5 @@ export function migrateParagraphInJson(doc: JSONContent): JSONContent {
     const content = node.content.map((child) => walk(child, type))
     return { ...node, type, content }
   }
-  return walk(doc)
+  return walk(normalized)
 }
