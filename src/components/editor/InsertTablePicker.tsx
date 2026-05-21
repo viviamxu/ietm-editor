@@ -23,14 +23,6 @@ export function resolveInsertTableDims(
   return { cols: safeCols, headerRowCount, bodyRows };
 }
 
-function clampRows(n: number): number {
-  return Math.min(MAX_ROWS, Math.max(1, Math.floor(n) || 1));
-}
-
-function clampCols(n: number): number {
-  return Math.min(MAX_COLS, Math.max(1, Math.floor(n) || 1));
-}
-
 interface InsertTablePickerProps {
   editor: Editor;
   schema: DescriptionSchema;

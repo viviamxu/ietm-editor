@@ -109,17 +109,6 @@ export function FormatToolbar({
     };
   }, [editor]);
 
-  const textAttrs = editor.getAttributes("textStyle") as {
-    fontFamily?: string | null;
-    fontSize?: string | null;
-    color?: string | null;
-    backgroundColor?: string | null;
-  };
-
-  const highlightAttrs = editor.getAttributes("highlight") as {
-    color?: string | null;
-  };
-
   const alignLeft =
     editor.isActive({ textAlign: "left" }) ||
     (!editor.isActive({ textAlign: "center" }) &&
@@ -597,15 +586,4 @@ export function FormatToolbar({
       </div>
     </div>
   );
-}
-
-function rgbToHex(color: string): string {
-  const s = color.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s;
-  const m = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (!m) return "#1f2330";
-  const r = Number(m[1]).toString(16).padStart(2, "0");
-  const g = Number(m[2]).toString(16).padStart(2, "0");
-  const b = Number(m[3]).toString(16).padStart(2, "0");
-  return `#${r}${g}${b}`;
 }
