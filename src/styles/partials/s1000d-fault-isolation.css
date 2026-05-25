@@ -1,0 +1,547 @@
+/* 故障隔离 DM 编辑样式（对齐故障类设计稿） */
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure {
+  margin: 12px 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fafbfc;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__code-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  outline: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__meta-group {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__meta-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__meta-row--fault-descr {
+  margin-bottom: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__meta-label {
+  flex-shrink: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__meta-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__content {
+  display: block;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__content
+  > .react-renderer.node-fault,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__content
+  > [data-node-view-wrapper].node-fault {
+  display: none !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__descr-content {
+  outline: none;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__descr-content
+  .react-renderer.node-descr,
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__descr-content descr {
+  display: inline;
+  outline: none;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__descr-content
+  .react-renderer.node-descr:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__descr-content
+  descr:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__descr-content
+  .react-renderer.node-descr:has(
+    > br.ProseMirror-trailingBreak:only-child
+  )::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-procedure__descr-content
+  descr:has(> br.ProseMirror-trailingBreak:only-child)::before {
+  content: "请输入故障描述";
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__steps-section {
+  display: block;
+  margin-top: 4px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__steps-heading {
+  padding: 10px 0 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-procedure__steps-content {
+  display: block;
+}
+
+/* 隔离步骤卡片 */
+.ietm-editor-surface .tiptap .s1000d-isolation-step,
+.ietm-editor-surface .tiptap .s1000d-isolation-end {
+  margin: 10px 0 0;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-step__content,
+.ietm-editor-surface .tiptap .s1000d-isolation-end__content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choices-list .node-choice {
+  padding: 3px 0;
+}
+
+.ietm-editor-surface .tiptap .node-isolationStepQuestion,
+.ietm-editor-surface .tiptap .node-isolationStepAnswer {
+  margin: 8px 0;
+}
+
+/* 步骤 / 结束标题（可编辑 title 节点） */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  > .react-renderer.node-title,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  > .react-renderer.node-title {
+  display: block;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  > .react-renderer.node-title::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  > .react-renderer.node-title::before {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  > .react-renderer.node-title::before {
+  content: "步骤标题";
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  > .react-renderer.node-title::before {
+  content: "结束标题";
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  .s1000d-title-display,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  .s1000d-title-display {
+  display: block;
+  min-height: 28px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* 步骤标题为空时占位 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  .s1000d-title-display:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  s1000d-block-title.s1000d-title-display:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  .s1000d-title-display:has(> br.ProseMirror-trailingBreak:only-child)::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__content
+  s1000d-block-title.s1000d-title-display:has(
+    > br.ProseMirror-trailingBreak:only-child
+  )::before {
+  content: "请输入步骤标题";
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+/* 结束标题为空时占位 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  .s1000d-title-display:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  s1000d-block-title.s1000d-title-display:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  .s1000d-title-display:has(> br.ProseMirror-trailingBreak:only-child)::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__content
+  s1000d-block-title.s1000d-title-display:has(
+    > br.ProseMirror-trailingBreak:only-child
+  )::before {
+  content: "请输入结束标题";
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+/* 动作 / 问题字段 */
+.ietm-editor-surface .tiptap .s1000d-fault-field {
+  display: block;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-field__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-field__box {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fafbfc;
+  min-height: 36px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-field__content {
+  outline: none;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 答案选项 */
+.ietm-editor-surface .tiptap .s1000d-fault-answer {
+  display: block;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-answer__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-answer__heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* 答案类型：是否 / 选择（Radio.Group 分段按钮） */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio.arco-radio-group-type-button {
+  padding: 2px;
+  line-height: 1;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio
+  .arco-radio-button {
+  margin: 0;
+  color: #374151;
+  background: transparent;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio
+  .arco-radio-button::after {
+  display: none;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio
+  .arco-radio-button:not(:first-of-type)::before {
+  background-color: #d1d5db;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio
+  .arco-radio-button-inner {
+  padding: 4px 14px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio
+  .arco-radio-button.arco-radio-checked {
+  background: #ffffff;
+  color: #d97706;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__kind-radio
+  .arco-radio-button:hover:not(.arco-radio-checked) {
+  background: transparent;
+  color: #374151;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-answer__content {
+  display: block;
+}
+
+/* 是否模式：UI 由 YesNoAnswerFields 渲染，隐藏 content 内 yesNoAnswer 占位块 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-answer__content--yesno
+  > .react-renderer.node-yesNoAnswer {
+  display: none !important;
+}
+
+/* 是否答案：是/否 + 下一步 + 下拉 同一行 */
+.ietm-editor-surface .tiptap .s1000d-fault-yesno__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-yesno__choice-label {
+  flex-shrink: 0;
+  font-weight: 500;
+  min-width: 1.5em;
+  white-space: nowrap;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-yesno__next-label {
+  flex-shrink: 0;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-yesno__row
+  .s1000d-fault-yesno__select {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-yesno__row
+  .s1000d-fault-yesno__select.arco-select,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-yesno__row
+  .s1000d-fault-yesno__select
+  .arco-select-view {
+  width: 100%;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-next-select {
+  min-width: 140px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-yesno__hidden-children,
+.ietm-editor-surface .tiptap .s1000d-fault-atom-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* 多选答案 listOfChoices */
+.ietm-editor-surface .tiptap .s1000d-fault-choices-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choices-list__add {
+  margin-top: 4px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choices-list__add .arco-btn {
+  padding-left: 0;
+  color: rgb(var(--primary-6));
+}
+
+/* 单条 choice：输入框 | 下拉 | 删除 */
+.ietm-editor-surface .tiptap .s1000d-fault-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__text {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 11px;
+  border: 1px solid var(--color-border-2, #e5e7eb);
+  border-radius: var(--border-radius-small, 4px);
+  background: var(--color-bg-2, #ffffff);
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__content {
+  outline: none;
+  min-height: 22px;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__content:empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-choice__content:has(
+    > br.ProseMirror-trailingBreak:only-child
+  )::before {
+  content: "请输入选项";
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__next {
+  flex-shrink: 0;
+  width: 140px;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-choice__next
+  .s1000d-fault-next-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #f53f3f;
+  cursor: pointer;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__delete:hover:not(:disabled) {
+  background: #fff1f0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-choice__delete:disabled {
+  color: #c9cdd4;
+  cursor: not-allowed;
+}
+
+.ietm-editor-surface .tiptap .react-renderer.node-isolationMainProcedure {
+  display: block;
+}

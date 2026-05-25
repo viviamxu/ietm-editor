@@ -1,6 +1,21 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 
 import { s1000dIdAttributeConfig } from "../../lib/s1000d/s1000dIdAttribute";
+import {
+  ChoiceNodeView,
+  ListOfChoicesNodeView,
+  FaultDescrNodeView,
+  FaultIsolationProcedureNodeView,
+  HiddenAtomNodeView,
+  HiddenFaultNodeView,
+  IsolationActionNodeView,
+  IsolationProcedureEndNodeView,
+  IsolationProcedureNodeView,
+  IsolationStepAnswerNodeView,
+  IsolationStepNodeView,
+  IsolationStepQuestionNodeView,
+} from "./FaultIsolationNodeViews";
 
 function readAttr(el: Element, name: string): string | null {
   return el.getAttribute(name) ?? el.getAttribute(name.toLowerCase());
@@ -40,6 +55,9 @@ export const S1000DFault = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["fault", mergeAttributes(HTMLAttributes)];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(HiddenFaultNodeView);
+  },
 });
 
 export const S1000DFaultDescr = Node.create({
@@ -49,6 +67,9 @@ export const S1000DFaultDescr = Node.create({
   parseHTML: () => [{ tag: "faultdescr" }, { tag: "faultDescr" }],
   renderHTML({ HTMLAttributes }) {
     return ["faultDescr", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(FaultDescrNodeView);
   },
 });
 
@@ -73,6 +94,9 @@ export const S1000DIsolationProcedure = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["isolationProcedure", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationProcedureNodeView);
+  },
 });
 
 export const S1000DIsolationMainProcedure = Node.create({
@@ -96,6 +120,9 @@ export const S1000DAction = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["action", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationActionNodeView);
+  },
 });
 
 export const S1000DIsolationStepQuestion = Node.create({
@@ -108,6 +135,9 @@ export const S1000DIsolationStepQuestion = Node.create({
   ],
   renderHTML({ HTMLAttributes }) {
     return ["isolationStepQuestion", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationStepQuestionNodeView);
   },
 });
 
@@ -122,6 +152,9 @@ export const S1000DYesAnswer = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["yesAnswer", mergeAttributes(HTMLAttributes)];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(HiddenAtomNodeView);
+  },
 });
 
 export const S1000DNoAnswer = Node.create({
@@ -134,6 +167,9 @@ export const S1000DNoAnswer = Node.create({
   parseHTML: () => [{ tag: "noanswer" }, { tag: "noAnswer" }],
   renderHTML({ HTMLAttributes }) {
     return ["noAnswer", mergeAttributes(HTMLAttributes)];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(HiddenAtomNodeView);
   },
 });
 
@@ -161,6 +197,9 @@ export const S1000DChoice = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["choice", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(ChoiceNodeView);
+  },
 });
 
 export const S1000DListOfChoices = Node.create({
@@ -174,6 +213,9 @@ export const S1000DListOfChoices = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["listOfChoices", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(ListOfChoicesNodeView);
+  },
 });
 
 export const S1000DIsolationStepAnswer = Node.create({
@@ -186,6 +228,9 @@ export const S1000DIsolationStepAnswer = Node.create({
   ],
   renderHTML({ HTMLAttributes }) {
     return ["isolationStepAnswer", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationStepAnswerNodeView);
   },
 });
 
@@ -215,6 +260,9 @@ export const S1000DIsolationStep = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["isolationStep", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationStepNodeView);
+  },
 });
 
 export const S1000DIsolationProcedureEnd = Node.create({
@@ -243,6 +291,9 @@ export const S1000DIsolationProcedureEnd = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["isolationProcedureEnd", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationProcedureEndNodeView);
+  },
 });
 
 export const S1000DFaultIsolationProcedure = Node.create({
@@ -255,6 +306,9 @@ export const S1000DFaultIsolationProcedure = Node.create({
   ],
   renderHTML({ HTMLAttributes }) {
     return ["faultIsolationProcedure", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(FaultIsolationProcedureNodeView);
   },
 });
 

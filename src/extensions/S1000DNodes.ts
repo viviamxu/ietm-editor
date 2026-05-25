@@ -26,6 +26,7 @@ import {
 import type { FigureAttrs, ParaAttrs } from "./s1000d/types";
 import { readParaAttrsFromDom, s1000dParaAttributeSpec } from "../lib/s1000d/paraAttributes";
 import { s1000dIdAttributeConfig } from "../lib/s1000d/s1000dIdAttribute";
+import { normalizeFaultIsolationTitlesInFragmentXml } from "../lib/s1000d/faultIsolationDefaultTitles";
 import {
   FIGURE_XML_ATTR_NAMES,
   SOURCE_XML_ATTR_KEYS,
@@ -52,6 +53,12 @@ function isS1000DTitleParent(parent: Element | null): boolean {
   if (
     parent.getAttribute("data-s1000d-node") === "isolationStep" ||
     parent.getAttribute("data-s1000d-node") === "isolationProcedureEnd"
+  ) {
+    return true;
+  }
+  if (
+    parent.classList.contains("s1000d-isolation-step__content") ||
+    parent.classList.contains("s1000d-isolation-end__content")
   ) {
     return true;
   }
@@ -1826,7 +1833,9 @@ export function getFaultIsolationInnerXmlFromDmXml(
   }
   const joined = parts.length > 0 ? parts.join("") : null;
   if (!joined) return null;
-  return preprocessS1000dDescriptionHtmlFragment(joined);
+  return preprocessS1000dDescriptionHtmlFragment(
+    normalizeFaultIsolationTitlesInFragmentXml(joined),
+  );
 }
 
 /**
