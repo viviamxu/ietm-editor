@@ -12,6 +12,10 @@ import {
 import type {
   InsertTableOptions,
 } from "./components/editor/IETMEditor";
+import type {
+  OpenDmPdfPreviewContext,
+  OpenDmPdfPreviewHandler,
+} from "./types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "./types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "./types/ietmEditorFooter";
 import {
@@ -42,7 +46,20 @@ import {
   exportEditorToDmXmlString,
   fillEmptyContentFromSchema,
 } from "./lib/s1000d/descriptionSchemaInsert";
+import {
+  DEFAULT_DM_PDF_PREVIEW_PATH,
+  openDmPdfPreview,
+  pdfPreviewResultToUrl,
+  resolveDmPdfPreviewUrl,
+} from "./lib/ietm/dmPdfPreview";
 import "./style.css";
+
+export {
+  DEFAULT_DM_PDF_PREVIEW_PATH,
+  openDmPdfPreview,
+  pdfPreviewResultToUrl,
+  resolveDmPdfPreviewUrl,
+};
 
 export {
   getDescriptionInnerXmlFromDmXml,
@@ -82,6 +99,7 @@ export type {
 };
 
 export type { SaveDmXmlHandler };
+export type { OpenDmPdfPreviewContext, OpenDmPdfPreviewHandler };
 export type {
   IETMEditorFooterStatus,
   IETMEditorFooterVariant,
@@ -102,6 +120,20 @@ export interface IETMEditorOptions {
    * 工具栏「保存」：传入时生成完整 DM XML 并调用本回调（不触发下载）；不传时与原先一致，触发本地下载。
    */
   onSaveDmXml?: SaveDmXmlHandler;
+  /**
+   * 底栏「预览」一站式回调：保存、调预览接口、鉴权等均由宿主完成。
+   * 传入后不再要求 `onSaveDmXml`，且忽略 `apiBaseUrl` / `fetchDmPdfPreview` 等内置预览请求。
+   */
+  onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
+  /**
+   * API 根路径（如 `https://api.example.com` 或 `''` 表示与页面同源）。
+   * 底栏「预览」保存成功后会请求 `{apiBaseUrl}/czy-ietm-admin/ietm/preview/dm/pdf`（可用 `dmPdfPreviewPath` 覆盖路径）。
+   */
+  apiBaseUrl?: string;
+  /** 覆盖 DM PDF 预览接口路径，默认 `/czy-ietm-admin/ietm/preview/dm/pdf` */
+  dmPdfPreviewPath?: string;
+  /** 自定义预览请求；仍会先调用 `onSaveDmXml`（`onOpenDmPdfPreview` 未传时生效） */
+  fetchDmPdfPreview?: () => Promise<string | Blob>;
   /**
    * 可编辑状态变化时通知宿主（含工具栏锁定/编辑切换与 `instance.setEditable`）。
    */
@@ -278,6 +310,10 @@ export function createIETMEditor(
       initialEditable: options.editable ?? true,
       initialDescriptionSchema: options.descriptionSchema,
       onSaveDmXml: options.onSaveDmXml,
+      onOpenDmPdfPreview: options.onOpenDmPdfPreview,
+      apiBaseUrl: options.apiBaseUrl,
+      dmPdfPreviewPath: options.dmPdfPreviewPath,
+      fetchDmPdfPreview: options.fetchDmPdfPreview,
       onEditableChange: options.onEditableChange,
       lockReadonlyButtonTitle: options.lockReadonlyButtonTitle,
       editModeButtonTitle: options.editModeButtonTitle,

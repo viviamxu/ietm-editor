@@ -10,13 +10,62 @@
 
 .ietm-editor-pane {
   position: relative;
-  flex: 0 0 70%;
-  max-width: 70%;
+  flex: 1;
+  max-width: 100%;
   min-height: 0;
   min-width: 0;
   background: #ffffff;
   overflow: auto;
   box-sizing: border-box;
+}
+
+.ietm-editor-pane--source {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+}
+
+.ietm-editor-surface-host {
+  min-height: 0;
+}
+
+.ietm-editor-surface-host.is-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  pointer-events: none;
+}
+
+.ietm-source-xml-view {
+  flex: 1;
+  margin: 0;
+  min-height: 0;
+  padding: 16px 20px;
+  overflow: auto;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #111827;
+  background: #f9fafb;
+  box-sizing: border-box;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.ietm-source-xml-view code {
+  font: inherit;
+}
+
+.ietm-app-main--with-right-pane .ietm-editor-pane {
+  flex: 0 0 70%;
+  max-width: 70%;
 }
 
 .ietm-editor-surface {
@@ -53,6 +102,46 @@
   font-weight: 500;
   color: #9ca3af;
   text-align: center;
+}
+
+.ietm-pdf-preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  min-height: 0;
+}
+
+.ietm-pdf-preview-pane p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.ietm-pdf-preview-pane--error p {
+  color: #dc2626;
+}
+
+.ietm-pdf-preview-pane__spinner {
+  animation: ietm-pdf-preview-spin 0.9s linear infinite;
+}
+
+@keyframes ietm-pdf-preview-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ietm-pdf-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  background: #ffffff;
 }
 
 .ietm-property-panel {
@@ -211,8 +300,65 @@
   padding: 0 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: #ffffff;
   border-top: 1px solid #e5e7eb;
+}
+
+.ietm-app-footer__start {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ietm-app-footer__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ietm-footer-icon-btn,
+.ietm-pad-preview-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 0;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.ietm-footer-icon-btn:hover,
+.ietm-pad-preview-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.ietm-footer-icon-btn.is-active,
+.ietm-pad-preview-btn.is-active {
+  background: transparent;
+  color: #2563eb;
+}
+
+.ietm-footer-icon-btn.is-active:hover,
+.ietm-pad-preview-btn.is-active:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ietm-footer-icon-btn:disabled,
+.ietm-pad-preview-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .ietm-save-status {

@@ -13,10 +13,14 @@ function isAlreadyS1000dTable(table: HTMLTableElement): boolean {
 function collectTableRows(table: HTMLTableElement): HTMLTableRowElement[] {
   const rows: HTMLTableRowElement[] = [];
   for (const section of table.querySelectorAll("thead, tbody, tfoot")) {
-    rows.push(...Array.from(section.querySelectorAll(":scope > tr")));
+    rows.push(
+      ...Array.from(section.querySelectorAll<HTMLTableRowElement>(":scope > tr")),
+    );
   }
   if (rows.length === 0) {
-    rows.push(...Array.from(table.querySelectorAll(":scope > tr")));
+    rows.push(
+      ...Array.from(table.querySelectorAll<HTMLTableRowElement>(":scope > tr")),
+    );
   }
   return rows;
 }

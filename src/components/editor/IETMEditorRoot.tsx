@@ -17,6 +17,7 @@ import {
   type IETMEditorRefValue,
   type InsertTableOptions,
 } from "./IETMEditor";
+import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
@@ -47,6 +48,7 @@ interface IETMEditorRootProps {
   initialEditable: boolean;
   initialDescriptionSchema?: DescriptionSchema;
   onSaveDmXml?: SaveDmXmlHandler;
+  onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
   onEditableChange?: (editable: boolean) => void;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
@@ -54,6 +56,9 @@ interface IETMEditorRootProps {
   lockReadonlyButtonTitle?: string;
   editModeButtonTitle?: string;
   footerStatus?: IETMEditorFooterStatus;
+  apiBaseUrl?: string;
+  dmPdfPreviewPath?: string;
+  fetchDmPdfPreview?: () => Promise<string | Blob>;
 }
 
 export const IETMEditorRoot = forwardRef<
@@ -128,12 +133,16 @@ export const IETMEditorRoot = forwardRef<
           editable={editable}
           onEditableChange={applyEditable}
           onSaveDmXml={props.onSaveDmXml}
+          onOpenDmPdfPreview={props.onOpenDmPdfPreview}
           onUpdate={props.onUpdate}
           onSelectionChange={props.onSelectionChange}
           onReady={props.onReady}
           lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
           editModeButtonTitle={props.editModeButtonTitle}
           footerStatusOverride={footerStatusOverride}
+          apiBaseUrl={props.apiBaseUrl}
+          dmPdfPreviewPath={props.dmPdfPreviewPath}
+          fetchDmPdfPreview={props.fetchDmPdfPreview}
         />
         <ReferencePublicationModal />
         <InternalRefModal />

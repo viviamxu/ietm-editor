@@ -47,6 +47,7 @@ import {
 } from "../../lib/editor/s1000dTableCommands";
 import {
   buildEmptyDescriptionDocJson,
+  exportEditorToDmXmlString,
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
   insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
@@ -74,8 +75,14 @@ import {
   Loader,
   Check,
 } from "lucide-react";
+import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
+import { Code2, Eye } from "lucide-react";
+import { DmPdfPreviewPane } from "./DmPdfPreviewPane";
+import { openDmPdfPreview } from "../../lib/ietm/dmPdfPreview";
+
+type EditorViewMode = "editor" | "source";
 
 export interface InsertTableOptions {
   rows?: number;
@@ -122,6 +129,17 @@ interface IETMEditorProps {
   editModeButtonTitle?: string;
   /** `null` 表示按 `editable` 使用内置默认底栏状态 */
   footerStatusOverride: IETMEditorFooterStatus | null;
+  /**
+   * 底栏「预览」一站式回调（保存 + 预览接口均由宿主处理）。
+   * 配置后不再要求 {@link onSaveDmXml}，且忽略内置预览请求。
+   */
+  onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
+  /** API 根路径，与默认 `/czy-ietm-admin/ietm/preview/dm/pdf` 拼接 */
+  apiBaseUrl?: string;
+  /** 覆盖 DM PDF 预览接口路径 */
+  dmPdfPreviewPath?: string;
+  /** 自定义预览请求（仍会先执行 {@link onSaveDmXml}） */
+  fetchDmPdfPreview?: () => Promise<string | Blob>;
 }
 
 const FOOTER_DEFAULT_SAVED_TEXT = "已保存";
@@ -255,6 +273,14 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
 
     const [propertiesDismissed, setPropertiesDismissed] = useState(false);
     const [editorSurfaceEngaged, setEditorSurfaceEngaged] = useState(false);
+    const [viewMode, setViewMode] = useState<EditorViewMode>("editor");
+    const [sourceXml, setSourceXml] = useState("");
+    const [padPreviewOpen, setPadPreviewOpen] = useState(false);
+    const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+    const [pdfPreviewError, setPdfPreviewError] = useState<string | null>(null);
+    const pdfPreviewUrlRef = useRef<string | null>(null);
+    const pdfPreviewRevokeRef = useRef(false);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
     const [, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
@@ -445,7 +471,85 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       : null;
 
     const showPropertyPanel =
-      editorSurfaceEngaged && resolvedTarget !== null && !propertiesDismissed;
+      viewMode === "editor" &&
+      editorSurfaceEngaged &&
+      resolvedTarget !== null &&
+      !propertiesDismissed;
+
+    const showRightPane =
+      padPreviewOpen || (showPropertyPanel && resolvedTarget !== null);
+
+    const clearPdfPreviewUrl = () => {
+      if (
+        pdfPreviewRevokeRef.current &&
+        pdfPreviewUrlRef.current?.startsWith("blob:")
+      ) {
+        URL.revokeObjectURL(pdfPreviewUrlRef.current);
+      }
+      pdfPreviewRevokeRef.current = false;
+      pdfPreviewUrlRef.current = null;
+      setPdfPreviewUrl(null);
+    };
+
+    useEffect(() => {
+      return () => {
+        if (
+          pdfPreviewRevokeRef.current &&
+          pdfPreviewUrlRef.current?.startsWith("blob:")
+        ) {
+          URL.revokeObjectURL(pdfPreviewUrlRef.current);
+        }
+      };
+    }, []);
+
+    const handleToggleViewMode = () => {
+      if (!editor) return;
+      if (viewMode === "editor") {
+        setSourceXml(exportEditorToDmXmlString(editor));
+        setViewMode("source");
+        return;
+      }
+      setViewMode("editor");
+    };
+
+    const handlePadPreviewClick = () => {
+      if (padPreviewOpen) {
+        setPadPreviewOpen(false);
+        setPdfPreviewError(null);
+        setPdfPreviewLoading(false);
+        clearPdfPreviewUrl();
+        return;
+      }
+
+      if (!editor) return;
+
+      setPadPreviewOpen(true);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(true);
+      clearPdfPreviewUrl();
+
+      void (async () => {
+        try {
+          const { url, revokeOnClose } = await openDmPdfPreview({
+            editor,
+            onOpenDmPdfPreview: props.onOpenDmPdfPreview,
+            onSaveDmXml: props.onSaveDmXml,
+            apiBaseUrl: props.apiBaseUrl,
+            dmPdfPreviewPath: props.dmPdfPreviewPath,
+            fetchDmPdfPreview: props.fetchDmPdfPreview,
+          });
+          pdfPreviewRevokeRef.current = revokeOnClose;
+          pdfPreviewUrlRef.current = url;
+          setPdfPreviewUrl(url);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "PDF 预览加载失败";
+          setPdfPreviewError(message);
+        } finally {
+          setPdfPreviewLoading(false);
+        }
+      })();
+    };
 
     const inspectStableKey = resolvedTarget
       ? `${resolvedTarget.nodeType}-${resolvedTarget.pos}`
@@ -739,39 +843,109 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           />
         </div>
 
-        <div className="ietm-app-main">
+        <div
+          className={
+            showRightPane
+              ? "ietm-app-main ietm-app-main--with-right-pane"
+              : "ietm-app-main"
+          }
+        >
           <div
-            className="ietm-editor-pane"
-            onMouseDown={handleEditorPaneMouseDown}
-            onFocusCapture={() => setEditorSurfaceEngaged(true)}
+            className={
+              viewMode === "source"
+                ? "ietm-editor-pane ietm-editor-pane--source"
+                : "ietm-editor-pane"
+            }
+            onMouseDown={
+              viewMode === "editor" ? handleEditorPaneMouseDown : undefined
+            }
+            onFocusCapture={
+              viewMode === "editor"
+                ? () => setEditorSurfaceEngaged(true)
+                : undefined
+            }
           >
-            <EditorContent editor={editor} className="ietm-editor-surface" />
+            <div
+              className={
+                viewMode === "source"
+                  ? "ietm-editor-surface-host is-hidden"
+                  : "ietm-editor-surface-host"
+              }
+              aria-hidden={viewMode === "source"}
+            >
+              <EditorContent editor={editor} className="ietm-editor-surface" />
+            </div>
+            {viewMode === "source" ? (
+              <pre className="ietm-source-xml-view" aria-readonly="true">
+                <code>{sourceXml}</code>
+              </pre>
+            ) : null}
           </div>
 
-          <aside className="ietm-right-pane">
-            {showPropertyPanel && resolvedTarget ? (
-              <S1000DPropertyPanel
-                key={inspectStableKey ?? "none"}
-                editor={editor}
-                target={resolvedTarget}
-                readOnly={!props.editable}
-                onDismiss={() => setPropertiesDismissed(true)}
-              />
-            ) : (
-              <div className="ietm-preview-placeholder">
-                <p>功能开发中，敬请期待</p>
-              </div>
-            )}
-          </aside>
+          {showRightPane ? (
+            <aside id="ietm-pad-preview-pane" className="ietm-right-pane">
+              {showPropertyPanel && resolvedTarget ? (
+                <S1000DPropertyPanel
+                  key={inspectStableKey ?? "none"}
+                  editor={editor}
+                  target={resolvedTarget}
+                  readOnly={!props.editable}
+                  onDismiss={() => setPropertiesDismissed(true)}
+                />
+              ) : (
+                <DmPdfPreviewPane
+                  loading={pdfPreviewLoading}
+                  error={pdfPreviewError}
+                  pdfUrl={pdfPreviewUrl}
+                />
+              )}
+            </aside>
+          ) : null}
         </div>
 
         <footer className="ietm-app-footer">
-          <IETMAppFooter
-            status={resolveFooterStatus(
-              props.footerStatusOverride,
-              props.editable,
-            )}
-          />
+          <div className="ietm-app-footer__start">
+            <IETMAppFooter
+              status={resolveFooterStatus(
+                props.footerStatusOverride,
+                props.editable,
+              )}
+            />
+          </div>
+          <div className="ietm-app-footer__actions">
+            <button
+              type="button"
+              className={
+                viewMode === "source"
+                  ? "ietm-footer-icon-btn is-active"
+                  : "ietm-footer-icon-btn"
+              }
+              aria-pressed={viewMode === "source"}
+              aria-label={
+                viewMode === "source" ? "切换为编辑模式" : "切换为源码模式"
+              }
+              title={viewMode === "source" ? "编辑模式" : "源码模式"}
+              onClick={handleToggleViewMode}
+            >
+              <Code2 size={22} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={
+                padPreviewOpen
+                  ? "ietm-footer-icon-btn is-active"
+                  : "ietm-footer-icon-btn"
+              }
+              aria-expanded={padPreviewOpen}
+              aria-controls="ietm-pad-preview-pane"
+              aria-label="预览"
+              title="预览"
+              disabled={pdfPreviewLoading}
+              onClick={handlePadPreviewClick}
+            >
+              <Eye size={22} aria-hidden />
+            </button>
+          </div>
         </footer>
 
         {/* The backdrop for old menu is no longer needed */}
