@@ -1266,7 +1266,10 @@ export function extractContentElementFromDmXml(
 
 export function extractIdentAndStatusSection(xmlString: string): void {
   const dmodule = getRootDModuleElement(xmlString);
-  if (!dmodule) return;
+  if (!dmodule) {
+    useDmMetadataStore.getState().setIdentAndStatusXml("");
+    return;
+  }
 
   const identNode = Array.from(dmodule.children).find(
     (c) => c.localName === "identAndStatusSection",
@@ -1276,6 +1279,8 @@ export function extractIdentAndStatusSection(xmlString: string): void {
     const serializer = new XMLSerializer();
     const identXmlString = serializer.serializeToString(identNode);
     useDmMetadataStore.getState().setIdentAndStatusXml(identXmlString);
+  } else {
+    useDmMetadataStore.getState().setIdentAndStatusXml("");
   }
 }
 /**

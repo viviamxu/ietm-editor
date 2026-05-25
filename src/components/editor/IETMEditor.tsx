@@ -38,7 +38,6 @@ import {
 } from "../../lib/editor/resolveInspectable";
 import {
   consumeInternalRefJumpGuard,
-  consumeSuppressPropertyPanelOpen,
   peekSuppressPropertyPanelOpen,
 } from "../../lib/editor/internalRefNavigate";
 import {
@@ -58,6 +57,8 @@ import {
   type InsertMultimediaPayload,
 } from "../../lib/editor/insertMultimedia";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
+import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
 import type { InsertImagePayload } from "../../types/toolbar";
 import {
@@ -74,12 +75,14 @@ import {
   LockKeyhole,
   Loader,
   Check,
+  Settings2,
 } from "lucide-react";
 import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import { Code2, Eye } from "lucide-react";
 import { DmPdfPreviewPane } from "./DmPdfPreviewPane";
+import { PropertySettingsEmptyPane } from "./PropertySettingsEmptyPane";
 import { openDmPdfPreview } from "../../lib/ietm/dmPdfPreview";
 
 type EditorViewMode = "editor" | "source";
@@ -97,7 +100,8 @@ export interface IETMEditorRefValue {
    * 若无合法 description 正文，则按当前 schema 写入最小合法稿。
    * @returns 未就绪或写入失败时为 `false`
    */
-  loadDmXml: (dmXml: string) => boolean;
+  loadDmXml: (dmXml: string, documentName?: string) => boolean;
+  setDmDocumentName: (name: string) => void;
   /**
    * 按当前 `getDescriptionSchema()`（含 `createIETMEditor({ descriptionSchema })` / `setDescriptionSchema`）
    * 将正文设为 schema 约束下的最小合法文档。
@@ -226,8 +230,6 @@ function normalizeEditorContentInput(
   return migrateParagraphInJson(content);
 }
 
-const DOC_TITLE_PLACEHOLDER = "数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D";
-
 function focusFirstCellByMouseLikeClick(
   editor: NonNullable<ReturnType<typeof useEditor>>,
 ): void {
@@ -271,8 +273,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       "file" | "edit" | "insert"
     >("file");
 
-    const [propertiesDismissed, setPropertiesDismissed] = useState(false);
-    const [editorSurfaceEngaged, setEditorSurfaceEngaged] = useState(false);
+    const [propertySettingsOpen, setPropertySettingsOpen] = useState(false);
+    const documentDisplayTitle = useDmMetadataStore(
+      (s) => s.documentDisplayTitle,
+    );
     const [viewMode, setViewMode] = useState<EditorViewMode>("editor");
     const [sourceXml, setSourceXml] = useState("");
     const [padPreviewOpen, setPadPreviewOpen] = useState(false);
@@ -354,9 +358,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         if (anchorKey !== selectionAnchorRef.current) {
           selectionAnchorRef.current = anchorKey;
           if (peekSuppressPropertyPanelOpen()) {
-            setPropertiesDismissed(true);
-          } else {
-            setPropertiesDismissed(false);
+            setPropertySettingsOpen(false);
           }
         }
         bumpSelectionUi();
@@ -382,8 +384,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             normalizeEditorContentInput(content) ?? "",
           );
         },
-        loadDmXml: (dmXml) => {
+        loadDmXml: (dmXml, documentName) => {
           if (!editor) return false;
+          if (documentName) {
+            useDmMetadataStore
+              .getState()
+              .setDocumentDisplayTitle(normalizeDmDocumentName(documentName));
+          }
           const inner = getDescriptionInnerXmlFromDmXml(dmXml);
           if (inner == null) {
             return applyFillEmptyContentFromSchema(
@@ -393,6 +400,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           return true;
+        },
+        setDmDocumentName: (name) => {
+          useDmMetadataStore
+            .getState()
+            .setDocumentDisplayTitle(normalizeDmDocumentName(name));
         },
         fillEmptyContentFromSchema: () => {
           if (!editor) return false;
@@ -470,14 +482,17 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ? resolveInspectable(editor)
       : null;
 
-    const showPropertyPanel =
-      viewMode === "editor" &&
-      editorSurfaceEngaged &&
-      resolvedTarget !== null &&
-      !propertiesDismissed;
+    const dismissPropertyPanel = () => {
+      setPropertySettingsOpen(false);
+    };
 
-    const showRightPane =
-      padPreviewOpen || (showPropertyPanel && resolvedTarget !== null);
+    const showPropertyPane =
+      viewMode === "editor" && propertySettingsOpen;
+
+    const showPropertyPanelForm =
+      showPropertyPane && resolvedTarget !== null;
+
+    const showRightPane = showPropertyPane || padPreviewOpen;
 
     const clearPdfPreviewUrl = () => {
       if (
@@ -507,9 +522,26 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       if (viewMode === "editor") {
         setSourceXml(exportEditorToDmXmlString(editor));
         setViewMode("source");
+        setPropertySettingsOpen(false);
         return;
       }
       setViewMode("editor");
+    };
+
+    const handlePropertySettingsClick = () => {
+      if (viewMode !== "editor") return;
+
+      if (propertySettingsOpen) {
+        dismissPropertyPanel();
+        return;
+      }
+
+      setPropertySettingsOpen(true);
+      setPadPreviewOpen(false);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(false);
+      clearPdfPreviewUrl();
+      editor?.commands.focus();
     };
 
     const handlePadPreviewClick = () => {
@@ -523,6 +555,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
 
       if (!editor) return;
 
+      setPropertySettingsOpen(false);
       setPadPreviewOpen(true);
       setPdfPreviewError(null);
       setPdfPreviewLoading(true);
@@ -555,18 +588,12 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ? `${resolvedTarget.nodeType}-${resolvedTarget.pos}`
       : null;
 
-    useEffect(() => {
-      if (consumeSuppressPropertyPanelOpen()) return;
-      setPropertiesDismissed(false);
-    }, [inspectStableKey]);
-
     if (!editor) {
       return null;
     }
 
     const handleEditorPaneMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
       if (e.button !== 0) return;
-      setEditorSurfaceEngaged(true);
       const el = e.target as Element | null;
       const clickedTable = el?.closest?.(
         ".s1000d-table-wrap, .s1000d-tgroup-table",
@@ -822,12 +849,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             </Tabs>
 
             <div className="ietm-app-header-right">
-              <span className="ietm-doc-title">{DOC_TITLE_PLACEHOLDER}</span>
-              <button type="button" className="ietm-share-btn" disabled>
-                分享
-              </button>
-              <span className="ietm-user-avatar" aria-hidden>
-                A
+              <span
+                className="ietm-doc-title"
+                title={documentDisplayTitle || undefined}
+              >
+                数据模块标题 {documentDisplayTitle}
               </span>
             </div>
           </header>
@@ -859,11 +885,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             onMouseDown={
               viewMode === "editor" ? handleEditorPaneMouseDown : undefined
             }
-            onFocusCapture={
-              viewMode === "editor"
-                ? () => setEditorSurfaceEngaged(true)
-                : undefined
-            }
           >
             <div
               className={
@@ -883,15 +904,24 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           </div>
 
           {showRightPane ? (
-            <aside id="ietm-pad-preview-pane" className="ietm-right-pane">
-              {showPropertyPanel && resolvedTarget ? (
-                <S1000DPropertyPanel
-                  key={inspectStableKey ?? "none"}
-                  editor={editor}
-                  target={resolvedTarget}
-                  readOnly={!props.editable}
-                  onDismiss={() => setPropertiesDismissed(true)}
-                />
+            <aside
+              id={
+                showPropertyPane ? "ietm-property-pane" : "ietm-pad-preview-pane"
+              }
+              className="ietm-right-pane"
+            >
+              {showPropertyPane ? (
+                showPropertyPanelForm && resolvedTarget ? (
+                  <S1000DPropertyPanel
+                    key={inspectStableKey ?? "none"}
+                    editor={editor}
+                    target={resolvedTarget}
+                    readOnly={!props.editable}
+                    onDismiss={dismissPropertyPanel}
+                  />
+                ) : (
+                  <PropertySettingsEmptyPane onDismiss={dismissPropertyPanel} />
+                )
               ) : (
                 <DmPdfPreviewPane
                   loading={pdfPreviewLoading}
@@ -944,6 +974,22 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               onClick={handlePadPreviewClick}
             >
               <Eye size={22} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={
+                propertySettingsOpen
+                  ? "ietm-footer-icon-btn is-active"
+                  : "ietm-footer-icon-btn"
+              }
+              aria-expanded={propertySettingsOpen}
+              aria-controls="ietm-property-pane"
+              aria-label="属性设置"
+              title="属性设置"
+              disabled={viewMode === "source"}
+              onClick={handlePropertySettingsClick}
+            >
+              <Settings2 size={22} aria-hidden />
             </button>
           </div>
         </footer>

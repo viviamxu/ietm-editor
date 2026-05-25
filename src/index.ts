@@ -46,14 +46,17 @@ import {
   exportEditorToDmXmlString,
   fillEmptyContentFromSchema,
 } from "./lib/s1000d/descriptionSchemaInsert";
+import { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
 import {
   DEFAULT_DM_PDF_PREVIEW_PATH,
   openDmPdfPreview,
   pdfPreviewResultToUrl,
   resolveDmPdfPreviewUrl,
 } from "./lib/ietm/dmPdfPreview";
+import { useDmMetadataStore } from "./store/dmMetadataStore";
 import "./style.css";
 
+export { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
 export {
   DEFAULT_DM_PDF_PREVIEW_PATH,
   openDmPdfPreview,
@@ -113,6 +116,11 @@ export interface IETMEditorOptions {
    * 若无 `<content>/<description>` 可导入正文：若同时传了 `content` 则用之；否则按 `descriptionSchema`（或 store 默认 schema）插入最小合法稿。
    */
   dmXml?: string;
+  /**
+   * 顶栏文档标题：XML 文件名（可含 `.xml` 或路径，展示时去掉后缀）。
+   * 例如 `bikeDmSample.xml` → `bikeDmSample`。
+   */
+  dmDocumentName?: string;
   editable?: boolean;
   /** 服务端下发的描述类 schema；不传则使用内置默认，卸载实例时会恢复默认（若创建时传入了本字段） */
   descriptionSchema?: DescriptionSchema;
@@ -173,7 +181,9 @@ export interface IETMEditorInstance {
    * 若无合法 description 正文，则按当前 schema 写入最小合法稿（与 `fillEmptyContentFromSchema` 一致）。
    * @returns 未就绪或写入失败时为 `false`
    */
-  loadDmXml(dmXml: string): boolean;
+  loadDmXml(dmXml: string, documentName?: string): boolean;
+  /** 设置顶栏文档标题（XML 文档名，如 `bikeDmSample` 或 `bikeDmSample.xml`） */
+  setDmDocumentName(name: string): void;
   /**
    * 按当前描述类 schema（`getDescriptionSchema()`，含创建实例时传入的 `descriptionSchema`）
    * 将正文设为最小合法 S1000D 文档。须在 `ready` 后调用更稳妥。
@@ -286,6 +296,12 @@ export function createIETMEditor(
     useToolbarConfigStore.getState().setToolbarConfig(options.toolbar);
   }
 
+  if (options.dmDocumentName) {
+    useDmMetadataStore
+      .getState()
+      .setDocumentDisplayTitle(normalizeDmDocumentName(options.dmDocumentName));
+  }
+
   const withHandle = (fn: (handle: IETMEditorRootHandle) => void) => {
     if (disposed) return;
     if (handleRef.current) {
@@ -326,9 +342,14 @@ export function createIETMEditor(
 
   return {
     setContent: (content) => withHandle((h) => h.setContent(content)),
-    loadDmXml: (dmXml) => {
+    loadDmXml: (dmXml, documentName) => {
       if (disposed || !handleRef.current) return false;
-      return handleRef.current.loadDmXml(dmXml);
+      return handleRef.current.loadDmXml(dmXml, documentName);
+    },
+    setDmDocumentName: (name) => {
+      useDmMetadataStore
+        .getState()
+        .setDocumentDisplayTitle(normalizeDmDocumentName(name));
     },
     fillEmptyContentFromSchema: () =>
       disposed || !handleRef.current

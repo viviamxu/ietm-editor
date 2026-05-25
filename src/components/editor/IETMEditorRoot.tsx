@@ -29,7 +29,8 @@ export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
   /** @returns 解析失败时为 `false` */
-  loadDmXml: (dmXml: string) => boolean;
+  loadDmXml: (dmXml: string, documentName?: string) => boolean;
+  setDmDocumentName: (name: string) => void;
   fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
   focus: () => void;
@@ -91,7 +92,9 @@ export const IETMEditorRoot = forwardRef<
     () => ({
       setContent: (content) => editorRef.current?.setContent(content),
       setEditable: (value) => applyEditable(value),
-      loadDmXml: (xml) => editorRef.current?.loadDmXml(xml) ?? false,
+      loadDmXml: (xml, documentName) =>
+        editorRef.current?.loadDmXml(xml, documentName) ?? false,
+      setDmDocumentName: (name) => editorRef.current?.setDmDocumentName(name),
       fillEmptyContentFromSchema: () =>
         editorRef.current?.fillEmptyContentFromSchema() ?? false,
       getJSON: () =>

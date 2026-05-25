@@ -14,6 +14,7 @@ function App() {
     const instance = createIETMEditor({
       element: el,
       dmXml: bikeDmSampleXml,
+      dmDocumentName: "bikeDmSample.xml",
     });
     instanceRef.current = instance;
 
