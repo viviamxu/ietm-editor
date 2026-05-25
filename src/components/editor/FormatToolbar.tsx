@@ -279,6 +279,7 @@ export function FormatToolbar({
             type="button"
             className="ietm-icon-btn"
             disabled={formatBarLocked}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertLevelledParaFromSchema(editor, schema)}
             title="插入层级段落"
             aria-label="插入层级段落"

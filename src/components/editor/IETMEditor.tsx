@@ -50,6 +50,7 @@ import {
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
   insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
+import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import {
   insertMultimediaIntoEditor,
@@ -279,6 +280,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000DListExitKeymap,
         S1000DNestingKeymap,
         MigrateParagraphToParaExtension,
+        PasteWordTableExtension,
         TextStyleKit.configure({
           lineHeight: false,
         }),
