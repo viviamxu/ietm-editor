@@ -63,9 +63,42 @@
   font: inherit;
 }
 
-.ietm-app-main--with-right-pane .ietm-editor-pane {
+/* 仅预览：左编辑 70% + 中预览 30% */
+.ietm-app-main--with-preview-pane .ietm-editor-pane {
   flex: 0 0 70%;
   max-width: 70%;
+}
+
+.ietm-app-main--with-preview-pane .ietm-preview-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+}
+
+/* 仅属性：左编辑 70% + 右属性 30% */
+.ietm-app-main--with-property-pane .ietm-editor-pane {
+  flex: 0 0 70%;
+  max-width: 70%;
+}
+
+.ietm-app-main--with-property-pane .ietm-property-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+}
+
+/* 预览 + 属性：左编辑 50% + 中预览 30% + 右属性 20% */
+.ietm-app-main--with-preview-and-property .ietm-editor-pane {
+  flex: 0 0 50%;
+  max-width: 50%;
+}
+
+.ietm-app-main--with-preview-and-property .ietm-preview-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+}
+
+.ietm-app-main--with-preview-and-property .ietm-property-pane {
+  flex: 0 0 20%;
+  max-width: 20%;
 }
 
 .ietm-editor-surface {
@@ -73,9 +106,8 @@
   box-sizing: border-box;
 }
 
+.ietm-side-pane,
 .ietm-right-pane {
-  flex: 0 0 30%;
-  max-width: 30%;
   min-height: 0;
   min-width: 0;
   box-sizing: border-box;
@@ -84,8 +116,12 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  /* 纵向滚动交给 .ietm-property-panel__body，避免整块右栏滚动顶掉面板标题 */
   overflow: hidden;
+}
+
+.ietm-side-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
 }
 
 .ietm-preview-placeholder {
@@ -142,6 +178,28 @@
   min-height: 0;
   border: none;
   background: #ffffff;
+}
+
+.ietm-preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  min-height: 0;
+}
+
+.ietm-preview-panel__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ietm-preview-panel__body .ietm-pdf-preview-pane,
+.ietm-preview-panel__body .ietm-preview-placeholder {
+  flex: 1;
+  min-height: 0;
 }
 
 .ietm-property-panel {

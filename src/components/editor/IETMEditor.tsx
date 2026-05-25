@@ -492,7 +492,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const showPropertyPanelForm =
       showPropertyPane && resolvedTarget !== null;
 
-    const showRightPane = showPropertyPane || padPreviewOpen;
+    const showPreviewPane = padPreviewOpen;
+    const hasDualSidePanes = showPreviewPane && showPropertyPane;
+    const hasSingleSidePane = showPreviewPane !== showPropertyPane && (showPreviewPane || showPropertyPane);
 
     const clearPdfPreviewUrl = () => {
       if (
@@ -504,6 +506,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       pdfPreviewRevokeRef.current = false;
       pdfPreviewUrlRef.current = null;
       setPdfPreviewUrl(null);
+    };
+
+    const dismissPadPreview = () => {
+      setPadPreviewOpen(false);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(false);
+      clearPdfPreviewUrl();
     };
 
     useEffect(() => {
@@ -537,25 +546,17 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       }
 
       setPropertySettingsOpen(true);
-      setPadPreviewOpen(false);
-      setPdfPreviewError(null);
-      setPdfPreviewLoading(false);
-      clearPdfPreviewUrl();
       editor?.commands.focus();
     };
 
     const handlePadPreviewClick = () => {
       if (padPreviewOpen) {
-        setPadPreviewOpen(false);
-        setPdfPreviewError(null);
-        setPdfPreviewLoading(false);
-        clearPdfPreviewUrl();
+        dismissPadPreview();
         return;
       }
 
       if (!editor) return;
 
-      setPropertySettingsOpen(false);
       setPadPreviewOpen(true);
       setPdfPreviewError(null);
       setPdfPreviewLoading(true);
@@ -870,11 +871,18 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         </div>
 
         <div
-          className={
-            showRightPane
-              ? "ietm-app-main ietm-app-main--with-right-pane"
-              : "ietm-app-main"
-          }
+          className={[
+            "ietm-app-main",
+            hasDualSidePanes && "ietm-app-main--with-preview-and-property",
+            hasSingleSidePane &&
+              showPreviewPane &&
+              "ietm-app-main--with-preview-pane",
+            hasSingleSidePane &&
+              showPropertyPane &&
+              "ietm-app-main--with-property-pane",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
           <div
             className={
@@ -903,31 +911,35 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             ) : null}
           </div>
 
-          {showRightPane ? (
+          {showPreviewPane ? (
             <aside
-              id={
-                showPropertyPane ? "ietm-property-pane" : "ietm-pad-preview-pane"
-              }
-              className="ietm-right-pane"
+              id="ietm-pad-preview-pane"
+              className="ietm-side-pane ietm-preview-pane"
             >
-              {showPropertyPane ? (
-                showPropertyPanelForm && resolvedTarget ? (
-                  <S1000DPropertyPanel
-                    key={inspectStableKey ?? "none"}
-                    editor={editor}
-                    target={resolvedTarget}
-                    readOnly={!props.editable}
-                    onDismiss={dismissPropertyPanel}
-                  />
-                ) : (
-                  <PropertySettingsEmptyPane onDismiss={dismissPropertyPanel} />
-                )
-              ) : (
-                <DmPdfPreviewPane
-                  loading={pdfPreviewLoading}
-                  error={pdfPreviewError}
-                  pdfUrl={pdfPreviewUrl}
+              <DmPdfPreviewPane
+                loading={pdfPreviewLoading}
+                error={pdfPreviewError}
+                pdfUrl={pdfPreviewUrl}
+                onDismiss={dismissPadPreview}
+              />
+            </aside>
+          ) : null}
+
+          {showPropertyPane ? (
+            <aside
+              id="ietm-property-pane"
+              className="ietm-side-pane ietm-property-pane"
+            >
+              {showPropertyPanelForm && resolvedTarget ? (
+                <S1000DPropertyPanel
+                  key={inspectStableKey ?? "none"}
+                  editor={editor}
+                  target={resolvedTarget}
+                  readOnly={!props.editable}
+                  onDismiss={dismissPropertyPanel}
                 />
+              ) : (
+                <PropertySettingsEmptyPane onDismiss={dismissPropertyPanel} />
               )}
             </aside>
           ) : null}
