@@ -16,6 +16,8 @@ import {
   internalRef,
   clearContent,
 } from "../../lib/s1000d/descriptionSchemaInsert";
+import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
+import { insertFaultIsolationFromSchema } from "../../lib/s1000d/faultIsolationInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
@@ -43,6 +45,7 @@ import {
   Strikethrough as StrikethroughIcon,
   Outdent,
   Indent,
+  ListCollapse,
 } from "lucide-react";
 
 import {
@@ -94,6 +97,9 @@ export function FormatToolbar({
   editModeButtonTitle = DEFAULT_EDIT_MODE_TITLE,
 }: FormatToolbarProps) {
   const schema = useDescriptionSchemaStore((s) => s.schema);
+  const contentKind = getDmContentKind(schema);
+  const isDescriptionDm = contentKind === "description";
+  const isFaultDm = contentKind === "faultIsolation";
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
   const onInsertImageClick = useToolbarConfigStore((s) => s.onInsertImageClick);
   const onInsertFilmClick = useToolbarConfigStore((s) => s.onInsertFilmClick);
@@ -274,7 +280,19 @@ export function FormatToolbar({
             <CircleX size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isBuiltinVisible("insertLevelledPara") ? (
+        {isFaultDm ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={() => insertFaultIsolationFromSchema(editor, schema)}
+            title="插入隔离程序"
+            aria-label="插入隔离程序"
+          >
+            <ListCollapse size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isDescriptionDm && isBuiltinVisible("insertLevelledPara") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -287,30 +305,34 @@ export function FormatToolbar({
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked || !promoteEnabled}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => promoteNesting(editor)}
-          title="升级（变浅层级，如三级→二级）"
-          aria-label="升级"
-        >
-          <Indent size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked || !demoteEnabled}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => demoteNesting(editor)}
-          title="降级（加深层级，如二级→三级）"
-          aria-label="降级"
-        >
-          <Outdent size={16} aria-hidden className="shrink-0" />
-        </button>
+        {isDescriptionDm ? (
+          <>
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked || !promoteEnabled}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => promoteNesting(editor)}
+              title="升级（变浅层级，如三级→二级）"
+              aria-label="升级"
+            >
+              <Indent size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked || !demoteEnabled}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => demoteNesting(editor)}
+              title="降级（加深层级，如二级→三级）"
+              aria-label="降级"
+            >
+              <Outdent size={16} aria-hidden className="shrink-0" />
+            </button>
+          </>
+        ) : null}
 
-        {isBuiltinVisible("insertSequentialList") ? (
+        {isDescriptionDm && isBuiltinVisible("insertSequentialList") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -322,7 +344,7 @@ export function FormatToolbar({
             <ListOrdered size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isBuiltinVisible("insertRandomList") ? (
+        {isDescriptionDm && isBuiltinVisible("insertRandomList") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -336,14 +358,14 @@ export function FormatToolbar({
             <List size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isBuiltinVisible("insertTable") ? (
+        {isDescriptionDm && isBuiltinVisible("insertTable") ? (
           <InsertTablePicker
             editor={editor}
             schema={schema}
             disabled={formatBarLocked}
           />
         ) : null}
-        {isBuiltinVisible("insertImage") ? (
+        {isDescriptionDm && isBuiltinVisible("insertImage") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -355,7 +377,7 @@ export function FormatToolbar({
             <Image size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isBuiltinVisible("insertFilm") ? (
+        {isDescriptionDm && isBuiltinVisible("insertFilm") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -367,23 +389,22 @@ export function FormatToolbar({
             <Film size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        <ToolbarCustomItems placement="insert" ctx={toolbarCtx} />
-        <button
-          type="button"
-          className="ietm-icon-btn"
-          disabled={formatBarLocked}
-          onClick={() => insertParagraphFromSchema(editor, schema)}
-          title="插入段落"
-          aria-label="插入段落"
-        >
-          <Pilcrow size={16} aria-hidden className="shrink-0" />
-        </button>
+        {isDescriptionDm ? (
+          <>
+            <ToolbarCustomItems placement="insert" ctx={toolbarCtx} />
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={() => insertParagraphFromSchema(editor, schema)}
+              title="插入段落"
+              aria-label="插入段落"
+            >
+              <Pilcrow size={16} aria-hidden className="shrink-0" />
+            </button>
+          </>
+        ) : null}
       </div>
-
-      <span
-        className="ietm-format-toolbar__divider"
-        style={{ display: showTableTools ? "none" : undefined }}
-      />
 
       <span
         className="ietm-format-toolbar__divider"
@@ -453,51 +474,60 @@ export function FormatToolbar({
         </button>
       </div>
 
-      <span
-        className="ietm-format-toolbar__divider"
-        style={{ display: showTableTools ? "none" : undefined }}
-      />
-
-      <div
-        className="ietm-format-toolbar__cluster"
-        style={{ display: showTableTools ? "none" : undefined }}
-      >
-        <button
-          type="button"
-          className={`ietm-toggle-btn ${alignLeft ? "is-active" : ""}`}
-          disabled={formatBarLocked}
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          title="左对齐"
-        >
-          <TextAlignStart size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className={`ietm-toggle-btn ${editor.isActive({ textAlign: "center" }) ? "is-active" : ""}`}
-          disabled={formatBarLocked}
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          title="居中"
-        >
-          <TextAlignCenter size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className={`ietm-toggle-btn ${editor.isActive({ textAlign: "right" }) ? "is-active" : ""}`}
-          disabled={formatBarLocked}
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          title="右对齐"
-        >
-          <TextAlignEnd size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className={`ietm-toggle-btn ${editor.isActive({ textAlign: "justify" }) ? "is-active" : ""}`}
-          disabled={formatBarLocked}
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-          title="两端对齐"
-        >
-          <TextAlignJustify size={16} aria-hidden className="shrink-0" />
-        </button>
+      {isDescriptionDm ? (
+        <>
+          <span
+            className="ietm-format-toolbar__divider"
+            style={{ display: showTableTools ? "none" : undefined }}
+          />
+          <div
+            className="ietm-format-toolbar__cluster"
+            style={{ display: showTableTools ? "none" : undefined }}
+          >
+            <button
+              type="button"
+              className={`ietm-toggle-btn ${alignLeft ? "is-active" : ""}`}
+              disabled={formatBarLocked}
+              onClick={() => editor.chain().focus().setTextAlign("left").run()}
+              title="左对齐"
+            >
+              <TextAlignStart size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className={`ietm-toggle-btn ${editor.isActive({ textAlign: "center" }) ? "is-active" : ""}`}
+              disabled={formatBarLocked}
+              onClick={() =>
+                editor.chain().focus().setTextAlign("center").run()
+              }
+              title="居中"
+            >
+              <TextAlignCenter size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className={`ietm-toggle-btn ${editor.isActive({ textAlign: "right" }) ? "is-active" : ""}`}
+              disabled={formatBarLocked}
+              onClick={() => editor.chain().focus().setTextAlign("right").run()}
+              title="右对齐"
+            >
+              <TextAlignEnd size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className={`ietm-toggle-btn ${editor.isActive({ textAlign: "justify" }) ? "is-active" : ""}`}
+              disabled={formatBarLocked}
+              onClick={() =>
+                editor.chain().focus().setTextAlign("justify").run()
+              }
+              title="两端对齐"
+            >
+              <TextAlignJustify size={16} aria-hidden className="shrink-0" />
+            </button>
+          </div>
+        </>
+      ) : null}
+      <div className="ietm-format-toolbar__cluster">
         <button
           type="button"
           className={`ietm-toggle-btn ${subscriptActive ? "is-active" : ""}`}
@@ -585,6 +615,8 @@ export function FormatToolbar({
           <CircleAlert size={16} aria-hidden className="shrink-0" />
         </button>
       </div>
+
+      <ToolbarCustomItems placement="format" ctx={toolbarCtx} />
     </div>
   );
 }

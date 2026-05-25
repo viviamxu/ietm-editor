@@ -24,10 +24,11 @@ import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
-  getDescriptionInnerXmlFromDmXml,
+  getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
+import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
@@ -45,11 +46,12 @@ import {
   runS1000dTableAction,
 } from "../../lib/editor/s1000dTableCommands";
 import {
-  buildEmptyDescriptionDocJson,
   exportEditorToDmXmlString,
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
   insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
+import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
+import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import {
@@ -328,10 +330,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           resize: false,
         }),
         ...s1000dPhase1Nodes,
+        ...s1000dFaultIsolationNodes,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
-        buildEmptyDescriptionDocJson(getDescriptionSchema()),
+        buildEmptyDocJsonFromSchema(getDescriptionSchema()),
       editorProps: {
         attributes: {
           class: "ietm-tiptap-root",
@@ -391,12 +394,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               .getState()
               .setDocumentDisplayTitle(normalizeDmDocumentName(documentName));
           }
-          const inner = getDescriptionInnerXmlFromDmXml(dmXml);
+          const schema = getDescriptionSchema();
+          const inner = getDmInnerXmlFromDmXml(
+            dmXml,
+            getDmContentKind(schema) === "faultIsolation",
+          );
           if (inner == null) {
-            return applyFillEmptyContentFromSchema(
-              editor,
-              getDescriptionSchema(),
-            );
+            return applyFillEmptyContentFromSchema(editor, schema);
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           return true;

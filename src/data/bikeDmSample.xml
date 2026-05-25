@@ -1,30 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?><!DOCTYPE dmodule  [
-  <!ENTITY ICN-C0419-S1000D0392-001-01 SYSTEM "ICN-C0419-S1000D0392-001-01.CGM" NDATA cgm >
-  <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE dmodule [
+   <!ENTITY ICN-C0419-S1000D0392-001-01 SYSTEM "ICN-C0419-S1000D0392-001-01.CGM" NDATA cgm >
+   <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
 ]>
 <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns:dc="http://www.purl.org/dc/elements/1.1/"
-         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:xlink="http://www.w3.org/1999/xlink"
-         xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
+   xmlns:dc="http://www.purl.org/dc/elements/1.1/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
 
    <identAndStatusSection>
       <dmAddress>
          <dmIdent>
             <dmCode modelIdentCode="S1000DLIGHTING" systemDiffCode="AAA" systemCode="D00"
-                    subSystemCode="0"
-                    subSubSystemCode="0"
-                    assyCode="00"
-                    disassyCode="00"
-                    disassyCodeVariant="AA"
-                    infoCode="040"
-                    infoCodeVariant="A"
-                    itemLocationCode="A"/>  
-            <language countryIsoCode="US" languageIsoCode="en"/>
-            <issueInfo issueNumber="008" inWork="00"/>
+               subSystemCode="0"
+               subSubSystemCode="0"
+               assyCode="00"
+               disassyCode="00"
+               disassyCodeVariant="AA"
+               infoCode="040"
+               infoCodeVariant="A"
+               itemLocationCode="A" />
+            <language countryIsoCode="US" languageIsoCode="en" />
+            <issueInfo issueNumber="008" inWork="00" />
          </dmIdent>
          <dmAddressItems>
-            <issueDate day="31" month="12" year="2016"/>
+            <issueDate day="31" month="12" year="2016" />
             <dmTitle>
                <techName>Electrical system</techName>
                <infoName>Description of how it is made and its function</infoName>
@@ -32,12 +33,12 @@
          </dmAddressItems>
       </dmAddress>
       <dmStatus issueType="changed">
-         <security securityClassification="01" commercialClassification="cc51" caveat="cv51"/>
+         <security securityClassification="01" commercialClassification="cc51" caveat="cv51" />
          <derivativeClassification>
             <classificationActionGroup id="dcg-001">
                <classificationAction year="2012" month="03" day="15" actionIdentType="ai01">
-   <!-- Classified By -->
-   <businessUnit>
+                  <!-- Classified By -->
+                  <businessUnit>
                      <businessUnitName>ASD Couriers</businessUnitName>
                      <contactPerson>
                         <lastName>Clifford</lastName>
@@ -46,32 +47,32 @@
                   <derivativeSource>Bike Security Guidance Book 1</derivativeSource>
                </classificationAction>
                <classificationAction year="2012" month="11" day="02" actionIdentType="ai09">
-   <!-- Upgrade to securityClassification 04 -->
-   <valueAfterAction year="2013" month="03" day="15" actionIdentType="ai02"/>
+                  <!-- Upgrade to securityClassification 04 -->
+                  <valueAfterAction year="2013" month="03" day="15" actionIdentType="ai02" />
                   <!-- Declassify -->
-   <businessUnit>
-	                    <businessUnitName>ASD Couriers</businessUnitName>
+                  <businessUnit>
+                     <businessUnitName>ASD Couriers</businessUnitName>
                      <contactPerson>
                         <lastName>Wink</lastName>
                      </contactPerson>
                   </businessUnit>
-                  <derivativeSource/>
+                  <derivativeSource />
                </classificationAction>
             </classificationActionGroup>
             <classificationActionGroup id="dcg-002">
                <classificationAction year="2012" month="01" day="02" actionIdentType="ai01">
-   <!-- Classified By -->
-   <businessUnit id="biz-fchs">
+                  <!-- Classified By -->
+                  <businessUnit id="biz-fchs">
                      <businessUnitName>Calm Security</businessUnitName>
                      <contactPerson id="per-calm" personPrefix="Mr">
-					                   <lastName>Calm</lastName>
-				                 </contactPerson>
-			               </businessUnit>
+                        <lastName>Calm</lastName>
+                     </contactPerson>
+                  </businessUnit>
                   <derivativeSource>Bike Security Guidance Book 2</derivativeSource>
                </classificationAction>
                <classificationAction year="2012" month="04" day="01" actionIdentType="ai02">
-   <!-- Declassify On -->
-   <businessUnit>
+                  <!-- Declassify On -->
+                  <businessUnit>
                      <businessUnitName>ASD Couriers</businessUnitName>
                      <contactPerson>
                         <lastName>Clifford</lastName>
@@ -86,17 +87,16 @@
                <dataDistribution>To be made available to all S1000D users.</dataDistribution>
                <exportControl>
                   <exportRegistrationStmt>
-                     <simplePara>Export of this data module to all countries that are the residence of
-                    organizations that are users of S1000D is permitted. Storage of this data module
-                    is to be at the discretion of the organization.</simplePara>
+                     <simplePara>Export of this data module to all countries that are the residence
+                        of organizations that are users of S1000D is permitted. Storage of this data
+                        module is to be at the discretion of the organization.</simplePara>
                   </exportRegistrationStmt>
                </exportControl>
-               <dataHandling>There are no specific handling instructions for this data
-            module.</dataHandling>
-               <dataDestruction>Users may destroy this data module in accordance with their own local
-            procedures.</dataDestruction>
+               <dataHandling>There are no specific handling instructions for this data module.</dataHandling>
+               <dataDestruction>Users may destroy this data module in accordance with their own
+                  local procedures.</dataDestruction>
                <dataDisclosure>There are no dissemination limitations that apply to this data
-            module.</dataDisclosure>
+                  module.</dataDisclosure>
             </restrictionInstructions>
             <restrictionInfo>
                <copyright>
@@ -116,29 +116,29 @@
                   <copyrightPara>
                      <randomList>
                         <listItem>
-                           <para>This material is provided "As is" and neither ASD nor any person who
-                            has contributed to the creation, revision or maintenance of the material
-                            makes any representations or warranties, express or implied, including
-                            but not limited to, warranties of merchantability or fitness for any
-                            particular purpose.</para>
+                           <para>This material is provided "As is" and neither ASD nor any person
+                     who has contributed to the creation, revision or maintenance of the material
+                     makes any representations or warranties, express or implied, including but not
+                     limited to, warranties of merchantability or fitness for any particular
+                     purpose.</para>
                         </listItem>
                         <listItem>
                            <para>Neither ASD nor any person who has contributed to the creation,
-                            revision or maintenance of this material shall be liable for any direct,
-                            indirect, special or consequential damages or any other liability
-                            arising from any use of this material.</para>
+                     revision or maintenance of this material shall be liable for any direct,
+                     indirect, special or consequential damages or any other liability arising from
+                     any use of this material.</para>
                         </listItem>
                         <listItem>
-                           <para>Revisions to this document may occur after its issuance. The user is
-                            responsible for determining if revisions to the material contained in
-                            this document have occurred and are applicable.</para>
+                           <para>Revisions to this document may occur after its issuance. The user
+                     is responsible for determining if revisions to the material contained in this
+                     document have occurred and are applicable.</para>
                         </listItem>
                      </randomList>
                   </copyrightPara>
                </copyright>
                <policyStatement>S1000D-SC-2016-017-002-00 Steering Committee TOR</policyStatement>
-               <dataConds>There are no known conditions that would change the data restrictions for, or
-            security classification of, this data module.</dataConds>
+               <dataConds>There are no known conditions that would change the data restrictions for,
+                  or security classification of, this data module.</dataConds>
             </restrictionInfo>
          </dataRestrictions>
          <responsiblePartnerCompany enterpriseCode="B6865">
@@ -151,43 +151,43 @@
             <dmRef>
                <dmRefIdent>
                   <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
-                          subSystemCode="0"
-                          subSubSystemCode="0"
-                          assyCode="00"
-                          disassyCode="00"
-                          disassyCodeVariant="AA"
-                          infoCode="00W"
-                          infoCodeVariant="A"
-                          itemLocationCode="D"/>
+                     subSystemCode="0"
+                     subSubSystemCode="0"
+                     assyCode="00"
+                     disassyCode="00"
+                     disassyCodeVariant="AA"
+                     infoCode="00W"
+                     infoCodeVariant="A"
+                     itemLocationCode="D" />
                </dmRefIdent>
             </dmRef>
          </applicCrossRefTableRef>
-         <applicRef applicIdentValue="app-00000000AA040A-0000"/>
+         <applicRef applicIdentValue="app-00000000AA040A-0000" />
          <techStandard>
             <authorityInfoAndTp>
                <authorityInfo>20010131</authorityInfo>
                <techPubBase>Bike book</techPubBase>
             </authorityInfoAndTp>
-            <authorityExceptions/>
-            <authorityNotes/>
+            <authorityExceptions />
+            <authorityNotes />
          </techStandard>
          <brexDmRef>
             <dmRef>
                <dmRefIdent>
                   <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
-                          subSystemCode="0"
-                          subSubSystemCode="0"
-                          assyCode="00"
-                          disassyCode="00"
-                          disassyCodeVariant="AA"
-                          infoCode="022"
-                          infoCodeVariant="A"
-                          itemLocationCode="D"/>
+                     subSystemCode="0"
+                     subSubSystemCode="0"
+                     assyCode="00"
+                     disassyCode="00"
+                     disassyCodeVariant="AA"
+                     infoCode="022"
+                     infoCodeVariant="A"
+                     itemLocationCode="D" />
                </dmRefIdent>
             </dmRef>
          </brexDmRef>
          <qualityAssurance>
-            <firstVerification verificationType="tabtop"/>
+            <firstVerification verificationType="tabtop" />
          </qualityAssurance>
          <systemBreakdownCode>LT</systemBreakdownCode>
          <reasonForUpdate id="rfu-general" updateReasonType="urt03">
@@ -201,17 +201,19 @@
    </identAndStatusSection>
    <content>
       <description>
-         <para id="para1">这是一段关于文档排版规范的说明文字。para 标签用于定义标准段落。在现代文档编辑中，我们支持丰富的行内元素：例如化学式
-               H<subScript>2</subScript>O中的<subScript>下标</subScript>，或者数学公式E=mc<superScript>2</superScript>中的<superScript>上标</superScript>。你也可以使用<emphasis
-    emphasisType="em01">加粗文本</emphasis>来强调核心概念，或者使用<emphasis emphasisType="em02"
- >斜体文本</emphasis>来表示特定语境。</para>
-         <para>在编写技术文档时，内部引用格式通常为<internalRef internalRefId="para1"/>，以确保追溯的准确性。外部引用则通常以 <dmRef>
+         <para id="para1">这是一段关于文档排版规范的说明文字。para 标签用于定义标准段落。在现代文档编辑中，我们支持丰富的行内元素：例如化学式 H<subScript>2</subScript>
+            O中的<subScript>下标</subScript>，或者数学公式E=mc<superScript>2</superScript>中的<superScript>上标</superScript>
+            。你也可以使用<emphasis
+               emphasisType="em01">加粗文本</emphasis>来强调核心概念，或者使用<emphasis emphasisType="em02"
+            >斜体文本</emphasis>
+            来表示特定语境。</para>
+         <para>在编写技术文档时，内部引用格式通常为<internalRef internalRefId="para1" />，以确保追溯的准确性。外部引用则通常以 <dmRef>
                <dmRefIdent>
                   <dmCode modelIdentCode="XXXX" systemDiffCode="A" systemCode="01" subSystemCode="0"
                      subSubSystemCode="0" assyCode="00" disassyCode="00" disassyCodeVariant="A"
-                     infoCode="041" infoCodeVariant="A" itemLocationCode="D"/>
-                  <issueInfo issueNumber="001" inWork="00"/>
-                  <language languageIsoCode="zh" countryIsoCode="CN"/>
+                     infoCode="041" infoCodeVariant="A" itemLocationCode="D" />
+                  <issueInfo issueNumber="001" inWork="00" />
+                  <language languageIsoCode="zh" countryIsoCode="CN" />
                </dmRefIdent>
                <dmRefAddressItems>
                   <dmTitle>
@@ -219,7 +221,8 @@
                      <infoName>超链接的形式</infoName>
                   </dmTitle>
                </dmRefAddressItems>
-            </dmRef>嵌入，引导读者获取更多背景信息。</para>
+            </dmRef>
+            嵌入，引导读者获取更多背景信息。</para>
          <levelledPara>
             <title>层级段落标题 (一级)</title>
             <para>一级标题通常用于划分文档的核心章节。在此层级下，内容应当具备高度的概括性。良好的段落间距 （Margin）是保证阅读节奏的关键因素。 </para>
@@ -227,8 +230,7 @@
          <levelledPara>
             <title>层级段落标题 (一级)</title>
             <warning>
-               <warningAndCautionPara>警告文本
-                  <attentionRandomList>
+               <warningAndCautionPara>警告文本 <attentionRandomList>
                      <attentionRandomListItem>
                         <attentionListItemPara>警示无序列表1：执行此操作将永久删除关联数据，请在操作前务必进行完整备份。</attentionListItemPara>
                      </attentionRandomListItem>
@@ -275,11 +277,11 @@
                   </randomList>
                </para>
                <figure>
-                  <title/>
-                  <graphic infoEntityIdent="XXXXXX"/>
+                  <title />
+                  <graphic infoEntityIdent="XXXXXX" />
                </figure>
                <table>
-                  <title/>
+                  <title />
                   <tgroup cols="4">
                      <thead>
                         <row>
@@ -300,44 +302,44 @@
                      <tbody>
                         <row>
                            <entry>
-                              <para/>
+                              <para />
                            </entry>
                            <entry>
-                              <para/>
+                              <para />
                            </entry>
                            <entry>
-                              <para/>
+                              <para />
                            </entry>
                            <entry>
-                              <para/>
-                           </entry>
-                        </row>
-                        <row>
-                           <entry>
-                              <para/>
-                           </entry>
-                           <entry>
-                              <para/>
-                           </entry>
-                           <entry>
-                              <para/>
-                           </entry>
-                           <entry>
-                              <para/>
+                              <para />
                            </entry>
                         </row>
                         <row>
                            <entry>
-                              <para/>
+                              <para />
                            </entry>
                            <entry>
-                              <para/>
+                              <para />
                            </entry>
                            <entry>
-                              <para/>
+                              <para />
                            </entry>
                            <entry>
-                              <para/>
+                              <para />
+                           </entry>
+                        </row>
+                        <row>
+                           <entry>
+                              <para />
+                           </entry>
+                           <entry>
+                              <para />
+                           </entry>
+                           <entry>
+                              <para />
+                           </entry>
+                           <entry>
+                              <para />
                            </entry>
                         </row>
                      </tbody>
@@ -347,5 +349,5 @@
          </levelledPara>
       </description>
    </content>
-  
+
 </dmodule>

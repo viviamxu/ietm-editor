@@ -3,6 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 import type { JSONContent } from "@tiptap/core";
 import {
   getDescriptionInnerXmlFromDmXml,
+  getFaultIsolationInnerXmlFromDmXml,
+  getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
 } from "./extensions/S1000DNodes";
 import {
@@ -46,6 +48,8 @@ import {
   exportEditorToDmXmlString,
   fillEmptyContentFromSchema,
 } from "./lib/s1000d/descriptionSchemaInsert";
+import { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";
+import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 import { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
 import {
   DEFAULT_DM_PDF_PREVIEW_PATH,
@@ -66,8 +70,18 @@ export {
 
 export {
   getDescriptionInnerXmlFromDmXml,
+  getFaultIsolationInnerXmlFromDmXml,
+  getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
 };
+export { getDmContentKind, isDescriptionDm, isFaultIsolationDm } from "./lib/s1000d/dmContentKind";
+export type { DmContentKind } from "./lib/s1000d/dmContentKind";
+export {
+  buildEmptyFaultIsolationDocJson,
+  buildMinimalFaultIsolationProcedureJson,
+  insertFaultIsolationFromSchema,
+} from "./lib/s1000d/faultIsolationInsert";
+export { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";
 export {
   buildEmptyDescriptionBodyFromSchema,
   buildEmptyDescriptionDocJson,
@@ -268,12 +282,12 @@ function resolveInitialEditorContent(
   options: IETMEditorOptions,
 ): JSONContent | string | undefined {
   if (typeof options.dmXml === "string") {
-    const inner = getDescriptionInnerXmlFromDmXml(options.dmXml);
+    const schema = options.descriptionSchema ?? getDescriptionSchema();
+    const preferFault = getDmContentKind(schema) === "faultIsolation";
+    const inner = getDmInnerXmlFromDmXml(options.dmXml, preferFault);
     if (inner != null) return inner;
     if (options.content !== undefined) return options.content;
-    return buildEmptyDescriptionDocJson(
-      options.descriptionSchema ?? getDescriptionSchema(),
-    );
+    return buildEmptyDocJsonFromSchema(schema);
   }
   return options.content;
 }

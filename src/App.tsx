@@ -1,7 +1,15 @@
 import { useEffect, useRef } from "react";
 import "./App.css";
-import { createIETMEditor, type IETMEditorInstance } from "./index";
-import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
+import {
+  createIETMEditor,
+  getDescriptionSchema,
+  type DescriptionSchema,
+  type IETMEditorInstance,
+} from "./index";
+// import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
+import faultDmXml from "./data/故障类.XML?raw";
+import faultIsolationSchema from "./data/故障隔离.json";
+import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -13,8 +21,11 @@ function App() {
 
     const instance = createIETMEditor({
       element: el,
-      dmXml: bikeDmSampleXml,
-      dmDocumentName: "bikeDmSample.xml",
+      // dmXml: bikeDmSampleXml,
+      // dmDocumentName: "bikeDmSample.xml",
+      dmXml: faultDmXml,
+      dmDocumentName: "故障类.XML",
+      descriptionSchema: faultIsolationSchema as DescriptionSchema,
     });
     instanceRef.current = instance;
 
@@ -23,7 +34,11 @@ function App() {
       console.debug("[ietm] update, blocks:", json.content?.length ?? 0);
     });
     const offReady = instance.on("ready", () => {
-      console.debug("[ietm] ready");
+      const schema = getDescriptionSchema();
+      const kind = getDmContentKind(schema);
+      console.log("[ietm] DM content kind:", kind);
+      console.log("[ietm] fault mode:", kind === "faultIsolation");
+      console.log("[ietm] content rule:", schema.content?.content);
     });
 
     return () => {

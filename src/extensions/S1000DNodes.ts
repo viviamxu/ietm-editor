@@ -49,6 +49,13 @@ function isS1000DTitleParent(parent: Element | null): boolean {
   if (parent.classList.contains("s1000d-levelled-para__content")) return true;
   if (parent.getAttribute("data-s1000d-xml-table") === "1") return true;
 
+  if (
+    parent.getAttribute("data-s1000d-node") === "isolationStep" ||
+    parent.getAttribute("data-s1000d-node") === "isolationProcedureEnd"
+  ) {
+    return true;
+  }
+
   const ln = parent.localName.toLowerCase();
   return (
     ln === "levelledpara" ||
@@ -56,7 +63,9 @@ function isS1000DTitleParent(parent: Element | null): boolean {
     ln === "table" ||
     ln === "sequentiallist" ||
     ln === "randomlist" ||
-    ln === "multimedia"
+    ln === "multimedia" ||
+    ln === "isolationstep" ||
+    ln === "isolationprocedureend"
   );
 }
 
@@ -1794,6 +1803,45 @@ export function getDescriptionInnerXmlFromDmXml(
   const joined = parts.length > 0 ? parts.join("") : null;
   if (!joined) return null;
   return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
+/**
+ * 从 DM 中取出 `<content>/<faultIsolation>` 的直接子节点 XML 片段（无 `<faultIsolation>` 外壳）。
+ */
+export function getFaultIsolationInnerXmlFromDmXml(
+  xmlString: string,
+): string | null {
+  extractIdentAndStatusSection(xmlString);
+  const contentRoot = extractContentElementFromDmXml(xmlString);
+  if (!contentRoot) return null;
+  const faultIsolation = Array.from(contentRoot.children).find(
+    (c) => c.localName === "faultIsolation",
+  );
+  if (!faultIsolation) return null;
+
+  const serializer = new XMLSerializer();
+  const parts: string[] = [];
+  for (const child of Array.from(faultIsolation.children)) {
+    parts.push(serializer.serializeToString(child));
+  }
+  const joined = parts.length > 0 ? parts.join("") : null;
+  if (!joined) return null;
+  return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
+/**
+ * 按 schema 正文类型从 DM 抽取可 `setContent` 的片段；类型不匹配时尝试另一种根元素。
+ */
+export function getDmInnerXmlFromDmXml(
+  xmlString: string,
+  preferFaultIsolation: boolean,
+): string | null {
+  const description = getDescriptionInnerXmlFromDmXml(xmlString);
+  const fault = getFaultIsolationInnerXmlFromDmXml(xmlString);
+  if (preferFaultIsolation) {
+    return fault ?? description;
+  }
+  return description ?? fault;
 }
 
 /**

@@ -7,7 +7,10 @@ import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s100
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
+import { getDmContentKind } from "./dmContentKind";
+import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
   const $from = editor.state.selection.$from;
@@ -1012,6 +1015,10 @@ function serializeNodeToXml(node: JSONContent): string {
   }
 
   if (node.type === "doc") {
+    const kind = getDmContentKind(getDescriptionSchema());
+    if (kind === "faultIsolation") {
+      return `<content>\n  <faultIsolation>\n${children}\n  </faultIsolation>\n</content>`;
+    }
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
   }
 
@@ -1092,7 +1099,7 @@ export function fillEmptyContentFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const next = buildEmptyDescriptionDocJson(schema);
+  const next = buildEmptyDocJsonFromSchema(schema);
   return editor.chain().focus().setContent(next).run();
 }
 
