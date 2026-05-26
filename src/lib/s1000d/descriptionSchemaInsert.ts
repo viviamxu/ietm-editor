@@ -695,6 +695,9 @@ const ignoredExportAttrs = [
   "src",
   /** 仅编辑器 WYSIWYG；不写入 S1000D XML */
   "textAlign",
+  /** 故障隔离「是否 / 选择」切换缓存，仅编辑器内使用 */
+  "cachedYesNoAnswerJson",
+  "cachedListOfChoicesJson",
 ];
 const listNodeTypes = [
   "bulletList",

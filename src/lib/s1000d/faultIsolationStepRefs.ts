@@ -1,11 +1,7 @@
 import type { Editor } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 
-import {
-  defaultIsolationEndTitle,
-  defaultIsolationStepTitle,
-  getTitleTextFromNode,
-} from "./faultIsolationDefaultTitles";
+import { getTitleTextFromNode } from "./faultIsolationDefaultTitles";
 
 export type IsolationStepRefOption = {
   id: string;
@@ -15,6 +11,23 @@ export type IsolationStepRefOption = {
 
 export { getTitleTextFromNode };
 
+/** 下拉展示：`stp-0002` 或 `stp-0002（步骤标题文案）`。 */
+export function formatIsolationStepRefLabel(
+  id: string,
+  titleText: string,
+): string {
+  const title = titleText.trim();
+  return title ? `${id}（${title}）` : id;
+}
+
+function readTitleFromBlock(child: PMNode): string {
+  let titleNode: PMNode | null = null;
+  child.forEach((c) => {
+    if (c.type.name === "title") titleNode = c;
+  });
+  return getTitleTextFromNode(titleNode);
+}
+
 /** 收集同一 `isolationMainProcedure` 内可供「下一步」选择的步骤/结束块。 */
 export function collectIsolationStepRefs(editor: Editor): IsolationStepRefOption[] {
   const { doc } = editor.state;
@@ -22,33 +35,19 @@ export function collectIsolationStepRefs(editor: Editor): IsolationStepRefOption
 
   doc.descendants((node) => {
     if (node.type.name !== "isolationMainProcedure") return;
-    let stepIndex = 0;
-    let endIndex = 0;
     node.forEach((child) => {
       const id = String(child.attrs.id ?? "").trim();
       if (!id) return;
       if (child.type.name === "isolationStep") {
-        stepIndex += 1;
-        let titleNode: PMNode | null = null;
-        child.forEach((c) => {
-          if (c.type.name === "title") titleNode = c;
-        });
-        const titleText = getTitleTextFromNode(titleNode);
         out.push({
           id,
-          label: titleText || defaultIsolationStepTitle(stepIndex),
+          label: formatIsolationStepRefLabel(id, readTitleFromBlock(child)),
           kind: "step",
         });
       } else if (child.type.name === "isolationProcedureEnd") {
-        let titleNode: PMNode | null = null;
-        child.forEach((c) => {
-          if (c.type.name === "title") titleNode = c;
-        });
-        const titleText = getTitleTextFromNode(titleNode);
-        endIndex += 1;
         out.push({
           id,
-          label: titleText || defaultIsolationEndTitle(endIndex),
+          label: formatIsolationStepRefLabel(id, readTitleFromBlock(child)),
           kind: "end",
         });
       }

@@ -24,9 +24,11 @@ import {
   WarningNodeView,
 } from "./s1000d/WarningNodeView";
 import type { FigureAttrs, ParaAttrs } from "./s1000d/types";
-import { readParaAttrsFromDom, s1000dParaAttributeSpec } from "../lib/s1000d/paraAttributes";
+import {
+  readParaAttrsFromDom,
+  s1000dParaAttributeSpec,
+} from "../lib/s1000d/paraAttributes";
 import { s1000dIdAttributeConfig } from "../lib/s1000d/s1000dIdAttribute";
-import { normalizeFaultIsolationTitlesInFragmentXml } from "../lib/s1000d/faultIsolationDefaultTitles";
 import {
   FIGURE_XML_ATTR_NAMES,
   SOURCE_XML_ATTR_KEYS,
@@ -81,11 +83,7 @@ const S1000D_TITLE_LEVEL_CAP = 6;
 /** 图题/表题等：不参与 levelledPara 章节标题层级（对应 `data-s1000d-title-level="0"`） */
 const S1000D_TITLE_CAPTION_LEVEL = 0;
 
-const TITLE_CAPTION_PARENT_TYPES = new Set([
-  "figure",
-  "table",
-  "multimedia",
-]);
+const TITLE_CAPTION_PARENT_TYPES = new Set(["figure", "table", "multimedia"]);
 
 const s1000dTitleLevelsKey = new PluginKey<{ forceInitialSync?: true }>(
   "s1000d-title-levels",
@@ -1102,10 +1100,7 @@ export const S1000DFigure = Node.create({
   content: "(title?) graphic+",
   defining: true,
 
-  addAttributes(): Record<
-    keyof FigureAttrs,
-    { default: string | null }
-  > {
+  addAttributes(): Record<keyof FigureAttrs, { default: string | null }> {
     return {
       id: s1000dIdAttributeConfig(),
       changeType: { default: null },
@@ -1135,7 +1130,9 @@ export const S1000DFigure = Node.create({
             authorityName: el.getAttribute("authorityName"),
             authorityDocument: el.getAttribute("authorityDocument"),
             securityClassification: el.getAttribute("securityClassification"),
-            commercialClassification: el.getAttribute("commercialClassification"),
+            commercialClassification: el.getAttribute(
+              "commercialClassification",
+            ),
             caveat: el.getAttribute("caveat"),
             [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
               el,
@@ -1833,9 +1830,7 @@ export function getFaultIsolationInnerXmlFromDmXml(
   }
   const joined = parts.length > 0 ? parts.join("") : null;
   if (!joined) return null;
-  return preprocessS1000dDescriptionHtmlFragment(
-    normalizeFaultIsolationTitlesInFragmentXml(joined),
-  );
+  return preprocessS1000dDescriptionHtmlFragment(joined);
 }
 
 /**

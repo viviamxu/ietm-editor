@@ -11,6 +11,7 @@ import {
   HiddenFaultNodeView,
   IsolationActionNodeView,
   IsolationProcedureEndNodeView,
+  IsolationMainProcedureNodeView,
   IsolationProcedureNodeView,
   IsolationStepAnswerNodeView,
   IsolationStepNodeView,
@@ -29,6 +30,25 @@ function nextActionRefIdSpec() {
       const v = attrs.nextActionRefId;
       if (v == null || String(v).trim() === "") return {};
       return { nextActionRefId: String(v).trim() };
+    },
+  };
+}
+
+/** 编辑器内缓存「是否 / 选择」另一套答案子树 JSON，不参与 S1000D XML 导出。 */
+function editorAnswerBranchCacheAttr(
+  attrKey: "cachedYesNoAnswerJson" | "cachedListOfChoicesJson",
+  dataAttr: string,
+) {
+  return {
+    default: null as string | null,
+    parseHTML: (el: HTMLElement) => {
+      const v = el.getAttribute(dataAttr);
+      return v != null && v.trim() !== "" ? v : null;
+    },
+    renderHTML: (attrs: Record<string, string | null | undefined>) => {
+      const v = attrs[attrKey];
+      if (v == null || String(v).trim() === "") return {};
+      return { [dataAttr]: String(v) };
     },
   };
 }
@@ -109,6 +129,9 @@ export const S1000DIsolationMainProcedure = Node.create({
   ],
   renderHTML({ HTMLAttributes }) {
     return ["isolationMainProcedure", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(IsolationMainProcedureNodeView);
   },
 });
 
@@ -222,6 +245,18 @@ export const S1000DIsolationStepAnswer = Node.create({
   name: "isolationStepAnswer",
   group: "block",
   content: "yesNoAnswer | listOfChoices",
+  addAttributes() {
+    return {
+      cachedYesNoAnswerJson: editorAnswerBranchCacheAttr(
+        "cachedYesNoAnswerJson",
+        "data-editor-cached-yes-no",
+      ),
+      cachedListOfChoicesJson: editorAnswerBranchCacheAttr(
+        "cachedListOfChoicesJson",
+        "data-editor-cached-choices",
+      ),
+    };
+  },
   parseHTML: () => [
     { tag: "isolationstepanswer" },
     { tag: "isolationStepAnswer" },

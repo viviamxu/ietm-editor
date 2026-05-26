@@ -148,6 +148,80 @@
   background: #ffffff;
 }
 
+.ietm-editor-surface .tiptap .s1000d-isolation-step {
+  position: relative;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-end {
+  position: relative;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-step__delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #f53f3f;
+  cursor: pointer;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-step__delete:hover:not(:disabled) {
+  background: #fff1f0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-step__delete:disabled {
+  color: #c9cdd4;
+  cursor: not-allowed;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-end__delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #f53f3f;
+  cursor: pointer;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-isolation-end__delete:hover:not(:disabled) {
+  background: #fff1f0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-end__delete:disabled {
+  color: #c9cdd4;
+  cursor: not-allowed;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-step__content {
+  padding-right: 34px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-isolation-end__content {
+  padding-right: 34px;
+}
+
 .ietm-editor-surface .tiptap .s1000d-isolation-step__content,
 .ietm-editor-surface .tiptap .s1000d-isolation-end__content {
   display: flex;
@@ -540,6 +614,41 @@
 .ietm-editor-surface .tiptap .s1000d-fault-choice__delete:disabled {
   color: #c9cdd4;
   cursor: not-allowed;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-main-procedure {
+  display: block;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-main-procedure__content {
+  display: block;
+}
+
+.ietm-editor-surface .tiptap .s1000d-fault-main-procedure__add-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 4px 0 8px;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-main-procedure__add-actions
+  .arco-btn {
+  padding: 0 4px;
+  height: auto;
+  font-size: 14px;
+  color: rgb(var(--primary-6));
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-fault-main-procedure__add-actions
+  .arco-btn:hover {
+  color: rgb(var(--primary-5));
+  background: transparent;
 }
 
 .ietm-editor-surface .tiptap .react-renderer.node-isolationMainProcedure {

@@ -17,7 +17,11 @@ import {
   clearContent,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
-import { insertFaultIsolationFromSchema } from "../../lib/s1000d/faultIsolationInsert";
+import {
+  insertFaultIsolationFromSchema,
+  insertIsolationProcedureEndAtCursor,
+  insertIsolationStepAtCursor,
+} from "../../lib/s1000d/faultIsolationInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
@@ -46,6 +50,8 @@ import {
   Outdent,
   Indent,
   ListCollapse,
+  ListEnd,
+  ListTree,
 } from "lucide-react";
 
 import {
@@ -281,16 +287,38 @@ export function FormatToolbar({
           </button>
         ) : null}
         {isFaultDm ? (
-          <button
-            type="button"
-            className="ietm-icon-btn"
-            disabled={formatBarLocked}
-            onClick={() => insertFaultIsolationFromSchema(editor, schema)}
-            title="插入隔离程序"
-            aria-label="插入隔离程序"
-          >
-            <ListCollapse size={16} aria-hidden className="shrink-0" />
-          </button>
+          <>
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={() => insertFaultIsolationFromSchema(editor, schema)}
+              title="插入隔离程序"
+              aria-label="插入隔离程序"
+            >
+              <ListCollapse size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={() => insertIsolationStepAtCursor(editor)}
+              title="插入隔离步骤"
+              aria-label="插入隔离步骤"
+            >
+              <ListTree size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={() => insertIsolationProcedureEndAtCursor(editor)}
+              title="插入隔离结束"
+              aria-label="插入隔离结束"
+            >
+              <ListEnd size={16} aria-hidden className="shrink-0" />
+            </button>
+          </>
         ) : null}
         {isDescriptionDm && isBuiltinVisible("insertLevelledPara") ? (
           <button

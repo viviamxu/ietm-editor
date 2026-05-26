@@ -29,7 +29,6 @@ import {
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
-import { FaultIsolationTitleExtension } from "../../extensions/s1000d/faultIsolationTitleExtension";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
@@ -332,7 +331,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         ...s1000dPhase1Nodes,
         ...s1000dFaultIsolationNodes,
-        FaultIsolationTitleExtension,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
@@ -492,15 +490,15 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       setPropertySettingsOpen(false);
     };
 
-    const showPropertyPane =
-      viewMode === "editor" && propertySettingsOpen;
+    const showPropertyPane = viewMode === "editor" && propertySettingsOpen;
 
-    const showPropertyPanelForm =
-      showPropertyPane && resolvedTarget !== null;
+    const showPropertyPanelForm = showPropertyPane && resolvedTarget !== null;
 
     const showPreviewPane = padPreviewOpen;
     const hasDualSidePanes = showPreviewPane && showPropertyPane;
-    const hasSingleSidePane = showPreviewPane !== showPropertyPane && (showPreviewPane || showPropertyPane);
+    const hasSingleSidePane =
+      showPreviewPane !== showPropertyPane &&
+      (showPreviewPane || showPropertyPane);
 
     const clearPdfPreviewUrl = () => {
       if (

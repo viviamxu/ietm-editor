@@ -13,7 +13,6 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
-import { getDefaultTitleForIsolationBlock } from "../../lib/s1000d/faultIsolationDefaultTitles";
 import {
   collectIsolationStepRefs,
   findChildNodePos,
@@ -21,6 +20,8 @@ import {
 } from "../../lib/s1000d/faultIsolationStepRefs";
 import {
   buildMinimalChoiceJson,
+  insertIsolationProcedureEndInMainProcedure,
+  insertIsolationStepInMainProcedure,
   replaceIsolationStepAnswerKind,
 } from "../../lib/s1000d/faultIsolationInsert";
 
@@ -50,7 +51,6 @@ function ensureChildTitle(
   editor: NodeViewProps["editor"],
   getPos: NodeViewProps["getPos"],
   node: PMNode,
-  blockType: "isolationStep" | "isolationProcedureEnd",
 ): void {
   let hasTitle = false;
   node.forEach((c) => {
@@ -59,16 +59,11 @@ function ensureChildTitle(
   if (hasTitle) return;
   const pos = typeof getPos === "function" ? getPos() : undefined;
   if (pos == null) return;
-  const defaultLabel = getDefaultTitleForIsolationBlock(
-    editor.state.doc,
-    pos,
-    blockType,
-  );
   editor
     .chain()
     .insertContentAt(pos + 1, {
       type: "title",
-      content: [{ type: "text", text: defaultLabel }],
+      content: [],
     })
     .run();
 }
@@ -211,6 +206,49 @@ export function FaultDescrNodeView(props: NodeViewProps) {
   );
 }
 
+/** `isolationMainProcedure`：步骤/结束列表 + 底部添加按钮。 */
+export function IsolationMainProcedureNodeView(props: NodeViewProps) {
+  const { editor, getPos, node, HTMLAttributes } = props;
+  useEditorRefresh(editor);
+
+  const addStep = useCallback(() => {
+    const pos = typeof getPos === "function" ? getPos() : undefined;
+    if (pos == null) return;
+    insertIsolationStepInMainProcedure(editor, pos, node);
+  }, [editor, getPos, node]);
+
+  const addEnd = useCallback(() => {
+    const pos = typeof getPos === "function" ? getPos() : undefined;
+    if (pos == null) return;
+    insertIsolationProcedureEndInMainProcedure(editor, pos, node);
+  }, [editor, getPos, node]);
+
+  return (
+    <NodeViewWrapper
+      as="div"
+      {...HTMLAttributes}
+      className={[HTMLAttributes?.class, "s1000d-fault-main-procedure"]
+        .filter(Boolean)
+        .join(" ")}
+      data-s1000d-node="isolationMainProcedure"
+    >
+      <NodeViewContent className="s1000d-fault-main-procedure__content" />
+      <div
+        className="s1000d-fault-main-procedure__add-actions"
+        contentEditable={false}
+        onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
+      >
+        <Button type="text" size="small" onClick={addStep}>
+          + 添加隔离步骤
+        </Button>
+        <Button type="text" size="small" onClick={addEnd}>
+          + 添加隔离结束
+        </Button>
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
 /** `isolationProcedure`：隔离步骤标题 + 步骤列表。 */
 export function IsolationProcedureNodeView(props: NodeViewProps) {
   const { HTMLAttributes } = props;
@@ -243,8 +281,34 @@ export function IsolationStepNodeView(props: NodeViewProps) {
   useEditorRefresh(editor);
 
   useEffect(() => {
-    ensureChildTitle(editor, getPos, node, "isolationStep");
+    ensureChildTitle(editor, getPos, node);
   }, [editor, getPos, node]);
+
+  const pos = typeof getPos === "function" ? getPos() : undefined;
+  let canDeleteStep = false;
+  if (pos != null) {
+    const $pos = editor.state.doc.resolve(pos);
+    const parent = $pos.parent;
+    canDeleteStep =
+      parent.type.name === "isolationMainProcedure" && parent.childCount > 1;
+  }
+
+  const deleteStep = useCallback(() => {
+    if (!editor.isEditable) return;
+    const p = typeof getPos === "function" ? getPos() : undefined;
+    if (p == null) return;
+    const $p = editor.state.doc.resolve(p);
+    const parent = $p.parent;
+    if (
+      parent.type.name !== "isolationMainProcedure" ||
+      parent.childCount <= 1
+    ) {
+      return;
+    }
+    const cur = editor.state.doc.nodeAt(p);
+    if (!cur || cur.type.name !== "isolationStep") return;
+    editor.chain().focus().deleteRange({ from: p, to: p + cur.nodeSize }).run();
+  }, [editor, getPos]);
 
   return (
     <NodeViewWrapper
@@ -256,6 +320,20 @@ export function IsolationStepNodeView(props: NodeViewProps) {
       data-s1000d-node="isolationStep"
       data-s1000d-element-id={node.attrs.id ?? undefined}
     >
+      <button
+        type="button"
+        className="s1000d-isolation-step__delete"
+        contentEditable={false}
+        disabled={!editor.isEditable || !canDeleteStep}
+        title={
+          canDeleteStep ? "删除此隔离步骤" : "主程序中至少保留一个步骤或结束块"
+        }
+        aria-label="删除此隔离步骤"
+        onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
+        onClick={deleteStep}
+      >
+        <Trash2 size={16} aria-hidden />
+      </button>
       <NodeViewContent className="s1000d-isolation-step__content" />
     </NodeViewWrapper>
   );
@@ -267,8 +345,34 @@ export function IsolationProcedureEndNodeView(props: NodeViewProps) {
   useEditorRefresh(editor);
 
   useEffect(() => {
-    ensureChildTitle(editor, getPos, node, "isolationProcedureEnd");
+    ensureChildTitle(editor, getPos, node);
   }, [editor, getPos, node]);
+
+  const pos = typeof getPos === "function" ? getPos() : undefined;
+  let canDeleteEnd = false;
+  if (pos != null) {
+    const $pos = editor.state.doc.resolve(pos);
+    const parent = $pos.parent;
+    canDeleteEnd =
+      parent.type.name === "isolationMainProcedure" && parent.childCount > 1;
+  }
+
+  const deleteEnd = useCallback(() => {
+    if (!editor.isEditable) return;
+    const p = typeof getPos === "function" ? getPos() : undefined;
+    if (p == null) return;
+    const $p = editor.state.doc.resolve(p);
+    const parent = $p.parent;
+    if (
+      parent.type.name !== "isolationMainProcedure" ||
+      parent.childCount <= 1
+    ) {
+      return;
+    }
+    const cur = editor.state.doc.nodeAt(p);
+    if (!cur || cur.type.name !== "isolationProcedureEnd") return;
+    editor.chain().focus().deleteRange({ from: p, to: p + cur.nodeSize }).run();
+  }, [editor, getPos]);
 
   return (
     <NodeViewWrapper
@@ -280,6 +384,20 @@ export function IsolationProcedureEndNodeView(props: NodeViewProps) {
       data-s1000d-node="isolationProcedureEnd"
       data-s1000d-element-id={node.attrs.id ?? undefined}
     >
+      <button
+        type="button"
+        className="s1000d-isolation-end__delete"
+        contentEditable={false}
+        disabled={!editor.isEditable || !canDeleteEnd}
+        title={
+          canDeleteEnd ? "删除此隔离结束" : "主程序中至少保留一个步骤或结束块"
+        }
+        aria-label="删除此隔离结束"
+        onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
+        onClick={deleteEnd}
+      >
+        <Trash2 size={16} aria-hidden />
+      </button>
       <NodeViewContent className="s1000d-isolation-end__content" />
     </NodeViewWrapper>
   );
@@ -527,7 +645,7 @@ export function ChoiceNodeView(props: NodeViewProps) {
     const $pos = editor.state.doc.resolve(pos);
     const parent = $pos.parent;
     return parent.type.name === "listOfChoices" && parent.childCount > 1;
-  }, [editor, getPos, node]);
+  }, [editor, getPos]);
 
   const updateRef = useCallback(
     (nextId: string) => {
