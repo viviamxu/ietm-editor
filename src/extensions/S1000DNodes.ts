@@ -4,6 +4,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
+import { DmRefNodeView } from "./s1000d/DmRefNodeView";
 import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
 import { GraphicNodeView } from "./s1000d/GraphicNodeView";
@@ -738,11 +739,36 @@ export const S1000DDmRef = Node.create({
   addAttributes() {
     return {
       rawXml: { default: "" },
+      displayCode: {
+        default: null as string | null,
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-display-code"),
+        renderHTML: (attrs: { displayCode?: string | null }) => {
+          const v = attrs.displayCode;
+          if (v == null || String(v).trim() === "") return {};
+          return { "data-display-code": String(v).trim() };
+        },
+      },
     };
   },
 
   parseHTML() {
     return [
+      {
+        tag: 'span[data-s1000d-dm-ref="1"]',
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          const encoded = el.getAttribute("data-raw-xml");
+          const rawXml = encoded
+            ? decodeURIComponent(encoded)
+            : String(el.getAttribute("data-dm-ref-raw") ?? "");
+          if (!rawXml.trim()) return false;
+          return {
+            rawXml,
+            displayCode: el.getAttribute("data-display-code"),
+            [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
+          };
+        },
+      },
       {
         tag: "dmref, dmRef", // HTML 会传小写，都拦截住
         getAttrs: (el) => {
@@ -753,6 +779,7 @@ export const S1000DDmRef = Node.create({
             : nodeEl.outerHTML;
           return {
             rawXml,
+            displayCode: nodeEl.getAttribute("data-display-code"),
             [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
           };
         },
@@ -760,15 +787,24 @@ export const S1000DDmRef = Node.create({
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    // 渲染 UI 视图保持不变
-    return [
-      "span",
-      mergeAttributes(HTMLAttributes, {
-        class: "s1000d-dmref-chip",
-        "data-s1000d-dm-ref": "1",
-      }),
-    ];
+  renderHTML({ node, HTMLAttributes }) {
+    const rawXml = String(node.attrs.rawXml ?? "").trim();
+    const extra: Record<string, string> = {
+      class: "s1000d-dmref-chip",
+      "data-s1000d-dm-ref": "1",
+    };
+    if (rawXml) {
+      extra["data-raw-xml"] = encodeURIComponent(rawXml);
+    }
+    const displayCode = String(node.attrs.displayCode ?? "").trim();
+    if (displayCode) {
+      extra["data-display-code"] = displayCode;
+    }
+    return ["span", mergeAttributes(HTMLAttributes, extra)];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(DmRefNodeView);
   },
 });
 /**

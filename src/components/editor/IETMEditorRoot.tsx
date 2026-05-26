@@ -21,8 +21,9 @@ import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
-import type { InsertImagePayload } from "../../types/toolbar";
+import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
 import { ConfigProvider } from "@arco-design/web-react";
+import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
 export interface IETMEditorRootHandle {
@@ -41,6 +42,7 @@ export interface IETMEditorRootHandle {
   addTableColumnAfter: () => boolean;
   setFooterStatus: (status: IETMEditorFooterStatus | null) => void;
   insertImages: (images: InsertImagePayload[]) => boolean;
+  insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
 }
 
@@ -111,6 +113,8 @@ export const IETMEditorRoot = forwardRef<
       setFooterStatus: (status) => setFooterStatusOverride(status),
       insertImages: (images) =>
         editorRef.current?.insertImages(images) ?? false,
+      insertDmRefs: (items) =>
+        editorRef.current?.insertDmRefs(items) ?? false,
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,
     }),
@@ -148,6 +152,7 @@ export const IETMEditorRoot = forwardRef<
           fetchDmPdfPreview={props.fetchDmPdfPreview}
         />
         <ReferencePublicationModal />
+        <ExternalRefPublicationModal />
         <InternalRefModal />
       </ConfigProvider>
     </div>

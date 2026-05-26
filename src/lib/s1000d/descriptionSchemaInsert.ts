@@ -4,6 +4,7 @@ import { TextSelection } from "@tiptap/pm/state";
 
 import { getInnermostLevelledParaDepth } from "../editor/nestingLevelShared";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
+import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
@@ -449,6 +450,15 @@ export function insertImageFromSchema(
     .openInsertPublication(editor, "image");
 }
 
+/** 打开 SDK 内置「引用出版物」弹框（mock），确认后插入 `dmRef`。 */
+export function insertExternalRefFromSchema(
+  editor: Editor,
+  schema?: DescriptionSchema,
+): void {
+  void schema;
+  useExternalRefModalStore.getState().openExternalRef(editor);
+}
+
 /** 可编辑前导正文（对应 schema `warningAndCautionPara` 的 `text*`，导出时剥壳） */
 function buildMinimalWarningAndCautionParaJson(): JSONContent {
   return {
@@ -698,6 +708,8 @@ const ignoredExportAttrs = [
   /** 故障隔离「是否 / 选择」切换缓存，仅编辑器内使用 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
+  /** 外部引用 Popover 展示编码，仅编辑器 */
+  "displayCode",
 ];
 const listNodeTypes = [
   "bulletList",

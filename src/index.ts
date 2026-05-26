@@ -30,6 +30,8 @@ import { useToolbarConfigStore } from "./store/toolbarConfigStore";
 import type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
+  InsertDmRefPayload,
+  OpenExternalRefContext,
   InsertImagePayload,
   ToolbarConfig,
   ToolbarItemContext,
@@ -103,10 +105,24 @@ export {
   type InsertPublicationMode,
 } from "./store/insertPublicationModalStore";
 export { insertMultimediaIntoEditor } from "./lib/editor/insertMultimedia";
+export {
+  buildDmRefJsonFromPayload,
+  canInsertDmRefIntoEditor,
+  insertDmRefsIntoEditor,
+} from "./lib/editor/insertDmRefs";
+export { openExternalRefPublication } from "./lib/editor/openExternalRef";
+export {
+  formatDmCodeLabel,
+  parseDmRefDisplayMeta,
+  parseDmRefDisplayTitle,
+} from "./extensions/s1000d/dmRefDisplay";
+export type { DmRefDisplayMeta } from "./extensions/s1000d/dmRefDisplay";
 export { useToolbarConfigStore };
 export type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
+  InsertDmRefPayload,
+  OpenExternalRefContext,
   InsertImagePayload,
   InsertMultimediaPayload,
   ToolbarConfig,
@@ -225,6 +241,8 @@ export interface IETMEditorInstance {
   setToolbarConfig(config: ToolbarConfig | null): void;
   /** 在光标处插入一张或多张 S1000D `image` 节点（宿主选图后调用） */
   insertImages(images: InsertImagePayload[]): boolean;
+  /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用（宿主选 DM 后调用） */
+  insertDmRefs(items: InsertDmRefPayload[]): boolean;
   /** 在光标处插入 `multimedia` / `multimediaObject`（`infoEntityIdent`） */
   insertMultimedia(items: InsertMultimediaPayload[]): boolean;
   on<E extends IETMEditorEventName>(
@@ -400,6 +418,10 @@ export function createIETMEditor(
     insertImages: (images) => {
       if (disposed || !handleRef.current) return false;
       return handleRef.current.insertImages(images);
+    },
+    insertDmRefs: (items) => {
+      if (disposed || !handleRef.current) return false;
+      return handleRef.current.insertDmRefs(items);
     },
     insertMultimedia: (items) => {
       if (disposed || !handleRef.current) return false;

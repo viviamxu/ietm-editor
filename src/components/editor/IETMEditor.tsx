@@ -53,6 +53,7 @@ import {
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
 import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
+import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import {
   insertMultimediaIntoEditor,
@@ -62,7 +63,7 @@ import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
-import type { InsertImagePayload } from "../../types/toolbar";
+import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -118,6 +119,8 @@ export interface IETMEditorRefValue {
   addTableColumnAfter: () => boolean;
   /** 在光标处插入一张或多张 S1000D 图片节点 */
   insertImages: (images: InsertImagePayload[]) => boolean;
+  /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用 */
+  insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
 }
 
@@ -473,6 +476,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         insertImages: (images) => {
           if (!editor) return false;
           return insertImagesIntoEditor(editor, images);
+        },
+        insertDmRefs: (items) => {
+          if (!editor) return false;
+          return insertDmRefsIntoEditor(editor, items);
         },
         insertMultimedia: (items) => {
           if (!editor) return false;

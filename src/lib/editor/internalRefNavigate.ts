@@ -40,7 +40,8 @@ export function consumeInternalRefJumpGuard(): boolean {
   return true;
 }
 
-function armInternalRefJumpGuard(): void {
+/** Popover 内点击跳转/打开时，避免指针事件穿透正文（内部/外部引用共用）。 */
+export function armInternalRefJumpGuard(): void {
   jumpGuardUntil = Date.now() + JUMP_GUARD_MS;
 }
 
