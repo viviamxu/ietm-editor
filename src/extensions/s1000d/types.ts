@@ -14,3 +14,16 @@ export interface ParaAttrs {
   derivativeClassificationRefId?: string | null
   reasonForUpdateRefIds?: string | null
 }
+
+/** `figure` 节点上可能出现的业务属性（属性面板固定展示） */
+export interface FigureAttrs {
+  id?: string | null
+  changeType?: string | null
+  changeMark?: string | null
+  reasonForUpdateRefIds?: string | null
+  authorityName?: string | null
+  authorityDocument?: string | null
+  securityClassification?: string | null
+  commercialClassification?: string | null
+  caveat?: string | null
+}

@@ -17,8 +17,11 @@ import {
   type IETMEditorRefValue,
   type InsertTableOptions,
 } from "./IETMEditor";
+import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
+import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
+import type { InsertImagePayload } from "../../types/toolbar";
 import { ConfigProvider } from "@arco-design/web-react";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
@@ -26,7 +29,8 @@ export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
   /** @returns 解析失败时为 `false` */
-  loadDmXml: (dmXml: string) => boolean;
+  loadDmXml: (dmXml: string, documentName?: string) => boolean;
+  setDmDocumentName: (name: string) => void;
   fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
   focus: () => void;
@@ -36,6 +40,8 @@ export interface IETMEditorRootHandle {
   addTableColumnBefore: () => boolean;
   addTableColumnAfter: () => boolean;
   setFooterStatus: (status: IETMEditorFooterStatus | null) => void;
+  insertImages: (images: InsertImagePayload[]) => boolean;
+  insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
 }
 
 interface IETMEditorRootProps {
@@ -43,6 +49,7 @@ interface IETMEditorRootProps {
   initialEditable: boolean;
   initialDescriptionSchema?: DescriptionSchema;
   onSaveDmXml?: SaveDmXmlHandler;
+  onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
   onEditableChange?: (editable: boolean) => void;
   onUpdate: (json: JSONContent) => void;
   onSelectionChange: (range: { from: number; to: number }) => void;
@@ -50,6 +57,9 @@ interface IETMEditorRootProps {
   lockReadonlyButtonTitle?: string;
   editModeButtonTitle?: string;
   footerStatus?: IETMEditorFooterStatus;
+  apiBaseUrl?: string;
+  dmPdfPreviewPath?: string;
+  fetchDmPdfPreview?: () => Promise<string | Blob>;
 }
 
 export const IETMEditorRoot = forwardRef<
@@ -82,7 +92,9 @@ export const IETMEditorRoot = forwardRef<
     () => ({
       setContent: (content) => editorRef.current?.setContent(content),
       setEditable: (value) => applyEditable(value),
-      loadDmXml: (xml) => editorRef.current?.loadDmXml(xml) ?? false,
+      loadDmXml: (xml, documentName) =>
+        editorRef.current?.loadDmXml(xml, documentName) ?? false,
+      setDmDocumentName: (name) => editorRef.current?.setDmDocumentName(name),
       fillEmptyContentFromSchema: () =>
         editorRef.current?.fillEmptyContentFromSchema() ?? false,
       getJSON: () =>
@@ -97,6 +109,10 @@ export const IETMEditorRoot = forwardRef<
       addTableColumnAfter: () =>
         editorRef.current?.addTableColumnAfter() ?? false,
       setFooterStatus: (status) => setFooterStatusOverride(status),
+      insertImages: (images) =>
+        editorRef.current?.insertImages(images) ?? false,
+      insertMultimedia: (items) =>
+        editorRef.current?.insertMultimedia(items) ?? false,
     }),
     [applyEditable],
   );
@@ -120,12 +136,16 @@ export const IETMEditorRoot = forwardRef<
           editable={editable}
           onEditableChange={applyEditable}
           onSaveDmXml={props.onSaveDmXml}
+          onOpenDmPdfPreview={props.onOpenDmPdfPreview}
           onUpdate={props.onUpdate}
           onSelectionChange={props.onSelectionChange}
           onReady={props.onReady}
           lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
           editModeButtonTitle={props.editModeButtonTitle}
           footerStatusOverride={footerStatusOverride}
+          apiBaseUrl={props.apiBaseUrl}
+          dmPdfPreviewPath={props.dmPdfPreviewPath}
+          fetchDmPdfPreview={props.fetchDmPdfPreview}
         />
         <ReferencePublicationModal />
         <InternalRefModal />

@@ -10,18 +10,26 @@ import {
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Tabs } from "@arco-design/web-react";
-import Underline from "@tiptap/extension-underline";
+import { Underline } from "../../extensions/s1000d/underlineMark";
+import { Overline } from "../../extensions/s1000d/overlineMark";
+import { Strikethrough } from "../../extensions/s1000d/strikethroughMark";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
+import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
+import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
+import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
+import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
-  getDescriptionInnerXmlFromDmXml,
+  getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
+import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
+import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
 import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
@@ -31,7 +39,6 @@ import {
 } from "../../lib/editor/resolveInspectable";
 import {
   consumeInternalRefJumpGuard,
-  consumeSuppressPropertyPanelOpen,
   peekSuppressPropertyPanelOpen,
 } from "../../lib/editor/internalRefNavigate";
 import {
@@ -39,10 +46,23 @@ import {
   runS1000dTableAction,
 } from "../../lib/editor/s1000dTableCommands";
 import {
-  buildEmptyDescriptionDocJson,
+  exportEditorToDmXmlString,
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
+  insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
+import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
+import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
+import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
+import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
+import {
+  insertMultimediaIntoEditor,
+  type InsertMultimediaPayload,
+} from "../../lib/editor/insertMultimedia";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
+import { useDmMetadataStore } from "../../store/dmMetadataStore";
+import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
+import type { InsertImagePayload } from "../../types/toolbar";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -53,14 +73,21 @@ import {
   Eraser,
   Rows3,
   Split,
-  TableCellsSplit,
   Trash2,
   LockKeyhole,
   Loader,
   Check,
+  Settings2,
 } from "lucide-react";
+import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
+import { Code2, Eye } from "lucide-react";
+import { DmPdfPreviewPane } from "./DmPdfPreviewPane";
+import { PropertySettingsEmptyPane } from "./PropertySettingsEmptyPane";
+import { openDmPdfPreview } from "../../lib/ietm/dmPdfPreview";
+
+type EditorViewMode = "editor" | "source";
 
 export interface InsertTableOptions {
   rows?: number;
@@ -75,7 +102,8 @@ export interface IETMEditorRefValue {
    * 若无合法 description 正文，则按当前 schema 写入最小合法稿。
    * @returns 未就绪或写入失败时为 `false`
    */
-  loadDmXml: (dmXml: string) => boolean;
+  loadDmXml: (dmXml: string, documentName?: string) => boolean;
+  setDmDocumentName: (name: string) => void;
   /**
    * 按当前 `getDescriptionSchema()`（含 `createIETMEditor({ descriptionSchema })` / `setDescriptionSchema`）
    * 将正文设为 schema 约束下的最小合法文档。
@@ -88,6 +116,9 @@ export interface IETMEditorRefValue {
   addTableRowAfter: () => boolean;
   addTableColumnBefore: () => boolean;
   addTableColumnAfter: () => boolean;
+  /** 在光标处插入一张或多张 S1000D 图片节点 */
+  insertImages: (images: InsertImagePayload[]) => boolean;
+  insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
 }
 
 interface IETMEditorProps {
@@ -104,6 +135,17 @@ interface IETMEditorProps {
   editModeButtonTitle?: string;
   /** `null` 表示按 `editable` 使用内置默认底栏状态 */
   footerStatusOverride: IETMEditorFooterStatus | null;
+  /**
+   * 底栏「预览」一站式回调（保存 + 预览接口均由宿主处理）。
+   * 配置后不再要求 {@link onSaveDmXml}，且忽略内置预览请求。
+   */
+  onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
+  /** API 根路径，与默认 `/czy-ietm-admin/ietm/preview/dm/pdf` 拼接 */
+  apiBaseUrl?: string;
+  /** 覆盖 DM PDF 预览接口路径 */
+  dmPdfPreviewPath?: string;
+  /** 自定义预览请求（仍会先执行 {@link onSaveDmXml}） */
+  fetchDmPdfPreview?: () => Promise<string | Blob>;
 }
 
 const FOOTER_DEFAULT_SAVED_TEXT = "已保存";
@@ -183,11 +225,12 @@ function IETMAppFooter(props: { status: IETMEditorFooterStatus }) {
 function normalizeEditorContentInput(
   content: JSONContent | string | undefined,
 ): JSONContent | string | undefined {
-  if (typeof content !== "string") return content;
-  return preprocessS1000dDescriptionHtmlFragment(content);
+  if (content == null) return content;
+  if (typeof content === "string") {
+    return preprocessS1000dDescriptionHtmlFragment(content);
+  }
+  return migrateParagraphInJson(content);
 }
-
-const DOC_TITLE_PLACEHOLDER = "数据模块标题 DMC-XXXX-XX-XXXX-XX-A-D";
 
 function focusFirstCellByMouseLikeClick(
   editor: NonNullable<ReturnType<typeof useEditor>>,
@@ -232,8 +275,18 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       "file" | "edit" | "insert"
     >("file");
 
-    const [propertiesDismissed, setPropertiesDismissed] = useState(false);
-    const [editorSurfaceEngaged, setEditorSurfaceEngaged] = useState(false);
+    const [propertySettingsOpen, setPropertySettingsOpen] = useState(false);
+    const documentDisplayTitle = useDmMetadataStore(
+      (s) => s.documentDisplayTitle,
+    );
+    const [viewMode, setViewMode] = useState<EditorViewMode>("editor");
+    const [sourceXml, setSourceXml] = useState("");
+    const [padPreviewOpen, setPadPreviewOpen] = useState(false);
+    const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+    const [pdfPreviewError, setPdfPreviewError] = useState<string | null>(null);
+    const pdfPreviewUrlRef = useRef<string | null>(null);
+    const pdfPreviewRevokeRef = useRef(false);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
     const [, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
@@ -244,13 +297,32 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         StarterKit.configure({
           bulletList: { keepMarks: true },
           orderedList: { keepMarks: true },
+          strike: false,
+          paragraph: false,
+          blockquote: false,
+          /** 描述类用 S1000D `title`，不用 StarterKit `heading`（否则会冒出空 `<h1>`） */
+          heading: false,
+          /** 描述类正文不用代码块；禁用后避免 TrailingNode/回车退化为 `<pre><code>` */
+          code: false,
+          codeBlock: false,
+          /** 不用尾随块（`paragraph` 关闭后易退化成 blockquote/codeBlock/heading） */
+          trailingNode: false,
         }),
+        S1000DParagraph,
+        S1000DListExitKeymap,
+        S1000DNestingKeymap,
+        MigrateParagraphToParaExtension,
+        PasteWordTableExtension,
         TextStyleKit.configure({
           lineHeight: false,
         }),
         Underline,
+        Overline,
+        Strikethrough,
         TextAlign.configure({
-          types: ["heading", "paragraph"],
+          types: ["para", "paragraph"],
+          alignments: ["left", "center", "right", "justify"],
+          defaultAlignment: "left",
         }),
         Highlight.configure({ multicolor: true }),
         SourceXmlAttrKeysExtension,
@@ -258,10 +330,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           resize: false,
         }),
         ...s1000dPhase1Nodes,
+        ...s1000dFaultIsolationNodes,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
-        buildEmptyDescriptionDocJson(getDescriptionSchema()),
+        buildEmptyDocJsonFromSchema(getDescriptionSchema()),
       editorProps: {
         attributes: {
           class: "ietm-tiptap-root",
@@ -288,9 +361,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         if (anchorKey !== selectionAnchorRef.current) {
           selectionAnchorRef.current = anchorKey;
           if (peekSuppressPropertyPanelOpen()) {
-            setPropertiesDismissed(true);
-          } else {
-            setPropertiesDismissed(false);
+            setPropertySettingsOpen(false);
           }
         }
         bumpSelectionUi();
@@ -316,17 +387,28 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             normalizeEditorContentInput(content) ?? "",
           );
         },
-        loadDmXml: (dmXml) => {
+        loadDmXml: (dmXml, documentName) => {
           if (!editor) return false;
-          const inner = getDescriptionInnerXmlFromDmXml(dmXml);
+          if (documentName) {
+            useDmMetadataStore
+              .getState()
+              .setDocumentDisplayTitle(normalizeDmDocumentName(documentName));
+          }
+          const schema = getDescriptionSchema();
+          const inner = getDmInnerXmlFromDmXml(
+            dmXml,
+            getDmContentKind(schema) === "faultIsolation",
+          );
           if (inner == null) {
-            return applyFillEmptyContentFromSchema(
-              editor,
-              getDescriptionSchema(),
-            );
+            return applyFillEmptyContentFromSchema(editor, schema);
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           return true;
+        },
+        setDmDocumentName: (name) => {
+          useDmMetadataStore
+            .getState()
+            .setDocumentDisplayTitle(normalizeDmDocumentName(name));
         },
         fillEmptyContentFromSchema: () => {
           if (!editor) return false;
@@ -388,6 +470,14 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           };
           return chain.addColumnAfter().run();
         },
+        insertImages: (images) => {
+          if (!editor) return false;
+          return insertImagesIntoEditor(editor, images);
+        },
+        insertMultimedia: (items) => {
+          if (!editor) return false;
+          return insertMultimediaIntoEditor(editor, items);
+        },
       }),
       [editor],
     );
@@ -396,17 +486,112 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ? resolveInspectable(editor)
       : null;
 
-    const showPropertyPanel =
-      editorSurfaceEngaged && resolvedTarget !== null && !propertiesDismissed;
+    const dismissPropertyPanel = () => {
+      setPropertySettingsOpen(false);
+    };
+
+    const showPropertyPane = viewMode === "editor" && propertySettingsOpen;
+
+    const showPropertyPanelForm = showPropertyPane && resolvedTarget !== null;
+
+    const showPreviewPane = padPreviewOpen;
+    const hasDualSidePanes = showPreviewPane && showPropertyPane;
+    const hasSingleSidePane =
+      showPreviewPane !== showPropertyPane &&
+      (showPreviewPane || showPropertyPane);
+
+    const clearPdfPreviewUrl = () => {
+      if (
+        pdfPreviewRevokeRef.current &&
+        pdfPreviewUrlRef.current?.startsWith("blob:")
+      ) {
+        URL.revokeObjectURL(pdfPreviewUrlRef.current);
+      }
+      pdfPreviewRevokeRef.current = false;
+      pdfPreviewUrlRef.current = null;
+      setPdfPreviewUrl(null);
+    };
+
+    const dismissPadPreview = () => {
+      setPadPreviewOpen(false);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(false);
+      clearPdfPreviewUrl();
+    };
+
+    useEffect(() => {
+      return () => {
+        if (
+          pdfPreviewRevokeRef.current &&
+          pdfPreviewUrlRef.current?.startsWith("blob:")
+        ) {
+          URL.revokeObjectURL(pdfPreviewUrlRef.current);
+        }
+      };
+    }, []);
+
+    const handleToggleViewMode = () => {
+      if (!editor) return;
+      if (viewMode === "editor") {
+        setSourceXml(exportEditorToDmXmlString(editor));
+        setViewMode("source");
+        setPropertySettingsOpen(false);
+        return;
+      }
+      setViewMode("editor");
+    };
+
+    const handlePropertySettingsClick = () => {
+      if (viewMode !== "editor") return;
+
+      if (propertySettingsOpen) {
+        dismissPropertyPanel();
+        return;
+      }
+
+      setPropertySettingsOpen(true);
+      editor?.commands.focus();
+    };
+
+    const handlePadPreviewClick = () => {
+      if (padPreviewOpen) {
+        dismissPadPreview();
+        return;
+      }
+
+      if (!editor) return;
+
+      setPadPreviewOpen(true);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(true);
+      clearPdfPreviewUrl();
+
+      void (async () => {
+        try {
+          const { url, revokeOnClose } = await openDmPdfPreview({
+            editor,
+            onOpenDmPdfPreview: props.onOpenDmPdfPreview,
+            onSaveDmXml: props.onSaveDmXml,
+            apiBaseUrl: props.apiBaseUrl,
+            dmPdfPreviewPath: props.dmPdfPreviewPath,
+            fetchDmPdfPreview: props.fetchDmPdfPreview,
+          });
+          pdfPreviewRevokeRef.current = revokeOnClose;
+          pdfPreviewUrlRef.current = url;
+          setPdfPreviewUrl(url);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "PDF 预览加载失败";
+          setPdfPreviewError(message);
+        } finally {
+          setPdfPreviewLoading(false);
+        }
+      })();
+    };
 
     const inspectStableKey = resolvedTarget
       ? `${resolvedTarget.nodeType}-${resolvedTarget.pos}`
       : null;
-
-    useEffect(() => {
-      if (consumeSuppressPropertyPanelOpen()) return;
-      setPropertiesDismissed(false);
-    }, [inspectStableKey]);
 
     if (!editor) {
       return null;
@@ -414,7 +599,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
 
     const handleEditorPaneMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
       if (e.button !== 0) return;
-      setEditorSurfaceEngaged(true);
       const el = e.target as Element | null;
       const clickedTable = el?.closest?.(
         ".s1000d-table-wrap, .s1000d-tgroup-table",
@@ -446,10 +630,20 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       return inserted;
     };
 
-    const insertImageFromPrompt = () => {
-      const url = window.prompt("请输入图片 URL");
-      if (!url) return;
-      editor.chain().focus().setImage({ src: url }).run();
+    const runInsertImageAction = () => {
+      if (!editor) return;
+      const onInsertImageClick =
+        useToolbarConfigStore.getState().onInsertImageClick;
+      if (onInsertImageClick) {
+        onInsertImageClick({
+          editor,
+          editable: props.editable,
+          activeTabKey,
+          formatBarLocked: !props.editable,
+        });
+        return;
+      }
+      insertImageFromSchema(editor, getDescriptionSchema());
     };
 
     const runTableAction = (
@@ -608,13 +802,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                         type="button"
                         className="ietm-menu-icon-btn"
                         disabled={
-                          headerMenuLocked || tableActionDisabled("deleteCell")
+                          headerMenuLocked || tableActionDisabled("deleteTable")
                         }
-                        onClick={() => runTableAction("deleteCell")}
-                        title="删除单元格"
-                        aria-label="删除单元格"
+                        onClick={() => runTableAction("deleteTable")}
+                        title="删除表格"
+                        aria-label="删除表格"
                       >
-                        <TableCellsSplit size={16} aria-hidden />
+                        <Trash2 size={16} aria-hidden />
                       </button>
                       <button
                         type="button"
@@ -627,18 +821,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                         aria-label="清空单元格"
                       >
                         <Eraser size={16} aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        className="ietm-menu-icon-btn"
-                        disabled={
-                          headerMenuLocked || tableActionDisabled("deleteTable")
-                        }
-                        onClick={() => runTableAction("deleteTable")}
-                        title="删除表格"
-                        aria-label="删除表格"
-                      >
-                        <Trash2 size={16} aria-hidden />
                       </button>
                     </div>
                   </div>
@@ -662,7 +844,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                     className="ietm-menu-item"
                     disabled={headerMenuLocked}
                     onClick={() => {
-                      insertImageFromPrompt();
+                      runInsertImageAction();
                     }}
                   >
                     插入图片
@@ -672,12 +854,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             </Tabs>
 
             <div className="ietm-app-header-right">
-              <span className="ietm-doc-title">{DOC_TITLE_PLACEHOLDER}</span>
-              <button type="button" className="ietm-share-btn" disabled>
-                分享
-              </button>
-              <span className="ietm-user-avatar" aria-hidden>
-                A
+              <span
+                className="ietm-doc-title"
+                title={documentDisplayTitle || undefined}
+              >
+                数据模块标题 {documentDisplayTitle}
               </span>
             </div>
           </header>
@@ -693,39 +874,140 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           />
         </div>
 
-        <div className="ietm-app-main">
+        <div
+          className={[
+            "ietm-app-main",
+            hasDualSidePanes && "ietm-app-main--with-preview-and-property",
+            hasSingleSidePane &&
+              showPreviewPane &&
+              "ietm-app-main--with-preview-pane",
+            hasSingleSidePane &&
+              showPropertyPane &&
+              "ietm-app-main--with-property-pane",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <div
-            className="ietm-editor-pane"
-            onMouseDown={handleEditorPaneMouseDown}
-            onFocusCapture={() => setEditorSurfaceEngaged(true)}
+            className={
+              viewMode === "source"
+                ? "ietm-editor-pane ietm-editor-pane--source"
+                : "ietm-editor-pane"
+            }
+            onMouseDown={
+              viewMode === "editor" ? handleEditorPaneMouseDown : undefined
+            }
           >
-            <EditorContent editor={editor} className="ietm-editor-surface" />
+            <div
+              className={
+                viewMode === "source"
+                  ? "ietm-editor-surface-host is-hidden"
+                  : "ietm-editor-surface-host"
+              }
+              aria-hidden={viewMode === "source"}
+            >
+              <EditorContent editor={editor} className="ietm-editor-surface" />
+            </div>
+            {viewMode === "source" ? (
+              <pre className="ietm-source-xml-view" aria-readonly="true">
+                <code>{sourceXml}</code>
+              </pre>
+            ) : null}
           </div>
 
-          <aside className="ietm-right-pane">
-            {showPropertyPanel && resolvedTarget ? (
-              <S1000DPropertyPanel
-                key={inspectStableKey ?? "none"}
-                editor={editor}
-                target={resolvedTarget}
-                readOnly={!props.editable}
-                onDismiss={() => setPropertiesDismissed(true)}
+          {showPreviewPane ? (
+            <aside
+              id="ietm-pad-preview-pane"
+              className="ietm-side-pane ietm-preview-pane"
+            >
+              <DmPdfPreviewPane
+                loading={pdfPreviewLoading}
+                error={pdfPreviewError}
+                pdfUrl={pdfPreviewUrl}
+                onDismiss={dismissPadPreview}
               />
-            ) : (
-              <div className="ietm-preview-placeholder">
-                <p>功能开发中，敬请期待</p>
-              </div>
-            )}
-          </aside>
+            </aside>
+          ) : null}
+
+          {showPropertyPane ? (
+            <aside
+              id="ietm-property-pane"
+              className="ietm-side-pane ietm-property-pane"
+            >
+              {showPropertyPanelForm && resolvedTarget ? (
+                <S1000DPropertyPanel
+                  key={inspectStableKey ?? "none"}
+                  editor={editor}
+                  target={resolvedTarget}
+                  readOnly={!props.editable}
+                  onDismiss={dismissPropertyPanel}
+                />
+              ) : (
+                <PropertySettingsEmptyPane onDismiss={dismissPropertyPanel} />
+              )}
+            </aside>
+          ) : null}
         </div>
 
         <footer className="ietm-app-footer">
-          <IETMAppFooter
-            status={resolveFooterStatus(
-              props.footerStatusOverride,
-              props.editable,
-            )}
-          />
+          <div className="ietm-app-footer__start">
+            <IETMAppFooter
+              status={resolveFooterStatus(
+                props.footerStatusOverride,
+                props.editable,
+              )}
+            />
+          </div>
+          <div className="ietm-app-footer__actions">
+            <button
+              type="button"
+              className={
+                viewMode === "source"
+                  ? "ietm-footer-icon-btn is-active"
+                  : "ietm-footer-icon-btn"
+              }
+              aria-pressed={viewMode === "source"}
+              aria-label={
+                viewMode === "source" ? "切换为编辑模式" : "切换为源码模式"
+              }
+              title={viewMode === "source" ? "编辑模式" : "源码模式"}
+              onClick={handleToggleViewMode}
+            >
+              <Code2 size={22} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={
+                padPreviewOpen
+                  ? "ietm-footer-icon-btn is-active"
+                  : "ietm-footer-icon-btn"
+              }
+              aria-expanded={padPreviewOpen}
+              aria-controls="ietm-pad-preview-pane"
+              aria-label="预览"
+              title="预览"
+              disabled={pdfPreviewLoading}
+              onClick={handlePadPreviewClick}
+            >
+              <Eye size={22} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={
+                propertySettingsOpen
+                  ? "ietm-footer-icon-btn is-active"
+                  : "ietm-footer-icon-btn"
+              }
+              aria-expanded={propertySettingsOpen}
+              aria-controls="ietm-property-pane"
+              aria-label="属性设置"
+              title="属性设置"
+              disabled={viewMode === "source"}
+              onClick={handlePropertySettingsClick}
+            >
+              <Settings2 size={22} aria-hidden />
+            </button>
+          </div>
         </footer>
 
         {/* The backdrop for old menu is no longer needed */}

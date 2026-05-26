@@ -16,6 +16,17 @@
   gap: 4px;
 }
 
+.ietm-toolbar-custom-fallback-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+}
+
 .ietm-format-toolbar__divider {
   width: 1px;
   height: 26px;
@@ -77,6 +88,14 @@
 
 .ietm-underline-label {
   text-decoration: underline;
+}
+
+.ietm-overline-label {
+  text-decoration: overline;
+}
+
+.ietm-strikethrough-label {
+  text-decoration: line-through;
 }
 
 .ietm-toolbar-select {

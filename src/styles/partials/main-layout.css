@@ -9,8 +9,9 @@
 }
 
 .ietm-editor-pane {
-  flex: 0 0 70%;
-  max-width: 70%;
+  position: relative;
+  flex: 1;
+  max-width: 100%;
   min-height: 0;
   min-width: 0;
   background: #ffffff;
@@ -18,14 +19,95 @@
   box-sizing: border-box;
 }
 
+.ietm-editor-pane--source {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+}
+
+.ietm-editor-surface-host {
+  min-height: 0;
+}
+
+.ietm-editor-surface-host.is-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  pointer-events: none;
+}
+
+.ietm-source-xml-view {
+  flex: 1;
+  margin: 0;
+  min-height: 0;
+  padding: 16px 20px;
+  overflow: auto;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #111827;
+  background: #f9fafb;
+  box-sizing: border-box;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.ietm-source-xml-view code {
+  font: inherit;
+}
+
+/* 仅预览：左编辑 70% + 中预览 30% */
+.ietm-app-main--with-preview-pane .ietm-editor-pane {
+  flex: 0 0 70%;
+  max-width: 70%;
+}
+
+.ietm-app-main--with-preview-pane .ietm-preview-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+}
+
+/* 仅属性：左编辑 70% + 右属性 30% */
+.ietm-app-main--with-property-pane .ietm-editor-pane {
+  flex: 0 0 70%;
+  max-width: 70%;
+}
+
+.ietm-app-main--with-property-pane .ietm-property-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+}
+
+/* 预览 + 属性：左编辑 50% + 中预览 30% + 右属性 20% */
+.ietm-app-main--with-preview-and-property .ietm-editor-pane {
+  flex: 0 0 50%;
+  max-width: 50%;
+}
+
+.ietm-app-main--with-preview-and-property .ietm-preview-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
+}
+
+.ietm-app-main--with-preview-and-property .ietm-property-pane {
+  flex: 0 0 20%;
+  max-width: 20%;
+}
+
 .ietm-editor-surface {
   min-height: 100%;
   box-sizing: border-box;
 }
 
+.ietm-side-pane,
 .ietm-right-pane {
-  flex: 0 0 30%;
-  max-width: 30%;
   min-height: 0;
   min-width: 0;
   box-sizing: border-box;
@@ -34,8 +116,12 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  /* 纵向滚动交给 .ietm-property-panel__body，避免整块右栏滚动顶掉面板标题 */
   overflow: hidden;
+}
+
+.ietm-side-pane {
+  flex: 0 0 30%;
+  max-width: 30%;
 }
 
 .ietm-preview-placeholder {
@@ -52,6 +138,68 @@
   font-weight: 500;
   color: #9ca3af;
   text-align: center;
+}
+
+.ietm-pdf-preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  min-height: 0;
+}
+
+.ietm-pdf-preview-pane p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.ietm-pdf-preview-pane--error p {
+  color: #dc2626;
+}
+
+.ietm-pdf-preview-pane__spinner {
+  animation: ietm-pdf-preview-spin 0.9s linear infinite;
+}
+
+@keyframes ietm-pdf-preview-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ietm-pdf-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  background: #ffffff;
+}
+
+.ietm-preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  min-height: 0;
+}
+
+.ietm-preview-panel__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ietm-preview-panel__body .ietm-pdf-preview-pane,
+.ietm-preview-panel__body .ietm-preview-placeholder {
+  flex: 1;
+  min-height: 0;
 }
 
 .ietm-property-panel {
@@ -101,6 +249,36 @@
   padding: 16px;
   overflow: auto;
   flex: 1;
+  min-height: 0;
+}
+
+.ietm-property-panel__footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ietm-property-panel__confirm {
+  min-width: 88px;
+  height: 36px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 6px;
+  background: #ff8f1f;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ietm-property-panel__confirm:hover {
+  background: #e67e00;
+}
+
+.ietm-property-panel__confirm:active {
+  background: #cc7000;
 }
 
 .ietm-prop-field {
@@ -127,6 +305,17 @@
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
+}
+
+.ietm-prop-field__input--invalid {
+  border-color: #dc2626;
+}
+
+.ietm-prop-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #dc2626;
 }
 
 .ietm-prop-field input:disabled,
@@ -169,8 +358,65 @@
   padding: 0 20px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: #ffffff;
   border-top: 1px solid #e5e7eb;
+}
+
+.ietm-app-footer__start {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ietm-app-footer__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ietm-footer-icon-btn,
+.ietm-pad-preview-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 0;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.ietm-footer-icon-btn:hover,
+.ietm-pad-preview-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.ietm-footer-icon-btn.is-active,
+.ietm-pad-preview-btn.is-active {
+  background: transparent;
+  color: #2563eb;
+}
+
+.ietm-footer-icon-btn.is-active:hover,
+.ietm-pad-preview-btn.is-active:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ietm-footer-icon-btn:disabled,
+.ietm-pad-preview-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .ietm-save-status {

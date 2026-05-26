@@ -32,10 +32,7 @@ function selectionOnThisLevelledPara(props: NodeViewProps): {
   }
 
   for (let d = $from.depth; d > 0; d--) {
-    if (
-      $from.node(d).type.name === "levelledPara" &&
-      $from.before(d) === pos
-    ) {
+    if ($from.node(d).type.name === "levelledPara" && $from.before(d) === pos) {
       return { nodeSelected: false, caretInside: true };
     }
   }
@@ -49,7 +46,7 @@ function selectionOnThisLevelledPara(props: NodeViewProps): {
  * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块（便于属性面板编辑外壳）。
  */
 export function LevelledParaNodeView(props: NodeViewProps) {
-  const { editor, getPos } = props;
+  const { editor, getPos, HTMLAttributes } = props;
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
 
@@ -75,14 +72,15 @@ export function LevelledParaNodeView(props: NodeViewProps) {
     [editor, getPos],
   );
 
+  const chromeClass = showChrome
+    ? "s1000d-levelled-para s1000d-levelled-para--chrome"
+    : "s1000d-levelled-para";
+
   return (
     <NodeViewWrapper
       as="section"
-      className={
-        showChrome
-          ? "s1000d-levelled-para s1000d-levelled-para--chrome"
-          : "s1000d-levelled-para"
-      }
+      {...HTMLAttributes}
+      className={[HTMLAttributes?.class, chromeClass].filter(Boolean).join(" ")}
       data-s1000d-node="levelledPara"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

@@ -8,16 +8,29 @@ import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
 import { GraphicNodeView } from "./s1000d/GraphicNodeView";
 import { FigureNodeView } from "./s1000d/FigureNodeView";
+import { MultimediaNodeView } from "./s1000d/MultimediaNodeView";
+import { MultimediaObjectNodeView } from "./s1000d/MultimediaObjectNodeView";
 import { LevelledParaNodeView } from "./s1000d/LevelledParaNodeView";
 import { s1000dTableNodes } from "./s1000d/s1000dTableNodes";
 import { S1000DSub, S1000DSup } from "./s1000d/subSuperMarks";
+import {
+  NoteLeadNodeView,
+  NoteNodeView,
+  NoteParaNodeView,
+} from "./s1000d/NoteNodeView";
 import {
   WarningAndCautionLeadNodeView,
   WarningAndCautionParaNodeView,
   WarningNodeView,
 } from "./s1000d/WarningNodeView";
-import type { ParaAttrs } from "./s1000d/types";
+import type { FigureAttrs, ParaAttrs } from "./s1000d/types";
 import {
+  readParaAttrsFromDom,
+  s1000dParaAttributeSpec,
+} from "../lib/s1000d/paraAttributes";
+import { s1000dIdAttributeConfig } from "../lib/s1000d/s1000dIdAttribute";
+import {
+  FIGURE_XML_ATTR_NAMES,
   SOURCE_XML_ATTR_KEYS,
   hasXmlAttr,
   xmlAttrsPresentOnElement,
@@ -25,7 +38,7 @@ import {
 import { readXlinkHrefFromElement } from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 
-export type { ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
+export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
 export { S1000DEmphasis };
 
 /**
@@ -39,6 +52,19 @@ function isS1000DTitleParent(parent: Element | null): boolean {
   if (parent.classList.contains("s1000d-levelled-para__content")) return true;
   if (parent.getAttribute("data-s1000d-xml-table") === "1") return true;
 
+  if (
+    parent.getAttribute("data-s1000d-node") === "isolationStep" ||
+    parent.getAttribute("data-s1000d-node") === "isolationProcedureEnd"
+  ) {
+    return true;
+  }
+  if (
+    parent.classList.contains("s1000d-isolation-step__content") ||
+    parent.classList.contains("s1000d-isolation-end__content")
+  ) {
+    return true;
+  }
+
   const ln = parent.localName.toLowerCase();
   return (
     ln === "levelledpara" ||
@@ -46,11 +72,18 @@ function isS1000DTitleParent(parent: Element | null): boolean {
     ln === "table" ||
     ln === "sequentiallist" ||
     ln === "randomlist" ||
-    ln === "multimedia"
+    ln === "multimedia" ||
+    ln === "isolationstep" ||
+    ln === "isolationprocedureend"
   );
 }
 
 const S1000D_TITLE_LEVEL_CAP = 6;
+
+/** 图题/表题等：不参与 levelledPara 章节标题层级（对应 `data-s1000d-title-level="0"`） */
+const S1000D_TITLE_CAPTION_LEVEL = 0;
+
+const TITLE_CAPTION_PARENT_TYPES = new Set(["figure", "table", "multimedia"]);
 
 const s1000dTitleLevelsKey = new PluginKey<{ forceInitialSync?: true }>(
   "s1000d-title-levels",
@@ -58,27 +91,44 @@ const s1000dTitleLevelsKey = new PluginKey<{ forceInitialSync?: true }>(
 
 function clampS1000dTitleDisplayLevel(raw: number): number {
   if (!Number.isFinite(raw)) return 1;
-  return Math.min(S1000D_TITLE_LEVEL_CAP, Math.max(1, Math.round(raw)));
+  const rounded = Math.round(raw);
+  if (rounded === S1000D_TITLE_CAPTION_LEVEL) return S1000D_TITLE_CAPTION_LEVEL;
+  return Math.min(S1000D_TITLE_LEVEL_CAP, Math.max(1, rounded));
+}
+
+function normalizeTitleDisplayLevel(raw: number | null | undefined): number {
+  if (raw === S1000D_TITLE_CAPTION_LEVEL) return S1000D_TITLE_CAPTION_LEVEL;
+  return clampS1000dTitleDisplayLevel(Number(raw ?? 1));
 }
 
 /**
- * 统计包含该 `title` 节点的 `levelledPara` 祖先数量，用于对应 h1/h2/…（最外层为 1）。
- * 位于 figure/table 等下且路径上无 `levelledPara` 时得到 0，按一级标题处理。
+ * `levelledPara` 下 title：按祖先 `levelledPara` 深度 1~6。
+ * `figure` / `table` / `multimedia` 下 title：固定为 0（图题/表题，不用 levelledPara 深度）。
  */
-function ancestorLevelledParaDepthForTitle(
-  doc: PMNode,
-  titleStartPos: number,
-): number {
-  let count = 0;
+function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
   try {
     const $pos = doc.resolve(titleStartPos + 1);
+    let titleDepth = -1;
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === "title") {
+        titleDepth = d;
+        break;
+      }
+    }
+    if (titleDepth > 0) {
+      const parentType = $pos.node(titleDepth - 1).type.name;
+      if (TITLE_CAPTION_PARENT_TYPES.has(parentType)) {
+        return S1000D_TITLE_CAPTION_LEVEL;
+      }
+    }
+    let count = 0;
     for (let d = $pos.depth; d > 0; d--) {
       if ($pos.node(d).type.name === "levelledPara") count++;
     }
+    return clampS1000dTitleDisplayLevel(Math.max(1, count));
   } catch {
     return 1;
   }
-  return clampS1000dTitleDisplayLevel(Math.max(1, count));
 }
 
 function createS1000dTitleLevelsPlugin() {
@@ -99,9 +149,9 @@ function createS1000dTitleLevelsPlugin() {
       newState.doc.descendants((node, pos) => {
         if (node.type.name !== "title") return true;
 
-        const next = ancestorLevelledParaDepthForTitle(newState.doc, pos);
-        const curr = clampS1000dTitleDisplayLevel(
-          Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
+        const next = computeTitleDisplayLevel(newState.doc, pos);
+        const curr = normalizeTitleDisplayLevel(
+          (node.attrs as { displayLevel?: number }).displayLevel,
         );
 
         if (curr !== next) {
@@ -141,10 +191,23 @@ function parseS1000dTitleDisplayLevelFromElement(el: Element): number {
   return 1;
 }
 
+/**
+ * 嵌套块专用组：不得使用 `block`，否则在 `paragraph` 关闭后会被 `doc` 的 `block+`
+ * 当成默认块（回车易出现 `attentionListItemPara` 等）。
+ */
+const WARNING_CAUTION_LEAD_GROUP = "warningAndCautionLeadBlock";
+const ATTENTION_LIST_ITEM_PARA_GROUP = "attentionListItemBlock";
+const ATTENTION_RANDOM_LIST_ITEM_GROUP = "attentionRandomListItemBlock";
+const ATTENTION_RANDOM_LIST_GROUP = "attentionRandomListBlock";
+const WARNING_CAUTION_PARA_GROUP = "warningAndCautionParaBlock";
+const NOTE_LEAD_GROUP = "noteLeadBlock";
+const NOTE_PARA_GROUP = "noteParaBlock";
+const S1000D_TITLE_GROUP = "s1000dTitleBlock";
+
 /** 编辑器内部块：承接 `warningAndCautionPara` 内、位于 `attentionRandomList` 之前的行内与前导内容（原装 XML 无此外壳，导入时写入）。 */
 export const WarningAndCautionLead = Node.create({
   name: "warningAndCautionLead",
-  group: "block",
+  group: WARNING_CAUTION_LEAD_GROUP,
 
   content: "inline*",
 
@@ -173,7 +236,7 @@ export const WarningAndCautionLead = Node.create({
 /** S1000D `attentionListItemPara`，位于 `attentionRandomListItem` 内。 */
 export const AttentionListItemPara = Node.create({
   name: "attentionListItemPara",
-  group: "block",
+  group: ATTENTION_LIST_ITEM_PARA_GROUP,
 
   content: "inline*",
 
@@ -198,7 +261,7 @@ export const AttentionListItemPara = Node.create({
 /** S1000D `attentionRandomListItem`。 */
 export const AttentionRandomListItem = Node.create({
   name: "attentionRandomListItem",
-  group: "block",
+  group: ATTENTION_RANDOM_LIST_ITEM_GROUP,
 
   content: "attentionListItemPara+",
 
@@ -223,7 +286,7 @@ export const AttentionRandomListItem = Node.create({
 /** S1000D `attentionRandomList`（attention 无序列表容器）。 */
 export const AttentionRandomList = Node.create({
   name: "attentionRandomList",
-  group: "block",
+  group: ATTENTION_RANDOM_LIST_GROUP,
 
   content: "attentionRandomListItem+",
 
@@ -253,7 +316,7 @@ export const AttentionRandomList = Node.create({
  */
 export const WarningAndCautionPara = Node.create({
   name: "warningAndCautionPara",
-  group: "block",
+  group: WARNING_CAUTION_PARA_GROUP,
 
   content: "warningAndCautionLead? attentionRandomList?",
 
@@ -372,11 +435,42 @@ export const S1000DCaution = Node.create({
   },
 });
 
-/** S1000D `notePara`（位于 `note` 内）。 */
+/** 编辑器内部块：`notePara` 内、位于 `attentionRandomList` 之前的前导正文（导出时剥壳）。 */
+export const NoteLead = Node.create({
+  name: "noteLead",
+  group: NOTE_LEAD_GROUP,
+
+  content: "inline*",
+
+  parseHTML() {
+    return [
+      {
+        tag: "noteLead",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+      {
+        tag: "notelead",
+        getAttrs: () => ({ [SOURCE_XML_ATTR_KEYS]: [] as string[] }),
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["noteLead", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(NoteLeadNodeView);
+  },
+});
+
+/**
+ * S1000D `notePara`：前导 `noteLead` 与可选 `attentionRandomList`（与样例 XML 并排结构一致）。
+ */
 export const NotePara = Node.create({
   name: "notePara",
-  group: "block",
-  content: "inline*",
+  group: NOTE_PARA_GROUP,
+  content: "noteLead? attentionRandomList?",
 
   parseHTML() {
     return [
@@ -393,6 +487,10 @@ export const NotePara = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["notePara", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(NoteParaNodeView);
   },
 });
 
@@ -438,6 +536,10 @@ export const S1000DNote = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["note", mergeAttributes(HTMLAttributes), 0];
   },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(NoteNodeView);
+  },
 });
 
 /** `displayLevel` 仅当源 HTML 上存在 `data-s1000d-title-level` 时视为「源上出现」并记入 `sourceXmlAttrKeys`。 */
@@ -464,11 +566,11 @@ const s1000dTitleHeadingParseRules = ([1, 2, 3, 4, 5, 6] as const).map(
 
 /**
  * S1000D `title`：标题行块，Schema 为 `(text)*`；此处建模为 `inline*` 以支持后续行内标记扩展。
- * 展示级数由祖先 `levelledPara` 深度决定（上限 6），但渲染为统一块标签，避免输出语义 h1~h6。
+ * 展示级数：`levelledPara` 下按祖先深度 1~6；`figure` 等块内图题为 0（非章节标题）。
  */
 export const S1000DTitle = Node.create({
   name: "title",
-  group: "block",
+  group: S1000D_TITLE_GROUP,
   content: "inline*",
 
   addAttributes() {
@@ -482,8 +584,8 @@ export const S1000DTitle = Node.create({
             : 1,
         renderHTML: (attrs) => ({
           "data-s1000d-title-level": String(
-            clampS1000dTitleDisplayLevel(
-              Number((attrs as { displayLevel?: number }).displayLevel ?? 1),
+            normalizeTitleDisplayLevel(
+              (attrs as { displayLevel?: number }).displayLevel,
             ),
           ),
         }),
@@ -528,8 +630,8 @@ export const S1000DTitle = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const level = clampS1000dTitleDisplayLevel(
-      Number((node.attrs as { displayLevel?: number }).displayLevel ?? 1),
+    const level = normalizeTitleDisplayLevel(
+      (node.attrs as { displayLevel?: number }).displayLevel,
     );
     return [
       "s1000d-block-title",
@@ -543,23 +645,24 @@ export const S1000DTitle = Node.create({
   },
 });
 
+function copyElementAttributes(src: Element, dest: Element) {
+  for (const { name, value } of Array.from(src.attributes)) {
+    dest.setAttribute(name, value);
+  }
+}
+
 /**
  * S1000D `para`：描述类正文的主要段落块；允许多种行内（Phase 1 仅 `inline*`，与 Schema 中 text 组对齐的第一步）。
  * 透传样例 XML 中出现的安全/衍生分类等属性，便于往返 XML。
  */
 export const S1000DPara = Node.create({
   name: "para",
+  priority: 1000,
   group: "block",
   content: "inline*",
 
   addAttributes(): Record<keyof ParaAttrs, { default: string | null }> {
-    return {
-      id: { default: null },
-      securityClassification: { default: null },
-      caveat: { default: null },
-      derivativeClassificationRefId: { default: null },
-      reasonForUpdateRefIds: { default: null },
-    };
+    return s1000dParaAttributeSpec();
   },
 
   parseHTML() {
@@ -569,22 +672,7 @@ export const S1000DPara = Node.create({
         priority: 200,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return {
-            id: el.getAttribute("id"),
-            securityClassification: el.getAttribute("securityClassification"),
-            caveat: el.getAttribute("caveat"),
-            derivativeClassificationRefId: el.getAttribute(
-              "derivativeClassificationRefId",
-            ),
-            reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
-              "id",
-              "securityClassification",
-              "caveat",
-              "derivativeClassificationRefId",
-              "reasonForUpdateRefIds",
-            ]),
-          };
+          return readParaAttrsFromDom(el);
         },
       },
     ];
@@ -592,6 +680,19 @@ export const S1000DPara = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return ["para", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Enter: ({ editor }) => {
+        const { $from } = editor.state.selection;
+        for (let d = $from.depth; d > 0; d--) {
+          if ($from.node(d).type.name !== "para") continue;
+          return editor.chain().focus().splitBlock().run();
+        }
+        return false;
+      },
+    };
   },
 });
 
@@ -708,14 +809,18 @@ export const S1000DInternalRef = Node.create({
         tag: "internalRef",
         getAttrs: (el) => ({
           ...readInternalRefAttrsFromDom(el as Element),
-          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el as Element),
+          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(
+            el as Element,
+          ),
         }),
       },
       {
         tag: "internalref",
         getAttrs: (el) => ({
           ...readInternalRefAttrsFromDom(el as Element),
-          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(el as Element),
+          [SOURCE_XML_ATTR_KEYS]: readInternalRefSourceXmlAttrKeys(
+            el as Element,
+          ),
         }),
       },
     ];
@@ -748,7 +853,7 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
   if (hasXmlAttr(el, "infoEntityIdent") || hasXmlAttr(el, "infoentityident")) {
     keys.push("infoEntityIdent");
   }
-  if (readXlinkHrefFromElement(el)) keys.push("xlink:href");
+  if (readXlinkHrefFromElement(el)) keys.push("src");
   return keys;
 }
 
@@ -777,9 +882,9 @@ export const S1000DGraphic = Node.create({
         default: null,
         parseHTML: (el) =>
           el instanceof Element
-            ? el.getAttribute("infoEntityIdent") ??
+            ? (el.getAttribute("infoEntityIdent") ??
               el.getAttribute("infoentityident") ??
-              el.getAttribute("data-info-entity-ident")
+              el.getAttribute("data-info-entity-ident"))
             : null,
         renderHTML: (attrs) => {
           const v = (attrs as { infoEntityIdent?: string | null })
@@ -850,7 +955,11 @@ export const S1000DGraphic = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     const raw = node.attrs.src;
     const src =
-      typeof raw === "string" ? raw.trim() : raw == null ? "" : String(raw).trim();
+      typeof raw === "string"
+        ? raw.trim()
+        : raw == null
+          ? ""
+          : String(raw).trim();
     const ident = node.attrs.infoEntityIdent
       ? String(node.attrs.infoEntityIdent)
       : "";
@@ -874,6 +983,115 @@ export const S1000DGraphic = Node.create({
 });
 
 /**
+ * S1000D `multimediaObject`：`multimedia` 下的媒体实体引用（无文本子节点）。
+ */
+export const S1000DMultimediaObject = Node.create({
+  name: "multimediaObject",
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      infoEntityIdent: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? (el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident") ??
+              el.getAttribute("data-info-entity-ident"))
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { infoEntityIdent?: string | null })
+            .infoEntityIdent;
+          return v ? { infoEntityIdent: String(v) } : {};
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "multimediaObject",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return {
+            infoEntityIdent:
+              el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "infoEntityIdent",
+              "infoentityident",
+            ]),
+          };
+        },
+      },
+      {
+        tag: "multimediaobject",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return {
+            infoEntityIdent:
+              el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "infoEntityIdent",
+              "infoentityident",
+            ]),
+          };
+        },
+      },
+    ];
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    const ident = node.attrs.infoEntityIdent
+      ? String(node.attrs.infoEntityIdent)
+      : "";
+    return [
+      "multimediaObject",
+      mergeAttributes(HTMLAttributes, ident ? { infoEntityIdent: ident } : {}),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(MultimediaObjectNodeView);
+  },
+});
+
+/**
+ * S1000D `multimedia`：块级，`title?` + 至少一个 `multimediaObject`。
+ */
+export const S1000DMultimedia = Node.create({
+  name: "multimedia",
+  group: "block fmftElemGroup",
+  content: "(title?) multimediaObject+",
+  defining: true,
+
+  parseHTML() {
+    return [
+      {
+        tag: "multimedia",
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return {
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, []),
+          };
+        },
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["multimedia", mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(MultimediaNodeView);
+  },
+});
+
+/**
  * S1000D `figure`：块级，`title?` + 至少一个 `graphic`。
  */
 export const S1000DFigure = Node.create({
@@ -882,9 +1100,17 @@ export const S1000DFigure = Node.create({
   content: "(title?) graphic+",
   defining: true,
 
-  addAttributes() {
+  addAttributes(): Record<keyof FigureAttrs, { default: string | null }> {
     return {
-      id: { default: null },
+      id: s1000dIdAttributeConfig(),
+      changeType: { default: null },
+      changeMark: { default: null },
+      reasonForUpdateRefIds: { default: null },
+      authorityName: { default: null },
+      authorityDocument: { default: null },
+      securityClassification: { default: null },
+      commercialClassification: { default: null },
+      caveat: { default: null },
     };
   },
 
@@ -895,8 +1121,23 @@ export const S1000DFigure = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           return {
-            id: el.getAttribute("id"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+            id:
+              el.getAttribute("id") ??
+              el.getAttribute("data-s1000d-element-id"),
+            changeType: el.getAttribute("changeType"),
+            changeMark: el.getAttribute("changeMark"),
+            reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
+            authorityName: el.getAttribute("authorityName"),
+            authorityDocument: el.getAttribute("authorityDocument"),
+            securityClassification: el.getAttribute("securityClassification"),
+            commercialClassification: el.getAttribute(
+              "commercialClassification",
+            ),
+            caveat: el.getAttribute("caveat"),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
+              el,
+              FIGURE_XML_ATTR_NAMES,
+            ),
           };
         },
       },
@@ -926,19 +1167,14 @@ export const LevelledPara = Node.create({
 
   addAttributes() {
     return {
-      id: {
-        default: null,
-        parseHTML: (el) =>
-          el instanceof Element ? el.getAttribute("id") : null,
-        renderHTML: (attrs) =>
-          (attrs as { id?: string | null }).id
-            ? { id: (attrs as { id: string }).id }
-            : {},
-      },
+      id: s1000dIdAttributeConfig(),
     };
   },
 
   parseHTML() {
+    const readLevelledParaId = (el: Element) =>
+      el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id");
+
     return [
       {
         tag: "section",
@@ -947,8 +1183,11 @@ export const LevelledPara = Node.create({
           if (!el || !(el instanceof Element)) return false;
           return el.getAttribute("data-s1000d-node") === "levelledPara"
             ? {
-                id: el.getAttribute("id"),
-                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+                id: readLevelledParaId(el),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+                  "id",
+                  "data-s1000d-element-id",
+                ]),
               }
             : false;
         },
@@ -958,8 +1197,11 @@ export const LevelledPara = Node.create({
         getAttrs: (el) =>
           el instanceof Element
             ? {
-                id: el.getAttribute("id"),
-                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+                id: readLevelledParaId(el),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+                  "id",
+                  "data-s1000d-element-id",
+                ]),
               }
             : {},
       },
@@ -968,8 +1210,11 @@ export const LevelledPara = Node.create({
         getAttrs: (el) =>
           el instanceof Element
             ? {
-                id: el.getAttribute("id"),
-                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+                id: readLevelledParaId(el),
+                [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+                  "id",
+                  "data-s1000d-element-id",
+                ]),
               }
             : {},
       },
@@ -997,6 +1242,7 @@ export const s1000dPhase1Nodes = [
   WarningAndCautionPara,
   S1000DWarning,
   S1000DCaution,
+  NoteLead,
   NotePara,
   S1000DNote,
   S1000DTitle,
@@ -1004,6 +1250,8 @@ export const s1000dPhase1Nodes = [
   S1000DDmRef,
   S1000DInternalRef,
   S1000DGraphic,
+  S1000DMultimediaObject,
+  S1000DMultimedia,
   S1000DFigure,
   ...s1000dTableNodes,
   LevelledPara,
@@ -1031,7 +1279,10 @@ export function extractContentElementFromDmXml(
 
 export function extractIdentAndStatusSection(xmlString: string): void {
   const dmodule = getRootDModuleElement(xmlString);
-  if (!dmodule) return;
+  if (!dmodule) {
+    useDmMetadataStore.getState().setIdentAndStatusXml("");
+    return;
+  }
 
   const identNode = Array.from(dmodule.children).find(
     (c) => c.localName === "identAndStatusSection",
@@ -1041,6 +1292,8 @@ export function extractIdentAndStatusSection(xmlString: string): void {
     const serializer = new XMLSerializer();
     const identXmlString = serializer.serializeToString(identNode);
     useDmMetadataStore.getState().setIdentAndStatusXml(identXmlString);
+  } else {
+    useDmMetadataStore.getState().setIdentAndStatusXml("");
   }
 }
 /**
@@ -1087,6 +1340,49 @@ function normalizeWarningAndCautionParasForEditor(descriptionRoot: Element) {
     const lead = ns
       ? owner.createElementNS(ns, "warningAndCautionLead")
       : owner.createElement("warningAndCautionLead");
+    for (const n of toWrap) lead.appendChild(n);
+    para.insertBefore(lead, para.firstChild);
+  }
+}
+
+/** 与 `normalizeWarningAndCautionParasForEditor` 同逻辑，用于 `notePara`。 */
+function normalizeNoteParasForEditor(descriptionRoot: Element) {
+  const paras = Array.from(descriptionRoot.querySelectorAll("notePara"));
+  const DOM_ELEMENT = globalThis.Node.ELEMENT_NODE;
+  const DOM_TEXT = globalThis.Node.TEXT_NODE;
+
+  for (const para of paras) {
+    if (para.querySelector(":scope > noteLead")) continue;
+    if (para.querySelector(":scope > notelead")) continue;
+
+    const toWrap: globalThis.ChildNode[] = [];
+    let ref: globalThis.ChildNode | null = para.firstChild;
+    while (ref) {
+      if (
+        ref.nodeType === DOM_ELEMENT &&
+        ((ref as Element).localName === "attentionRandomList" ||
+          (ref as Element).localName === "attentionrandomlist")
+      ) {
+        break;
+      }
+      const next = ref.nextSibling;
+      toWrap.push(ref);
+      ref = next;
+    }
+
+    const hasSubstance = toWrap.some((n) => {
+      if (n.nodeType === DOM_TEXT) {
+        return !!(n.textContent && n.textContent.trim());
+      }
+      return n.nodeType === DOM_ELEMENT;
+    });
+    if (!hasSubstance) continue;
+
+    const owner = para.ownerDocument;
+    const ns = para.namespaceURI;
+    const lead = ns
+      ? owner.createElementNS(ns, "noteLead")
+      : owner.createElement("noteLead");
     for (const n of toWrap) lead.appendChild(n);
     para.insertBefore(lead, para.firstChild);
   }
@@ -1158,6 +1454,7 @@ function normalizeListItemParasBeforeListRename(item: Element) {
       (inlineParts.length > 0 && blocks.length === 0)
     ) {
       const p = doc.createElement("p");
+      copyElementAttributes(para, p);
       for (const n of inlineParts) p.appendChild(n);
       frag.appendChild(p);
     } else {
@@ -1182,6 +1479,7 @@ function normalizeMixedContentParas(description: Element) {
       if (
         isS1000dSequentialOrRandomListTag(ln) ||
         ln === "figure" ||
+        ln === "multimedia" ||
         ln === "table"
       ) {
         hasBlock = true;
@@ -1219,6 +1517,7 @@ function normalizeMixedContentParas(description: Element) {
         if (
           isS1000dSequentialOrRandomListTag(ln) ||
           ln === "figure" ||
+          ln === "multimedia" ||
           ln === "table"
         ) {
           flushPara();
@@ -1453,6 +1752,7 @@ export function getDescriptionInnerXmlFromDmXml(
   if (!description) return null;
 
   normalizeWarningAndCautionParasForEditor(description);
+  normalizeNoteParasForEditor(description);
   normalizeS1000dListsForEditor(description);
 
   const BLOCK_TAGS = [
@@ -1463,6 +1763,8 @@ export function getDescriptionInnerXmlFromDmXml(
     "row",
     "tr",
     "figure",
+    "multimedia",
+    "multimediaobject",
     "warning",
     "caution",
     "note",
@@ -1505,6 +1807,45 @@ export function getDescriptionInnerXmlFromDmXml(
   const joined = parts.length > 0 ? parts.join("") : null;
   if (!joined) return null;
   return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
+/**
+ * 从 DM 中取出 `<content>/<faultIsolation>` 的直接子节点 XML 片段（无 `<faultIsolation>` 外壳）。
+ */
+export function getFaultIsolationInnerXmlFromDmXml(
+  xmlString: string,
+): string | null {
+  extractIdentAndStatusSection(xmlString);
+  const contentRoot = extractContentElementFromDmXml(xmlString);
+  if (!contentRoot) return null;
+  const faultIsolation = Array.from(contentRoot.children).find(
+    (c) => c.localName === "faultIsolation",
+  );
+  if (!faultIsolation) return null;
+
+  const serializer = new XMLSerializer();
+  const parts: string[] = [];
+  for (const child of Array.from(faultIsolation.children)) {
+    parts.push(serializer.serializeToString(child));
+  }
+  const joined = parts.length > 0 ? parts.join("") : null;
+  if (!joined) return null;
+  return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
+/**
+ * 按 schema 正文类型从 DM 抽取可 `setContent` 的片段；类型不匹配时尝试另一种根元素。
+ */
+export function getDmInnerXmlFromDmXml(
+  xmlString: string,
+  preferFaultIsolation: boolean,
+): string | null {
+  const description = getDescriptionInnerXmlFromDmXml(xmlString);
+  const fault = getFaultIsolationInnerXmlFromDmXml(xmlString);
+  if (preferFaultIsolation) {
+    return fault ?? description;
+  }
+  return description ?? fault;
 }
 
 /**

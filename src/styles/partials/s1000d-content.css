@@ -1,4 +1,4 @@
-﻿.ietm-editor-surface
+.ietm-editor-surface
   .tiptap
   .s1000d-title-display[data-s1000d-title-level="1"] {
   display: block;
@@ -64,16 +64,70 @@
   color: #64748b;
 }
 
-/* figure 等块内短标题（任意层级）略微缩小 */
-.ietm-editor-surface .tiptap figure > .s1000d-title-display,
+/* levelledPara 空标题：纯样式占位（不写入 XML） */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  .s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  s1000d-block-title.s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):empty::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  .s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):has(> br.ProseMirror-trailingBreak:only-child)::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-levelled-para
+  s1000d-block-title.s1000d-title-display[data-s1000d-title-level]:not(
+    [data-s1000d-title-level="0"]
+  ):has(> br.ProseMirror-trailingBreak:only-child)::before {
+  content: "请输入标题";
+  float: left;
+  height: 0;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+/* figure 图题：displayLevel=0，不用 levelledPara 章节标题样式 */
+.ietm-editor-surface
+  .tiptap
+  figure
+  .s1000d-title-display[data-s1000d-title-level="0"],
+.ietm-editor-surface
+  .tiptap
+  figure.s1000d-figure
+  .s1000d-title-display[data-s1000d-title-level="0"],
+.ietm-editor-surface .tiptap figure .s1000d-figure__content .s1000d-title-display,
 .ietm-editor-surface
   .tiptap
   figure.s1000d-figure
   .s1000d-figure__content
-  > .s1000d-title-display {
-  font-size: 1.05em;
-  font-weight: 600;
-  margin: 0.35em 0 0.2em;
+  .s1000d-title-display,
+.ietm-editor-surface
+  .tiptap
+  figure
+  .s1000d-figure__content
+  s1000d-block-title.s1000d-title-display,
+.ietm-editor-surface
+  .tiptap
+  figure.s1000d-figure
+  .s1000d-figure__content
+  s1000d-block-title.s1000d-title-display {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #718199;
+  text-align: center;
+  margin: 0 0 8px;
 }
 
 /* table 标题：不使用 heading 语义，视觉按业务示例居中、浅灰并带短下划线 */
@@ -134,6 +188,39 @@
   background: #f1f5f9;
   border-style: dashed;
   border-color: #cbd5e1;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-node {
+  display: block;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  color: #334155;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node__icon {
+  flex-shrink: 0;
+  color: #64748b;
 }
 
 /* 序列化 / 剪贴板等场景下仍可能出现裸 `<graphic>` */
@@ -308,21 +395,25 @@
   margin-right: 4px;
 }
 
-.s1000d-internal-ref-target-flash {
-  animation: s1000d-internal-ref-flash-keyframes 1s ease-out 1 !important;
-  outline: 3px solid #f97316 !important;
-  outline-offset: 2px !important;
+/* 内部引用跳转：浮动高亮层（叠在 .ietm-editor-pane 内，不依赖改 para 节点 class） */
+.s1000d-internal-ref-target-flash-overlay {
+  position: absolute;
+  z-index: 40;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.9);
+  background-color: rgba(255, 237, 213, 0.65);
+  animation: s1000d-internal-ref-flash-overlay-keyframes 1s ease-out forwards;
 }
 
-@keyframes s1000d-internal-ref-flash-keyframes {
+@keyframes s1000d-internal-ref-flash-overlay-keyframes {
   0%,
-  100% {
-    outline-width: 0;
-    outline-color: transparent;
+  80% {
+    opacity: 1;
   }
-  15% {
-    outline-width: 5px;
-    outline-color: #ea580c;
+  100% {
+    opacity: 0;
   }
 }
 
@@ -342,7 +433,30 @@
 
 .ietm-editor-surface
   .tiptap
-  emphasis.s1000d-emphasis:not([data-emphasis-type="em02"]) {
+  emphasis.s1000d-emphasis:not([data-emphasis-type="em02"]):not(
+    [data-emphasis-type="em03"]
+  ):not([data-emphasis-type="em04"]):not([data-emphasis-type="em05"]) {
   font-weight: 700;
   color: #0f172a;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em03"],
+.ietm-editor-surface .tiptap emphasis.s1000d-underline {
+  text-decoration: underline;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em04"],
+.ietm-editor-surface .tiptap emphasis.s1000d-overline {
+  text-decoration: overline;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.ietm-editor-surface .tiptap emphasis.s1000d-emphasis[data-emphasis-type="em05"],
+.ietm-editor-surface .tiptap emphasis.s1000d-strikethrough {
+  text-decoration: line-through;
+  font-weight: inherit;
+  color: inherit;
 }
