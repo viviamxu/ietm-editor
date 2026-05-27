@@ -26,6 +26,7 @@ import { ConfigProvider } from "@arco-design/web-react";
 import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
+import { useIcnInfoStore } from "../../store/icnInfoStore";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
@@ -44,6 +45,7 @@ export interface IETMEditorRootHandle {
   insertImages: (images: InsertImagePayload[]) => boolean;
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
+  refreshDmPdfPreview: () => void;
 }
 
 interface IETMEditorRootProps {
@@ -62,6 +64,8 @@ interface IETMEditorRootProps {
   apiBaseUrl?: string;
   dmPdfPreviewPath?: string;
   fetchDmPdfPreview?: () => Promise<string | Blob>;
+  icnInfoPath?: string;
+  previewLibPath?: string;
 }
 
 export const IETMEditorRoot = forwardRef<
@@ -88,6 +92,25 @@ export const IETMEditorRoot = forwardRef<
       resetDescriptionSchema();
     };
   }, [props.initialDescriptionSchema]);
+
+  // 同步 ICN 接口配置到 store
+  useEffect(() => {
+    useIcnInfoStore.getState().setIcnInfoConfig({
+      apiBaseUrl: props.apiBaseUrl ?? "",
+      icnInfoPath: props.icnInfoPath,
+      previewLibPath: props.previewLibPath,
+    });
+  }, [props.apiBaseUrl, props.icnInfoPath, props.previewLibPath]);
+
+  // 初始化 @ietm-manual/preview（注册 cc-3d-scene Web Component）
+  useEffect(() => {
+    const libPath = props.previewLibPath ?? "/";
+    void import("@ietm-manual/preview").then((mod) => {
+      if (typeof mod.setLibPath === "function") {
+        mod.setLibPath(libPath);
+      }
+    });
+  }, [props.previewLibPath]);
 
   useImperativeHandle(
     ref,
@@ -117,6 +140,7 @@ export const IETMEditorRoot = forwardRef<
         editorRef.current?.insertDmRefs(items) ?? false,
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,
+      refreshDmPdfPreview: () => editorRef.current?.refreshDmPdfPreview(),
     }),
     [applyEditable],
   );

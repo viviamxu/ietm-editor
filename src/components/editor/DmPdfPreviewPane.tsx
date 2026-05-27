@@ -20,7 +20,7 @@ export function DmPdfPreviewPane(props: DmPdfPreviewPaneProps) {
           aria-hidden
           className="ietm-pdf-preview-pane__spinner shrink-0"
         />
-        <p>正在保存并加载预览…</p>
+        <p>正在加载预览…</p>
       </div>
     );
   } else if (error) {

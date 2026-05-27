@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   type MouseEvent as ReactMouseEvent,
@@ -30,6 +31,7 @@ import {
 } from "../../extensions/S1000DNodes";
 import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
+import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
 import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
@@ -122,6 +124,11 @@ export interface IETMEditorRefValue {
   /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用 */
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
+  /**
+   * 重新加载 PDF 预览：会重新调用 `onOpenDmPdfPreview`（若配置）并更新预览窗格。
+   * 若预览窗格当前关闭，则会自动打开并加载。
+   */
+  refreshDmPdfPreview: () => void;
 }
 
 interface IETMEditorProps {
@@ -382,6 +389,80 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       props.onReady();
     }, [editor, props]);
 
+    useEffect(() => {
+      if (!editor) return;
+      void hydrateMultimediaObjectsInEditor(editor);
+    }, [editor]);
+
+    const clearPdfPreviewUrl = useCallback(() => {
+      if (
+        pdfPreviewRevokeRef.current &&
+        pdfPreviewUrlRef.current?.startsWith("blob:")
+      ) {
+        URL.revokeObjectURL(pdfPreviewUrlRef.current);
+      }
+      pdfPreviewRevokeRef.current = false;
+      pdfPreviewUrlRef.current = null;
+      setPdfPreviewUrl(null);
+    }, []);
+
+    const dismissPadPreview = () => {
+      setPadPreviewOpen(false);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(false);
+      clearPdfPreviewUrl();
+    };
+
+    useEffect(() => {
+      return () => {
+        if (
+          pdfPreviewRevokeRef.current &&
+          pdfPreviewUrlRef.current?.startsWith("blob:")
+        ) {
+          URL.revokeObjectURL(pdfPreviewUrlRef.current);
+        }
+      };
+    }, []);
+
+    const runOpenPdfPreview = useCallback(() => {
+      if (!editor) return;
+
+      setPadPreviewOpen(true);
+      setPdfPreviewError(null);
+      setPdfPreviewLoading(true);
+      clearPdfPreviewUrl();
+
+      void (async () => {
+        try {
+          const { url, revokeOnClose } = await openDmPdfPreview({
+            editor,
+            onOpenDmPdfPreview: props.onOpenDmPdfPreview,
+            onSaveDmXml: props.onSaveDmXml,
+            apiBaseUrl: props.apiBaseUrl,
+            dmPdfPreviewPath: props.dmPdfPreviewPath,
+            fetchDmPdfPreview: props.fetchDmPdfPreview,
+          });
+          pdfPreviewRevokeRef.current = revokeOnClose;
+          pdfPreviewUrlRef.current = url;
+          setPdfPreviewUrl(url);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "PDF 预览加载失败";
+          setPdfPreviewError(message);
+        } finally {
+          setPdfPreviewLoading(false);
+        }
+      })();
+    }, [
+      clearPdfPreviewUrl,
+      editor,
+      props.apiBaseUrl,
+      props.dmPdfPreviewPath,
+      props.fetchDmPdfPreview,
+      props.onOpenDmPdfPreview,
+      props.onSaveDmXml,
+    ]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -406,6 +487,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             return applyFillEmptyContentFromSchema(editor, schema);
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
+          void hydrateMultimediaObjectsInEditor(editor);
           return true;
         },
         setDmDocumentName: (name) => {
@@ -485,8 +567,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           if (!editor) return false;
           return insertMultimediaIntoEditor(editor, items);
         },
+        refreshDmPdfPreview: () => {
+          runOpenPdfPreview();
+        },
       }),
-      [editor],
+      [editor, runOpenPdfPreview],
     );
 
     const resolvedTarget: InspectTarget | null = editor
@@ -506,36 +591,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const hasSingleSidePane =
       showPreviewPane !== showPropertyPane &&
       (showPreviewPane || showPropertyPane);
-
-    const clearPdfPreviewUrl = () => {
-      if (
-        pdfPreviewRevokeRef.current &&
-        pdfPreviewUrlRef.current?.startsWith("blob:")
-      ) {
-        URL.revokeObjectURL(pdfPreviewUrlRef.current);
-      }
-      pdfPreviewRevokeRef.current = false;
-      pdfPreviewUrlRef.current = null;
-      setPdfPreviewUrl(null);
-    };
-
-    const dismissPadPreview = () => {
-      setPadPreviewOpen(false);
-      setPdfPreviewError(null);
-      setPdfPreviewLoading(false);
-      clearPdfPreviewUrl();
-    };
-
-    useEffect(() => {
-      return () => {
-        if (
-          pdfPreviewRevokeRef.current &&
-          pdfPreviewUrlRef.current?.startsWith("blob:")
-        ) {
-          URL.revokeObjectURL(pdfPreviewUrlRef.current);
-        }
-      };
-    }, []);
 
     const handleToggleViewMode = () => {
       if (!editor) return;
@@ -565,35 +620,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         dismissPadPreview();
         return;
       }
-
-      if (!editor) return;
-
-      setPadPreviewOpen(true);
-      setPdfPreviewError(null);
-      setPdfPreviewLoading(true);
-      clearPdfPreviewUrl();
-
-      void (async () => {
-        try {
-          const { url, revokeOnClose } = await openDmPdfPreview({
-            editor,
-            onOpenDmPdfPreview: props.onOpenDmPdfPreview,
-            onSaveDmXml: props.onSaveDmXml,
-            apiBaseUrl: props.apiBaseUrl,
-            dmPdfPreviewPath: props.dmPdfPreviewPath,
-            fetchDmPdfPreview: props.fetchDmPdfPreview,
-          });
-          pdfPreviewRevokeRef.current = revokeOnClose;
-          pdfPreviewUrlRef.current = url;
-          setPdfPreviewUrl(url);
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "PDF 预览加载失败";
-          setPdfPreviewError(message);
-        } finally {
-          setPdfPreviewLoading(false);
-        }
-      })();
+      runOpenPdfPreview();
     };
 
     const inspectStableKey = resolvedTarget

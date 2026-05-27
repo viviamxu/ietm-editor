@@ -1,4 +1,4 @@
-﻿.ietm-editor-surface
+.ietm-editor-surface
   .tiptap
   .s1000d-title-display[data-s1000d-title-level="1"] {
   display: block;
@@ -225,6 +225,50 @@
 .ietm-editor-surface .tiptap .s1000d-multimedia-object-node__icon {
   flex-shrink: 0;
   color: #64748b;
+}
+
+/* 3D 模式：整块展示 cc-3d-scene */
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node--3d {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.ietm-editor-surface .tiptap .s1000d-cc3d-scene {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 240px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node__ident {
+  display: block;
+  margin-top: 4px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* 视频模式 */
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node--video {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node__video {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: #0f172a;
 }
 
 /* 序列化 / 剪贴板等场景下仍可能出现裸 `<graphic>` */

@@ -173,6 +173,16 @@ export interface IETMEditorOptions {
   /** 自定义预览请求；仍会先调用 `onSaveDmXml`（`onOpenDmPdfPreview` 未传时生效） */
   fetchDmPdfPreview?: () => Promise<string | Blob>;
   /**
+   * ICN 信息接口路径，默认 `/czy-ietm-admin/ietm/icn/icnInfo`。
+   * 与 `apiBaseUrl` 拼接后作为「插入多媒体」弹框的数据来源。
+   */
+  icnInfoPath?: string;
+  /**
+   * `@ietm-manual/preview` 静态资源根路径，传给 `setLibPath()`，默认 `"/"`。
+   * 决定 cc-3d-scene 加载 Draco 等依赖资源的基准路径。
+   */
+  previewLibPath?: string;
+  /**
    * 可编辑状态变化时通知宿主（含工具栏锁定/编辑切换与 `instance.setEditable`）。
    */
   onEditableChange?: (editable: boolean) => void;
@@ -245,6 +255,11 @@ export interface IETMEditorInstance {
   insertDmRefs(items: InsertDmRefPayload[]): boolean;
   /** 在光标处插入 `multimedia` / `multimediaObject`（`infoEntityIdent`） */
   insertMultimedia(items: InsertMultimediaPayload[]): boolean;
+  /**
+   * 重新加载 PDF 预览：会重新调用 `onOpenDmPdfPreview`（若配置）并更新预览窗格。
+   * 若预览窗格当前关闭，则会自动打开并加载。
+   */
+  refreshDmPdfPreview(): void;
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -362,6 +377,8 @@ export function createIETMEditor(
       apiBaseUrl: options.apiBaseUrl,
       dmPdfPreviewPath: options.dmPdfPreviewPath,
       fetchDmPdfPreview: options.fetchDmPdfPreview,
+      icnInfoPath: options.icnInfoPath,
+      previewLibPath: options.previewLibPath,
       onEditableChange: options.onEditableChange,
       lockReadonlyButtonTitle: options.lockReadonlyButtonTitle,
       editModeButtonTitle: options.editModeButtonTitle,
@@ -427,6 +444,7 @@ export function createIETMEditor(
       if (disposed || !handleRef.current) return false;
       return handleRef.current.insertMultimedia(items);
     },
+    refreshDmPdfPreview: () => withHandle((h) => h.refreshDmPdfPreview()),
     on: emitter.on,
     off: emitter.off,
     destroy: () => {

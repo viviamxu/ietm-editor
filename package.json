@@ -48,10 +48,11 @@
   },
   "dependencies": {
     "@arco-design/web-react": "^2.66.15",
+    "@ietm-manual/preview": "^0.0.1",
     "@tiptap/core": "^3.22.5",
     "@tiptap/extension-highlight": "3.22.5",
-    "@tiptap/extension-list-item": "3.22.5",
     "@tiptap/extension-image": "^3.22.5",
+    "@tiptap/extension-list-item": "3.22.5",
     "@tiptap/extension-text-align": "3.22.5",
     "@tiptap/extension-text-style": "3.22.5",
     "@tiptap/extension-underline": "3.22.5",
