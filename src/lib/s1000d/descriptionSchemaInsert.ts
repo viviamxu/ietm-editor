@@ -4,6 +4,7 @@ import { TextSelection } from "@tiptap/pm/state";
 
 import { getInnermostLevelledParaDepth } from "../editor/nestingLevelShared";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
+import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
@@ -11,6 +12,7 @@ import { getDmContentKind } from "./dmContentKind";
 import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { resolveMultimediaTypeForXml } from "./multimediaType";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
   const $from = editor.state.selection.$from;
@@ -449,6 +451,15 @@ export function insertImageFromSchema(
     .openInsertPublication(editor, "image");
 }
 
+/** 打开 SDK 内置「引用出版物」弹框（mock），确认后插入 `dmRef`。 */
+export function insertExternalRefFromSchema(
+  editor: Editor,
+  schema?: DescriptionSchema,
+): void {
+  void schema;
+  useExternalRefModalStore.getState().openExternalRef(editor);
+}
+
 /** 可编辑前导正文（对应 schema `warningAndCautionPara` 的 `text*`，导出时剥壳） */
 function buildMinimalWarningAndCautionParaJson(): JSONContent {
   return {
@@ -698,6 +709,8 @@ const ignoredExportAttrs = [
   /** 故障隔离「是否 / 选择」切换缓存，仅编辑器内使用 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
+  /** 外部引用 Popover 展示编码，仅编辑器 */
+  "displayCode",
 ];
 const listNodeTypes = [
   "bulletList",
@@ -830,13 +843,25 @@ function buildColspecXml(cols: number): string {
 }
 
 function serializeMultimediaObjectToXml(attrs: JSONContent["attrs"]): string {
-  if (!attrs) return "<multimediaObject></multimediaObject>";
+  if (!attrs) return '<multimediaObject multimediaType="other" />';
   const iei =
     attrs.infoEntityIdent != null &&
     String(attrs.infoEntityIdent).trim() !== ""
       ? ` infoEntityIdent="${escapeXml(String(attrs.infoEntityIdent))}"`
       : "";
-  return `<multimediaObject${iei}></multimediaObject>`;
+  const multimediaType = resolveMultimediaTypeForXml({
+    multimediaType: attrs.multimediaType as string | null | undefined,
+    dataType: attrs.dataType as string | null | undefined,
+    fileType: attrs.fileType as string | null | undefined,
+  });
+  const hrefRaw =
+    attrs.mediaSrc != null && String(attrs.mediaSrc).trim() !== ""
+      ? String(attrs.mediaSrc).trim()
+      : attrs.sceneSrc != null && String(attrs.sceneSrc).trim() !== ""
+        ? String(attrs.sceneSrc).trim()
+        : "";
+  const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
+  return `<multimediaObject${iei} multimediaType="${escapeXml(multimediaType)}"${xlink} />`;
 }
 
 function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {

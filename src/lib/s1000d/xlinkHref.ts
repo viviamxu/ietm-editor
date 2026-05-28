@@ -14,3 +14,26 @@ export function readXlinkHrefFromElement(el: Element): string {
   if (prefixed?.trim()) return prefixed.trim();
   return "";
 }
+
+/**
+ * 从 `graphic` / 编辑器内 `img[data-s1000d-node=graphic]` 读取预览地址。
+ * 优先 `xlink:href`，其次 `src` / `data-editor-src`。
+ */
+export function readGraphicSrcFromElement(el: Element): string {
+  const xlink = readXlinkHrefFromElement(el);
+  if (xlink) return xlink;
+
+  const fromData = el.getAttribute("data-editor-src");
+  if (fromData?.trim()) return fromData.trim();
+
+  if (el.tagName === "IMG" || el.localName.toLowerCase() === "img") {
+    const s = el.getAttribute("src");
+    if (s?.trim()) return s.trim();
+  }
+
+  const nested = el.querySelector('img[data-s1000d-node="graphic"]');
+  const nestedSrc = nested?.getAttribute("src");
+  if (nestedSrc?.trim()) return nestedSrc.trim();
+
+  return "";
+}

@@ -14,6 +14,7 @@ import {
   exportEditorToDmXmlString,
   save,
   internalRef,
+  insertExternalRefFromSchema,
   clearContent,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
@@ -40,6 +41,7 @@ import {
   Superscript,
   Save,
   Link2,
+  ExternalLink,
   CircleX,
   LockKeyhole,
   LockKeyholeOpen,
@@ -109,6 +111,9 @@ export function FormatToolbar({
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
   const onInsertImageClick = useToolbarConfigStore((s) => s.onInsertImageClick);
   const onInsertFilmClick = useToolbarConfigStore((s) => s.onInsertFilmClick);
+  const onInsertExternalRefClick = useToolbarConfigStore(
+    (s) => s.onInsertExternalRefClick,
+  );
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   const [saveInFlight, setSaveInFlight] = useState(false);
   useEffect(() => {
@@ -206,6 +211,14 @@ export function FormatToolbar({
       return;
     }
     insertFilmFromSchema(editor, schema);
+  };
+
+  const runInsertExternalRef = () => {
+    if (onInsertExternalRefClick) {
+      onInsertExternalRefClick(toolbarCtx);
+      return;
+    }
+    insertExternalRefFromSchema(editor, schema);
   };
 
   return (
@@ -372,7 +385,7 @@ export function FormatToolbar({
             <ListOrdered size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isDescriptionDm && isBuiltinVisible("insertRandomList") ? (
+        {isBuiltinVisible("insertRandomList") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -386,14 +399,14 @@ export function FormatToolbar({
             <List size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isDescriptionDm && isBuiltinVisible("insertTable") ? (
+        {isBuiltinVisible("insertTable") ? (
           <InsertTablePicker
             editor={editor}
             schema={schema}
             disabled={formatBarLocked}
           />
         ) : null}
-        {isDescriptionDm && isBuiltinVisible("insertImage") ? (
+        {isBuiltinVisible("insertImage") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -405,7 +418,7 @@ export function FormatToolbar({
             <Image size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isDescriptionDm && isBuiltinVisible("insertFilm") ? (
+        {isBuiltinVisible("insertFilm") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -593,8 +606,21 @@ export function FormatToolbar({
             disabled={formatBarLocked}
             onClick={() => internalRef(editor)}
             title="内部引用"
+            aria-label="内部引用"
           >
             <Link2 size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertExternalRef") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onClick={runInsertExternalRef}
+            title="插入外部引用"
+            aria-label="插入外部引用"
+          >
+            <ExternalLink size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
         <ToolbarCustomItems placement="reference" ctx={toolbarCtx} />

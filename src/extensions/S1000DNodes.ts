@@ -4,6 +4,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
+import { DmRefNodeView } from "./s1000d/DmRefNodeView";
 import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
 import { GraphicNodeView } from "./s1000d/GraphicNodeView";
@@ -35,7 +36,10 @@ import {
   hasXmlAttr,
   xmlAttrsPresentOnElement,
 } from "../lib/s1000d/sourceXmlAttrKeys";
-import { readXlinkHrefFromElement } from "../lib/s1000d/xlinkHref";
+import {
+  readGraphicSrcFromElement,
+  readXlinkHrefFromElement,
+} from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 
 export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
@@ -738,11 +742,36 @@ export const S1000DDmRef = Node.create({
   addAttributes() {
     return {
       rawXml: { default: "" },
+      displayCode: {
+        default: null as string | null,
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-display-code"),
+        renderHTML: (attrs: { displayCode?: string | null }) => {
+          const v = attrs.displayCode;
+          if (v == null || String(v).trim() === "") return {};
+          return { "data-display-code": String(v).trim() };
+        },
+      },
     };
   },
 
   parseHTML() {
     return [
+      {
+        tag: 'span[data-s1000d-dm-ref="1"]',
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          const encoded = el.getAttribute("data-raw-xml");
+          const rawXml = encoded
+            ? decodeURIComponent(encoded)
+            : String(el.getAttribute("data-dm-ref-raw") ?? "");
+          if (!rawXml.trim()) return false;
+          return {
+            rawXml,
+            displayCode: el.getAttribute("data-display-code"),
+            [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
+          };
+        },
+      },
       {
         tag: "dmref, dmRef", // HTML 会传小写，都拦截住
         getAttrs: (el) => {
@@ -753,6 +782,7 @@ export const S1000DDmRef = Node.create({
             : nodeEl.outerHTML;
           return {
             rawXml,
+            displayCode: nodeEl.getAttribute("data-display-code"),
             [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
           };
         },
@@ -760,15 +790,24 @@ export const S1000DDmRef = Node.create({
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    // 渲染 UI 视图保持不变
-    return [
-      "span",
-      mergeAttributes(HTMLAttributes, {
-        class: "s1000d-dmref-chip",
-        "data-s1000d-dm-ref": "1",
-      }),
-    ];
+  renderHTML({ node, HTMLAttributes }) {
+    const rawXml = String(node.attrs.rawXml ?? "").trim();
+    const extra: Record<string, string> = {
+      class: "s1000d-dmref-chip",
+      "data-s1000d-dm-ref": "1",
+    };
+    if (rawXml) {
+      extra["data-raw-xml"] = encodeURIComponent(rawXml);
+    }
+    const displayCode = String(node.attrs.displayCode ?? "").trim();
+    if (displayCode) {
+      extra["data-display-code"] = displayCode;
+    }
+    return ["span", mergeAttributes(HTMLAttributes, extra)];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(DmRefNodeView);
   },
 });
 /**
@@ -853,7 +892,7 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
   if (hasXmlAttr(el, "infoEntityIdent") || hasXmlAttr(el, "infoentityident")) {
     keys.push("infoEntityIdent");
   }
-  if (readXlinkHrefFromElement(el)) keys.push("src");
+  if (readGraphicSrcFromElement(el)) keys.push("src");
   return keys;
 }
 
@@ -892,18 +931,11 @@ export const S1000DGraphic = Node.create({
           return v ? { "data-info-entity-ident": String(v) } : {};
         },
       },
-      /** 仅自源 XML `xlink:href`（或编辑器内 `<img>` 的 `src`）提取；无 `xlink:href` 则为 `""` */
+      /** 预览地址：S1000D `xlink:href` 或编辑器 `img@src` / `data-editor-src`。 */
       src: {
         default: "",
-        parseHTML: (el) => {
-          if (!(el instanceof Element)) return "";
-          if (el.tagName === "IMG" || el.localName.toLowerCase() === "img") {
-            const s = el.getAttribute("src");
-            return s?.trim() ? s.trim() : "";
-          }
-          const fromXlink = readXlinkHrefFromElement(el);
-          return fromXlink ? fromXlink : "";
-        },
+        parseHTML: (el) =>
+          el instanceof Element ? readGraphicSrcFromElement(el) : "",
         renderHTML: (attrs) => {
           const s = (attrs as { src?: string | null }).src;
           const t = typeof s === "string" ? s.trim() : "";
@@ -919,13 +951,13 @@ export const S1000DGraphic = Node.create({
         tag: "graphic",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          const xlinkHref = readXlinkHrefFromElement(el);
+          const src = readGraphicSrcFromElement(el);
           return {
             id: el.getAttribute("id"),
             infoEntityIdent:
               el.getAttribute("infoEntityIdent") ??
               el.getAttribute("infoentityident"),
-            src: xlinkHref ? xlinkHref : "",
+            src,
             [SOURCE_XML_ATTR_KEYS]: readGraphicSourceXmlAttrKeys(el),
           };
         },
@@ -935,16 +967,18 @@ export const S1000DGraphic = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
-          const src = el.getAttribute("src");
+          const src = readGraphicSrcFromElement(el);
           return {
             id: el.getAttribute("data-graphic-id") ?? el.getAttribute("id"),
             infoEntityIdent: el.getAttribute("data-info-entity-ident"),
-            src: src?.trim() ? src.trim() : "",
+            src,
             [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
               "id",
               "data-graphic-id",
               "data-info-entity-ident",
               "src",
+              "xlink:href",
+              "data-editor-src",
             ]),
           };
         },
@@ -982,6 +1016,38 @@ export const S1000DGraphic = Node.create({
   },
 });
 
+/** 自源 XML `multimediaObject` 解析编辑器媒体 URL（`xlink:href` → mediaSrc / sceneSrc）。 */
+function readMultimediaObjectAttrsFromElement(el: Element) {
+  const xlinkHref = readXlinkHrefFromElement(el);
+  const multimediaType =
+    el.getAttribute("multimediaType") ??
+    el.getAttribute("multimediatype") ??
+    "other";
+  const dataType = el.getAttribute("data-icn-type");
+  const is3d = multimediaType === "3D" || dataType === "cc3d";
+  const legacyMedia = el.getAttribute("data-media-src");
+  const legacyScene = el.getAttribute("data-scene-src");
+  return {
+    infoEntityIdent:
+      el.getAttribute("infoEntityIdent") ??
+      el.getAttribute("infoentityident"),
+    multimediaType,
+    dataType,
+    sceneSrc: legacyScene ?? (is3d && xlinkHref ? xlinkHref : null),
+    previewImgSrc: el.getAttribute("data-preview-img-src"),
+    fileType: el.getAttribute("data-file-type"),
+    mediaSrc:
+      legacyMedia ?? (!is3d && xlinkHref ? xlinkHref : null),
+    sourceXmlAttrKeys: xmlAttrsPresentOnElement(el, [
+      "infoEntityIdent",
+      "infoentityident",
+      "multimediaType",
+      "multimediatype",
+      "xlink:href",
+    ]),
+  };
+}
+
 /**
  * S1000D `multimediaObject`：`multimedia` 下的媒体实体引用（无文本子节点）。
  */
@@ -1006,6 +1072,77 @@ export const S1000DMultimediaObject = Node.create({
           return v ? { infoEntityIdent: String(v) } : {};
         },
       },
+      /** S1000D 必填：`video` | `audio` | `3D` | `computerGraphic` | `other` 等。 */
+      multimediaType: {
+        default: "other",
+        parseHTML: (el) =>
+          el instanceof Element
+            ? (el.getAttribute("multimediaType") ??
+              el.getAttribute("multimediatype"))
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { multimediaType?: string | null }).multimediaType;
+          return v ? { multimediaType: String(v) } : {};
+        },
+      },
+      /** ICN 业务类型："cc3d" 三维 | "math" 公式 | null 其它。仅存编辑器内存，不写入 S1000D XML。 */
+      dataType: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("data-icn-type") : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { dataType?: string | null }).dataType;
+          return v ? { "data-icn-type": v } : {};
+        },
+      },
+      /** cc3d 场景 zip URL（cc-3d-scene src）。仅存编辑器内存，不写入 S1000D XML。 */
+      sceneSrc: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("data-scene-src") : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { sceneSrc?: string | null }).sceneSrc;
+          return v ? { "data-scene-src": v } : {};
+        },
+      },
+      /** 2D 预览图 URL（视频封面 / cc-3d-scene img-src）。仅存编辑器内存，不写入 S1000D XML。 */
+      previewImgSrc: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("data-preview-img-src") : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { previewImgSrc?: string | null }).previewImgSrc;
+          return v ? { "data-preview-img-src": v } : {};
+        },
+      },
+      /** 文件后缀（如 mp4）。仅存编辑器内存，不写入 S1000D XML。 */
+      fileType: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("data-file-type") : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { fileType?: string | null }).fileType;
+          return v ? { "data-file-type": v } : {};
+        },
+      },
+      /** 主媒体 URL；保存为 S1000D `xlink:href`，加载时读回。 */
+      mediaSrc: {
+        default: null,
+        parseHTML: (el) => {
+          if (!(el instanceof Element)) return null;
+          const legacy = el.getAttribute("data-media-src");
+          if (legacy?.trim()) return legacy.trim();
+          const mt =
+            el.getAttribute("multimediaType") ??
+            el.getAttribute("multimediatype") ??
+            "";
+          const dataType = el.getAttribute("data-icn-type");
+          if (mt === "3D" || dataType === "cc3d") return null;
+          const fromXlink = readXlinkHrefFromElement(el);
+          return fromXlink || null;
+        },
+        renderHTML: () => ({}),
+      },
     };
   },
 
@@ -1015,14 +1152,11 @@ export const S1000DMultimediaObject = Node.create({
         tag: "multimediaObject",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
+          const { sourceXmlAttrKeys, ...attrs } =
+            readMultimediaObjectAttrsFromElement(el);
           return {
-            infoEntityIdent:
-              el.getAttribute("infoEntityIdent") ??
-              el.getAttribute("infoentityident"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
-              "infoEntityIdent",
-              "infoentityident",
-            ]),
+            ...attrs,
+            [SOURCE_XML_ATTR_KEYS]: sourceXmlAttrKeys,
           };
         },
       },
@@ -1030,14 +1164,11 @@ export const S1000DMultimediaObject = Node.create({
         tag: "multimediaobject",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
+          const { sourceXmlAttrKeys, ...attrs } =
+            readMultimediaObjectAttrsFromElement(el);
           return {
-            infoEntityIdent:
-              el.getAttribute("infoEntityIdent") ??
-              el.getAttribute("infoentityident"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
-              "infoEntityIdent",
-              "infoentityident",
-            ]),
+            ...attrs,
+            [SOURCE_XML_ATTR_KEYS]: sourceXmlAttrKeys,
           };
         },
       },
@@ -1048,9 +1179,15 @@ export const S1000DMultimediaObject = Node.create({
     const ident = node.attrs.infoEntityIdent
       ? String(node.attrs.infoEntityIdent)
       : "";
+    const multimediaType = node.attrs.multimediaType
+      ? String(node.attrs.multimediaType)
+      : "other";
     return [
       "multimediaObject",
-      mergeAttributes(HTMLAttributes, ident ? { infoEntityIdent: ident } : {}),
+      mergeAttributes(HTMLAttributes, {
+        ...(ident ? { infoEntityIdent: ident } : {}),
+        multimediaType,
+      }),
     ];
   },
 

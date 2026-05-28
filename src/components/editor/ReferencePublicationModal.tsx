@@ -13,7 +13,9 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
+import { DEMO_MULTIMEDIA_MP4 } from "../../lib/ietm/multimediaIcnHydrate";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
+import type { InsertPublicationMode } from "../../store/insertPublicationModalStore";
 
 type ArcoTreeDataNode = NonNullable<TreeProps["treeData"]>[number];
 
@@ -23,6 +25,7 @@ type MenuItem = {
   children?: MenuItem[];
 };
 
+/** 弹框列表 mock 行（插图与多媒体共用 UI） */
 type PublicationRow = {
   id: string;
   menuId: string;
@@ -30,7 +33,16 @@ type PublicationRow = {
   code: string;
   version: string;
   security: string;
+  /** 弹框预览缩略图 */
   preview: string;
+  /** 业务类型（后端 dataType）；mock 视频为 null */
+  dataType?: string | null;
+  /** 文件后缀，如 mp4 */
+  fileType?: string | null;
+  /** 主文件 URL（视频 mp4 等） */
+  filePath?: string;
+  /** 封面/缩略图 */
+  thPath?: string;
 };
 
 const MENU_TREE: MenuItem[] = [
@@ -97,14 +109,20 @@ function makeMockRows(): PublicationRow[] {
   for (const menuId of LEAF_IDS) {
     for (let i = 1; i <= 24; i++) {
       n += 1;
+      const poster = `https://picsum.photos/seed/ietm${n}/300/200`;
+      const isVideo = n % 3 === 0;
       rows.push({
         id: `${menuId}-${i}`,
         menuId,
-        title: `插图标题 ${menuId}-${i}`,
+        title: isVideo ? `演示视频 ${menuId}-${i}` : `插图标题 ${menuId}-${i}`,
         code: `ICN-XXX-${String(n).padStart(6, "0")}-${String((n % 99999) + 10000).slice(0, 5)}`,
         version: String(1 + (n % 3)).padStart(3, "0"),
         security: String(1 + (n % 2)).padStart(2, "0"),
-        preview: `https://picsum.photos/seed/ietm${n}/300/200`,
+        preview: poster,
+        dataType: null,
+        fileType: isVideo ? "mp4" : null,
+        filePath: isVideo ? DEMO_MULTIMEDIA_MP4 : undefined,
+        thPath: poster,
       });
     }
   }
@@ -113,13 +131,16 @@ function makeMockRows(): PublicationRow[] {
 
 const ALL_ROWS = makeMockRows();
 
-function ReferencePublicationDialog() {
+// ─── 统一图片 / 多媒体列表对话框 ─────────────────────────────────────────────
+
+function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
+  const { mode } = props;
+  const isMultimedia = mode === "multimedia";
+
   const editor = useInsertPublicationModalStore((s) => s.editor);
-  const mode = useInsertPublicationModalStore((s) => s.mode);
   const closeInsertPublication = useInsertPublicationModalStore(
     (s) => s.closeInsertPublication,
   );
-  const isMultimedia = mode === "multimedia";
 
   const [search, setSearch] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(() => LEAF_IDS[0] ?? "");
@@ -131,7 +152,6 @@ function ReferencePublicationDialog() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const tableWrapRef = useRef<HTMLDivElement>(null);
-  /** 表体滚动高度：容器高度减去表头行约高，供 Arco Table `scroll.y` 固定表头 */
   const [tableBodyScrollY, setTableBodyScrollY] = useState(400);
 
   useLayoutEffect(() => {
@@ -140,8 +160,7 @@ function ReferencePublicationDialog() {
     const measure = () => {
       const h = el.clientHeight;
       if (h <= 0) return;
-      const headerApprox = 44;
-      setTableBodyScrollY(Math.max(120, Math.floor(h - headerApprox)));
+      setTableBodyScrollY(Math.max(120, Math.floor(h - 44)));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -174,6 +193,25 @@ function ReferencePublicationDialog() {
       { title: "编码", dataIndex: "code", width: 200 },
       { title: "版本", dataIndex: "version", width: 80 },
       { title: "密级", dataIndex: "security", width: 80 },
+      ...(isMultimedia
+        ? [
+            {
+              title: "类型",
+              dataIndex: "fileType",
+              width: 72,
+              render: (_: unknown, row: PublicationRow) => {
+                if (row.fileType === "mp4") {
+                  return (
+                    <span style={{ color: "#2563eb", fontWeight: 500 }}>
+                      视频
+                    </span>
+                  );
+                }
+                return <span style={{ color: "#64748b" }}>其它</span>;
+              },
+            } satisfies TableColumnProps<PublicationRow>,
+          ]
+        : []),
       {
         title: "预览",
         dataIndex: "preview",
@@ -181,7 +219,7 @@ function ReferencePublicationDialog() {
         render: (_: unknown, row: PublicationRow) => (
           <img
             className="ietm-ref-pub-arco-preview"
-            src={row.preview}
+            src={row.thPath ?? row.preview}
             alt=""
             width={48}
             height={48}
@@ -189,7 +227,7 @@ function ReferencePublicationDialog() {
         ),
       },
     ],
-    [],
+    [isMultimedia],
   );
 
   const onTreeSelect = useCallback((keys: string[]) => {
@@ -212,7 +250,15 @@ function ReferencePublicationDialog() {
       if (isMultimedia) {
         insertMultimediaIntoEditor(
           editor,
-          rows.map((row) => ({ infoEntityIdent: row.code })),
+          rows.map((row) => ({
+            infoEntityIdent: row.code,
+            title: row.title,
+            dataType: row.dataType ?? null,
+            fileType: row.fileType ?? null,
+            mediaSrc:
+              row.fileType === "mp4" && row.filePath ? row.filePath : undefined,
+            previewImgSrc: row.thPath ?? row.preview,
+          })),
         );
       } else {
         insertImagesIntoEditor(
@@ -329,8 +375,9 @@ function ReferencePublicationDialog() {
 export function ReferencePublicationModal() {
   const isOpen = useInsertPublicationModalStore((s) => s.isOpen);
   const openNonce = useInsertPublicationModalStore((s) => s.openNonce);
+  const mode = useInsertPublicationModalStore((s) => s.mode);
 
   if (!isOpen) return null;
 
-  return <ReferencePublicationDialog key={openNonce} />;
+  return <ReferencePublicationDialog key={openNonce} mode={mode} />;
 }

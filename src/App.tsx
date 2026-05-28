@@ -6,9 +6,9 @@ import {
   type DescriptionSchema,
   type IETMEditorInstance,
 } from "./index";
-// import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
-import faultDmXml from "./data/故障类.XML?raw";
-import faultIsolationSchema from "./data/故障隔离.json";
+import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
+// import faultDmXml from "./data/故障类.XML?raw";
+import faultIsolationSchema from "./data/描述类Schema.json";
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 
 function App() {
@@ -21,10 +21,10 @@ function App() {
 
     const instance = createIETMEditor({
       element: el,
-      // dmXml: bikeDmSampleXml,
-      // dmDocumentName: "bikeDmSample.xml",
-      dmXml: faultDmXml,
-      dmDocumentName: "故障类.XML",
+      dmXml: bikeDmSampleXml,
+      dmDocumentName: "bikeDmSample.xml",
+      // dmXml: faultDmXml,
+      // dmDocumentName: "故障类.XML",
       descriptionSchema: faultIsolationSchema as DescriptionSchema,
     });
     instanceRef.current = instance;

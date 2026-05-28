@@ -21,10 +21,15 @@ import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
-import type { InsertImagePayload } from "../../types/toolbar";
+import type {
+  InsertDmRefPayload,
+  InsertImagePayload,
+} from "../../types/toolbar";
 import { ConfigProvider } from "@arco-design/web-react";
+import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
+import { useIcnInfoStore } from "../../store/icnInfoStore";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
@@ -41,7 +46,9 @@ export interface IETMEditorRootHandle {
   addTableColumnAfter: () => boolean;
   setFooterStatus: (status: IETMEditorFooterStatus | null) => void;
   insertImages: (images: InsertImagePayload[]) => boolean;
+  insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
+  refreshDmPdfPreview: () => void;
 }
 
 interface IETMEditorRootProps {
@@ -60,6 +67,8 @@ interface IETMEditorRootProps {
   apiBaseUrl?: string;
   dmPdfPreviewPath?: string;
   fetchDmPdfPreview?: () => Promise<string | Blob>;
+  icnInfoPath?: string;
+  previewLibPath?: string;
 }
 
 export const IETMEditorRoot = forwardRef<
@@ -67,9 +76,8 @@ export const IETMEditorRoot = forwardRef<
   IETMEditorRootProps
 >(function IETMEditorRoot(props, ref) {
   const [editable, setEditable] = useState(props.initialEditable);
-  const [footerStatusOverride, setFooterStatusOverride] = useState<
-    IETMEditorFooterStatus | null
-  >(() => props.footerStatus ?? null);
+  const [footerStatusOverride, setFooterStatusOverride] =
+    useState<IETMEditorFooterStatus | null>(() => props.footerStatus ?? null);
   const editorRef = useRef<IETMEditorRefValue>(null);
   const onEditableChangeRef = useRef(props.onEditableChange);
   onEditableChangeRef.current = props.onEditableChange;
@@ -86,6 +94,25 @@ export const IETMEditorRoot = forwardRef<
       resetDescriptionSchema();
     };
   }, [props.initialDescriptionSchema]);
+
+  // 同步 ICN 接口配置到 store
+  useEffect(() => {
+    useIcnInfoStore.getState().setIcnInfoConfig({
+      apiBaseUrl: props.apiBaseUrl ?? "",
+      icnInfoPath: props.icnInfoPath,
+      previewLibPath: props.previewLibPath,
+    });
+  }, [props.apiBaseUrl, props.icnInfoPath, props.previewLibPath]);
+
+  // 初始化 @ietm-manual/preview（注册 cc-3d-scene Web Component）
+  useEffect(() => {
+    const libPath = props.previewLibPath ?? "/";
+    void import("@ietm-manual/preview").then((mod) => {
+      if (typeof mod.setLibPath === "function") {
+        mod.setLibPath(libPath);
+      }
+    });
+  }, [props.previewLibPath]);
 
   useImperativeHandle(
     ref,
@@ -111,8 +138,10 @@ export const IETMEditorRoot = forwardRef<
       setFooterStatus: (status) => setFooterStatusOverride(status),
       insertImages: (images) =>
         editorRef.current?.insertImages(images) ?? false,
+      insertDmRefs: (items) => editorRef.current?.insertDmRefs(items) ?? false,
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,
+      refreshDmPdfPreview: () => editorRef.current?.refreshDmPdfPreview(),
     }),
     [applyEditable],
   );
@@ -148,6 +177,7 @@ export const IETMEditorRoot = forwardRef<
           fetchDmPdfPreview={props.fetchDmPdfPreview}
         />
         <ReferencePublicationModal />
+        <ExternalRefPublicationModal />
         <InternalRefModal />
       </ConfigProvider>
     </div>

@@ -52,15 +52,23 @@
     "Courier New", monospace;
   font-size: 12px;
   line-height: 1.55;
-  color: #111827;
   background: #f9fafb;
   box-sizing: border-box;
-  white-space: pre;
-  tab-size: 2;
 }
 
-.ietm-source-xml-view code {
-  font: inherit;
+.ietm-source-xml-view pre {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.ietm-source-xml-view .ietm-source-xml-view__code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre;
+  tab-size: 2;
 }
 
 /* 仅预览：左编辑 70% + 中预览 30% */

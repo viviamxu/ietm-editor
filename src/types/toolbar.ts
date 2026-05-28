@@ -28,7 +28,8 @@ export type BuiltinToolbarItemId =
   | "insertTable"
   | "insertImage"
   | "insertFilm"
-  | "internalRef";
+  | "internalRef"
+  | "insertExternalRef";
 
 /**
  * 自定义按钮插入位置。
@@ -75,6 +76,35 @@ export type ToolbarConfig = {
    * 未传时与插入图片共用内置出版物弹框。
    */
   onInsertFilmClick?: (ctx: ToolbarItemContext) => void;
+  /**
+   * 宿主接管「插入外部引用」：打开 DM 选择弹框，确认后调用 `insertDmRefs` 写入编辑器。
+   * 未传时打开 SDK 内置「引用出版物」弹框（mock 数据）。
+   */
+  onInsertExternalRefClick?: (ctx: ToolbarItemContext) => void;
+  /**
+   * 宿主接管外部引用「打开出版物」：在新窗口/新 Tab 加载对应 DM XML。
+   * 未传时 SDK 仅演示提示。
+   */
+  onOpenExternalRefTarget?: (ctx: OpenExternalRefContext) => void | Promise<void>;
+};
+
+/** 点击外部引用箭头时传给宿主（用于打开另一份 DM）。 */
+export type OpenExternalRefContext = {
+  editor: Editor;
+  rawXml: string;
+  title: string;
+  code: string;
+  dmCode: Record<string, string>;
+  issueInfo: { issueNumber: string; inWork: string };
+  language: { languageIsoCode: string; countryIsoCode: string };
+};
+
+/** 宿主选中的 S1000D 外部引用（`dmRef`）片段。 */
+export type InsertDmRefPayload = {
+  /** 完整 `<dmRef>…</dmRef>` XML 字符串 */
+  rawXml: string;
+  /** 表格「编码」列展示文案，仅编辑器内用于 Popover，不写入 S1000D XML */
+  displayCode?: string;
 };
 
 export type InsertImagePayload = {
