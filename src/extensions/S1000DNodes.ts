@@ -36,7 +36,10 @@ import {
   hasXmlAttr,
   xmlAttrsPresentOnElement,
 } from "../lib/s1000d/sourceXmlAttrKeys";
-import { readXlinkHrefFromElement } from "../lib/s1000d/xlinkHref";
+import {
+  readGraphicSrcFromElement,
+  readXlinkHrefFromElement,
+} from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 
 export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
@@ -889,7 +892,7 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
   if (hasXmlAttr(el, "infoEntityIdent") || hasXmlAttr(el, "infoentityident")) {
     keys.push("infoEntityIdent");
   }
-  if (readXlinkHrefFromElement(el)) keys.push("src");
+  if (readGraphicSrcFromElement(el)) keys.push("src");
   return keys;
 }
 
@@ -928,18 +931,11 @@ export const S1000DGraphic = Node.create({
           return v ? { "data-info-entity-ident": String(v) } : {};
         },
       },
-      /** 仅自源 XML `xlink:href`（或编辑器内 `<img>` 的 `src`）提取；无 `xlink:href` 则为 `""` */
+      /** 预览地址：S1000D `xlink:href` 或编辑器 `img@src` / `data-editor-src`。 */
       src: {
         default: "",
-        parseHTML: (el) => {
-          if (!(el instanceof Element)) return "";
-          if (el.tagName === "IMG" || el.localName.toLowerCase() === "img") {
-            const s = el.getAttribute("src");
-            return s?.trim() ? s.trim() : "";
-          }
-          const fromXlink = readXlinkHrefFromElement(el);
-          return fromXlink ? fromXlink : "";
-        },
+        parseHTML: (el) =>
+          el instanceof Element ? readGraphicSrcFromElement(el) : "",
         renderHTML: (attrs) => {
           const s = (attrs as { src?: string | null }).src;
           const t = typeof s === "string" ? s.trim() : "";
@@ -955,13 +951,13 @@ export const S1000DGraphic = Node.create({
         tag: "graphic",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          const xlinkHref = readXlinkHrefFromElement(el);
+          const src = readGraphicSrcFromElement(el);
           return {
             id: el.getAttribute("id"),
             infoEntityIdent:
               el.getAttribute("infoEntityIdent") ??
               el.getAttribute("infoentityident"),
-            src: xlinkHref ? xlinkHref : "",
+            src,
             [SOURCE_XML_ATTR_KEYS]: readGraphicSourceXmlAttrKeys(el),
           };
         },
@@ -971,16 +967,18 @@ export const S1000DGraphic = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
-          const src = el.getAttribute("src");
+          const src = readGraphicSrcFromElement(el);
           return {
             id: el.getAttribute("data-graphic-id") ?? el.getAttribute("id"),
             infoEntityIdent: el.getAttribute("data-info-entity-ident"),
-            src: src?.trim() ? src.trim() : "",
+            src,
             [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
               "id",
               "data-graphic-id",
               "data-info-entity-ident",
               "src",
+              "xlink:href",
+              "data-editor-src",
             ]),
           };
         },

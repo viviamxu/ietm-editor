@@ -27,7 +27,6 @@ function isVideoMedia(fileType: string, mediaSrc: string): boolean {
 /** S1000D `multimediaObject`：按 dataType / 媒体类型渲染 3D、视频或占位。 */
 export function MultimediaObjectNodeView(props: NodeViewProps) {
   const { node } = props;
-  const ident = String(node.attrs.infoEntityIdent ?? "").trim();
   const dataType = String(node.attrs.dataType ?? "").trim();
   const fileType = String(node.attrs.fileType ?? "").trim();
   const sceneSrc = String(node.attrs.sceneSrc ?? "").trim();
@@ -48,7 +47,6 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
           img-src={previewImgSrc || undefined}
           class="s1000d-cc3d-scene"
         />
-        <span className="s1000d-multimedia-object-node__ident">{ident}</span>
       </NodeViewWrapper>
     );
   }
@@ -69,7 +67,6 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
           preload="metadata"
           playsInline
         />
-        <span className="s1000d-multimedia-object-node__ident">{ident}</span>
       </NodeViewWrapper>
     );
   }
@@ -81,10 +78,12 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
       data-s1000d-node="multimediaObject"
       contentEditable={false}
     >
-      <Film size={18} aria-hidden className="s1000d-multimedia-object-node__icon" />
-      <span className="s1000d-multimedia-object-node__label">
-        {ident || "（未设置 infoEntityIdent）"}
-      </span>
+      <Film
+        size={18}
+        aria-hidden
+        className="s1000d-multimedia-object-node__icon"
+      />
+      <span className="s1000d-multimedia-object-node__label">多媒体</span>
     </NodeViewWrapper>
   );
 }

@@ -209,6 +209,30 @@
   gap: 8px;
 }
 
+/* multimedia 标题：与图片标题一致，居中显示 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-multimedia-node
+  .s1000d-title-display[data-s1000d-title-level="0"],
+.ietm-editor-surface
+  .tiptap
+  .s1000d-multimedia-node
+  .s1000d-multimedia__inner
+  .s1000d-title-display,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-multimedia-node
+  .s1000d-multimedia__inner
+  s1000d-block-title.s1000d-title-display {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #718199;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
 .ietm-editor-surface .tiptap .s1000d-multimedia-object-node {
   display: inline-flex;
   align-items: center;
@@ -243,14 +267,6 @@
   min-height: 240px;
   border-radius: 6px;
   overflow: hidden;
-}
-
-.ietm-editor-surface .tiptap .s1000d-multimedia-object-node__ident {
-  display: block;
-  margin-top: 4px;
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 11px;
-  color: #94a3b8;
 }
 
 /* 视频模式 */

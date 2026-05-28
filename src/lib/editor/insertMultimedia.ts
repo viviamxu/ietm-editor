@@ -1,5 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import type { JSONContent } from "@tiptap/core";
+import { NodeSelection } from "@tiptap/pm/state";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
 
 export type InsertMultimediaPayload = {
@@ -72,5 +73,12 @@ export function insertMultimediaIntoEditor(
     nodes.push({ type: "multimedia", content: multimediaContent });
   }
   if (nodes.length === 0) return false;
+
+  const { selection } = editor.state;
+  if (selection instanceof NodeSelection) {
+    const insertPos = selection.from + selection.node.nodeSize;
+    return editor.chain().focus().insertContentAt(insertPos, nodes).run();
+  }
+
   return editor.chain().focus().insertContent(nodes).run();
 }

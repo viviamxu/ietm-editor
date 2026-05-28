@@ -21,7 +21,10 @@ import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
-import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
+import type {
+  InsertDmRefPayload,
+  InsertImagePayload,
+} from "../../types/toolbar";
 import { ConfigProvider } from "@arco-design/web-react";
 import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
@@ -73,9 +76,8 @@ export const IETMEditorRoot = forwardRef<
   IETMEditorRootProps
 >(function IETMEditorRoot(props, ref) {
   const [editable, setEditable] = useState(props.initialEditable);
-  const [footerStatusOverride, setFooterStatusOverride] = useState<
-    IETMEditorFooterStatus | null
-  >(() => props.footerStatus ?? null);
+  const [footerStatusOverride, setFooterStatusOverride] =
+    useState<IETMEditorFooterStatus | null>(() => props.footerStatus ?? null);
   const editorRef = useRef<IETMEditorRefValue>(null);
   const onEditableChangeRef = useRef(props.onEditableChange);
   onEditableChangeRef.current = props.onEditableChange;
@@ -136,8 +138,7 @@ export const IETMEditorRoot = forwardRef<
       setFooterStatus: (status) => setFooterStatusOverride(status),
       insertImages: (images) =>
         editorRef.current?.insertImages(images) ?? false,
-      insertDmRefs: (items) =>
-        editorRef.current?.insertDmRefs(items) ?? false,
+      insertDmRefs: (items) => editorRef.current?.insertDmRefs(items) ?? false,
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,
       refreshDmPdfPreview: () => editorRef.current?.refreshDmPdfPreview(),

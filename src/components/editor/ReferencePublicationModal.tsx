@@ -201,7 +201,11 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
               width: 72,
               render: (_: unknown, row: PublicationRow) => {
                 if (row.fileType === "mp4") {
-                  return <span style={{ color: "#2563eb", fontWeight: 500 }}>视频</span>;
+                  return (
+                    <span style={{ color: "#2563eb", fontWeight: 500 }}>
+                      视频
+                    </span>
+                  );
                 }
                 return <span style={{ color: "#64748b" }}>其它</span>;
               },

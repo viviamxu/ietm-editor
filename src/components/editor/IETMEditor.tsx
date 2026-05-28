@@ -88,6 +88,7 @@ import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import { Code2, Eye } from "lucide-react";
 import { DmPdfPreviewPane } from "./DmPdfPreviewPane";
 import { PropertySettingsEmptyPane } from "./PropertySettingsEmptyPane";
+import { SourceXmlView } from "./SourceXmlView";
 import { openDmPdfPreview } from "../../lib/ietm/dmPdfPreview";
 
 type EditorViewMode = "editor" | "source";
@@ -942,11 +943,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             >
               <EditorContent editor={editor} className="ietm-editor-surface" />
             </div>
-            {viewMode === "source" ? (
-              <pre className="ietm-source-xml-view" aria-readonly="true">
-                <code>{sourceXml}</code>
-              </pre>
-            ) : null}
+            {viewMode === "source" ? <SourceXmlView xml={sourceXml} /> : null}
           </div>
 
           {showPreviewPane ? (

@@ -23,6 +23,7 @@ export function resolveMultimediaTypeForXml(attrs: {
   const fileType = attrs.fileType?.trim().toLowerCase();
   if (fileType === "mp4" || fileType === "webm") return "video";
   if (fileType === "mp3" || fileType === "wav") return "audio";
+  if (fileType === "zip") return "3D";
 
   return "other";
 }
