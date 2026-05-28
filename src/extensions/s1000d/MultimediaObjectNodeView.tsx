@@ -1,6 +1,7 @@
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { Film } from "lucide-react";
+import Cc3dSceneElement from "../../components/Cc3dSceneElement";
 
 // 让 TypeScript 认识 cc-3d-scene 自定义元素
 declare global {
@@ -41,11 +42,10 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
         data-s1000d-node="multimediaObject"
         contentEditable={false}
       >
-        {/* @ts-expect-error cc-3d-scene 是自定义元素 */}
-        <cc-3d-scene
+        <Cc3dSceneElement
           src={sceneSrc}
-          img-src={previewImgSrc || undefined}
-          class="s1000d-cc3d-scene"
+          imgSrc={previewImgSrc || undefined}
+          className="s1000d-cc3d-scene"
         />
       </NodeViewWrapper>
     );
