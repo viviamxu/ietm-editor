@@ -583,7 +583,6 @@
     [data-emphasis-type="em03"]
   ):not([data-emphasis-type="em04"]):not([data-emphasis-type="em05"]) {
   font-weight: 700;
-  color: #0f172a;
 }
 
 .ietm-editor-surface
