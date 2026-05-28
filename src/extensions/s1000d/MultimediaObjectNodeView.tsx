@@ -33,8 +33,12 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
   const sceneSrc = String(node.attrs.sceneSrc ?? "").trim();
   const previewImgSrc = String(node.attrs.previewImgSrc ?? "").trim();
   const mediaSrc = String(node.attrs.mediaSrc ?? "").trim();
-
-  if (dataType === "cc3d" && sceneSrc) {
+  const is3d =
+    !!sceneSrc &&
+    (dataType === "cc3d" ||
+      node.attrs.multimediaType === "3D" ||
+      fileType === "zip");
+  if (is3d) {
     return (
       <NodeViewWrapper
         as="div"

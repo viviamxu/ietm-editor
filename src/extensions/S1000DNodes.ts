@@ -1023,8 +1023,12 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
     el.getAttribute("multimediaType") ??
     el.getAttribute("multimediatype") ??
     "other";
-  const dataType = el.getAttribute("data-icn-type");
-  const is3d = multimediaType === "3D" || dataType === "cc3d";
+  const dataIcnType = el.getAttribute("data-icn-type");
+  const isZipHref = /\.(zip)(?:[?#].*)?$/i.test(
+    String(xlinkHref ?? "").trim(),
+  );
+  const is3dByXml = multimediaType === "3D" || isZipHref;
+  const dataType = dataIcnType ?? (is3dByXml ? "cc3d" : null);
   const legacyMedia = el.getAttribute("data-media-src");
   const legacyScene = el.getAttribute("data-scene-src");
   return {
@@ -1033,11 +1037,11 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
       el.getAttribute("infoentityident"),
     multimediaType,
     dataType,
-    sceneSrc: legacyScene ?? (is3d && xlinkHref ? xlinkHref : null),
+    sceneSrc: legacyScene ?? (is3dByXml && xlinkHref ? xlinkHref : null),
     previewImgSrc: el.getAttribute("data-preview-img-src"),
     fileType: el.getAttribute("data-file-type"),
     mediaSrc:
-      legacyMedia ?? (!is3d && xlinkHref ? xlinkHref : null),
+      legacyMedia ?? (!is3dByXml && xlinkHref ? xlinkHref : null),
     sourceXmlAttrKeys: xmlAttrsPresentOnElement(el, [
       "infoEntityIdent",
       "infoentityident",
