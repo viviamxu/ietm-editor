@@ -33,7 +33,7 @@
 }
 
 .ife-root {
-  height: 100vh;
+  height: 100%;
   width: 100%;
   background: #f5f6f8;
   color: #1f2937;
@@ -94,6 +94,37 @@
 
 .ife-save-btn:hover {
   background: #1d4ed8;
+}
+
+.ife-overlay-host {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #f5f6f8;
+}
+
+.ife-topbar-actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ife-cancel-btn {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ife-cancel-btn:hover {
+  background: #f9fafb;
 }
 
 .ife-action-btn {
@@ -227,6 +258,10 @@
 
 .ife-node-title-input:focus {
   border-color: #60a5fa;
+}
+
+.ife-node-title-input::placeholder {
+  color: #9ca3af;
 }
 
 .ife-node-header-icon {

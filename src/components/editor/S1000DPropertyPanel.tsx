@@ -19,6 +19,9 @@ const HIDDEN_ATTR_KEYS = new Set([
   /** 工具栏 TextAlign 使用，不落 S1000D XML、不在属性面板展示 */
   "textAlign",
   SOURCE_XML_ATTR_KEYS,
+  /** 故障隔离：编辑器内分支缓存，不参与 S1000D 导出 */
+  "cachedYesNoAnswerJson",
+  "cachedListOfChoicesJson",
 ]);
 
 const ATTR_ORDER: Partial<Record<string, string[]>> = {
@@ -49,11 +52,30 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   caution: [],
   note: [],
   dmRef: ["rawXml"],
+  isolationStep: [],
+  isolationProcedureEnd: [],
+  choice: ["nextActionRefId"],
+  fault: ["faultCode"],
+  yesAnswer: ["nextActionRefId"],
+  noAnswer: ["nextActionRefId"],
 };
 
 /** 属性面板展示名（schema 字段名 → 源 XML 语义） */
 const ATTR_LABEL: Partial<Record<string, Partial<Record<string, string>>>> = {
   graphic: { src: "xlink:href" },
+  choice: { nextActionRefId: "下一步 (nextActionRefId)" },
+  yesAnswer: { nextActionRefId: "下一步 (nextActionRefId)" },
+  noAnswer: { nextActionRefId: "下一步 (nextActionRefId)" },
+  fault: { faultCode: "故障代码 (faultCode)" },
+};
+
+const NODE_TYPE_LABEL: Partial<Record<string, string>> = {
+  isolationStep: "隔离步骤 (isolationStep)",
+  isolationProcedureEnd: "隔离结束 (isolationProcedureEnd)",
+  choice: "选项 (choice)",
+  fault: "故障 (fault)",
+  yesAnswer: "是 (yesAnswer)",
+  noAnswer: "否 (noAnswer)",
 };
 
 function attrPanelLabel(nodeType: string, key: string): string {
@@ -231,11 +253,12 @@ export function S1000DPropertyPanel({
       : null;
 
   const typeLabel =
-    target.nodeType === "image"
+    NODE_TYPE_LABEL[target.nodeType] ??
+    (target.nodeType === "image"
       ? "图片（figure / graphic）"
       : target.nodeType === "paragraph"
         ? "段落（列表 / paragraph）"
-        : target.nodeType;
+        : target.nodeType);
 
   return (
     <div className="ietm-property-panel">

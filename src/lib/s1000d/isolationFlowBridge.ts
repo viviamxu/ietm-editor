@@ -10,6 +10,7 @@ import {
   buildMinimalIsolationStepJson,
   buildYesNoAnswerJson,
 } from "./faultIsolationInsert";
+import { useIsolationFlowOverlayStore } from "../../store/isolationFlowOverlayStore";
 
 export const ISOLATION_FLOW_CHANNEL = "ietm-isolation-flow";
 export const ISOLATION_FLOW_STORAGE_PREFIX = "ietm-isolation-flow:";
@@ -46,7 +47,8 @@ export type IsolationFlowPayload = {
 };
 
 export type IsolationFlowMessage =
-  | { type: "SAVE"; payload: IsolationFlowPayload };
+  | { type: "SAVE"; payload: IsolationFlowPayload }
+  | { type: "LOAD"; payload: IsolationFlowPayload };
 
 export function makeProcedureKey(procedurePos: number): string {
   return `fi-${procedurePos}`;
@@ -256,7 +258,7 @@ export function procedureToFlow(main: PMNode): {
         type: "isolationStep",
         position: { x: 120, y },
         data: {
-          title: getTitleTextFromNode(titleNode) || "隔离步骤",
+          title: getTitleTextFromNode(titleNode),
           action: getInlineTextFromBlock(child, "action"),
           question: getInlineTextFromBlock(child, "isolationStepQuestion"),
           branchMode: branch.branchMode,
@@ -303,7 +305,7 @@ export function procedureToFlow(main: PMNode): {
         type: "isolationEnd",
         position: { x: 120, y },
         data: {
-          title: getTitleTextFromNode(titleNode) || "流程结束",
+          title: getTitleTextFromNode(titleNode),
           action: getInlineTextFromBlock(child, "action"),
         },
       });
@@ -510,42 +512,42 @@ export function applyIsolationFlowToEditor(
   return true;
 }
 
-export function openIsolationFlowEditor(
+/** 从编辑器构建隔离流程编排器 payload；失败时返回 `null`。 */
+export function buildIsolationFlowPayload(
   editor: Editor,
   procedurePos: number,
-): void {
+): IsolationFlowPayload | null {
   const proc = editor.state.doc.nodeAt(procedurePos);
-  if (!proc || proc.type.name !== "faultIsolationProcedure") return;
+  if (!proc || proc.type.name !== "faultIsolationProcedure") return null;
 
   ensureIsolationRefIdsInProcedure(editor, procedurePos);
 
   const procAfter = editor.state.doc.nodeAt(procedurePos);
-  if (!procAfter) return;
+  if (!procAfter) return null;
 
   const main = findIsolationMainProcedure(procAfter);
-  if (!main) return;
+  if (!main) return null;
 
   const procedureKey = makeProcedureKey(procedurePos);
   const { nodes, edges } = procedureToFlow(main);
-  const flowPayload: IsolationFlowPayload = {
+  return {
     version: 1,
     procedureKey,
     nodes,
     edges,
   };
+}
 
-  try {
-    sessionStorage.setItem(
-      isolationFlowStorageKey(procedureKey),
-      JSON.stringify(flowPayload),
-    );
-  } catch {
-    console.error("[ietm] isolation flow: sessionStorage write failed");
-    return;
-  }
+export function openIsolationFlowEditor(
+  editor: Editor,
+  procedurePos: number,
+): void {
+  const flowPayload = buildIsolationFlowPayload(editor, procedurePos);
+  if (!flowPayload) return;
 
-  const url = `/isolation-flow-editor?key=${encodeURIComponent(procedureKey)}`;
-  window.open(url, "_blank");
+  useIsolationFlowOverlayStore
+    .getState()
+    .open(flowPayload, editor.isEditable);
 }
 
 export function readIsolationFlowPayload(

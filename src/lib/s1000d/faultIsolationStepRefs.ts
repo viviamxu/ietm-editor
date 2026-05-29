@@ -29,7 +29,11 @@ function readTitleFromBlock(child: PMNode): string {
 }
 
 /** 收集同一 `isolationMainProcedure` 内可供「下一步」选择的步骤/结束块。 */
-export function collectIsolationStepRefs(editor: Editor): IsolationStepRefOption[] {
+export function collectIsolationStepRefs(
+  editor: Editor,
+  options?: { excludeId?: string | null },
+): IsolationStepRefOption[] {
+  const exclude = String(options?.excludeId ?? "").trim();
   const { doc } = editor.state;
   const out: IsolationStepRefOption[] = [];
 
@@ -38,6 +42,7 @@ export function collectIsolationStepRefs(editor: Editor): IsolationStepRefOption
     node.forEach((child) => {
       const id = String(child.attrs.id ?? "").trim();
       if (!id) return;
+      if (exclude && id === exclude) return;
       if (child.type.name === "isolationStep") {
         out.push({
           id,
@@ -55,6 +60,22 @@ export function collectIsolationStepRefs(editor: Editor): IsolationStepRefOption
   });
 
   return out;
+}
+
+/** 从文档位置向上查找所属 `isolationStep` 的引用 id。 */
+export function findEnclosingIsolationStepRefId(
+  editor: Editor,
+  fromPos: number,
+): string | null {
+  const $pos = editor.state.doc.resolve(fromPos);
+  for (let d = $pos.depth; d > 0; d--) {
+    const node = $pos.node(d);
+    if (node.type.name === "isolationStep") {
+      const id = String(node.attrs.id ?? "").trim();
+      return id || null;
+    }
+  }
+  return null;
 }
 
 /** 在父节点 `parent` 内查找名为 `childName` 的子节点文档位置。 */

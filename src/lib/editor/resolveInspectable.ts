@@ -10,6 +10,10 @@ const INNER_INSPECT_DEFER = new Set<string>([
   'paragraph',
   'notePara',
   'warningAndCautionPara',
+  /** 故障隔离：内层字段优先展示外层步骤/结束块 */
+  'title',
+  'action',
+  'isolationStepQuestion',
 ])
 
 /** 当光标处于 INNER_INSPECT_DEFER 内时，若路径上存在以下类型，则检视该外层节点。 */
@@ -20,6 +24,9 @@ const OUTRANKS_INNER_DEFER = new Set<string>([
   'warning',
   'caution',
   'note',
+  'isolationStep',
+  'isolationProcedureEnd',
+  'choice',
 ])
 
 function countEntryCellsInRow(row: PMNode): number {

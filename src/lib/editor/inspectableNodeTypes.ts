@@ -24,6 +24,13 @@ export const INSPECTABLE_NODE_TYPE_LIST = [
   'warning',
   'warningAndCautionLead',
   'warningAndCautionPara',
+  /** 故障隔离 */
+  'fault',
+  'isolationStep',
+  'isolationProcedureEnd',
+  'choice',
+  'yesAnswer',
+  'noAnswer',
 ] as const
 
 export const INSPECTABLE_NODE_TYPES = new Set<string>(INSPECTABLE_NODE_TYPE_LIST)

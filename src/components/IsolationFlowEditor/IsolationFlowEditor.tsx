@@ -30,11 +30,16 @@ import {
 import "reactflow/dist/style.css";
 import "../../styles/partials/isolation-flow-editor.css";
 import {
-  ISOLATION_FLOW_CHANNEL,
   payloadFromFlowSnapshot,
-  readIsolationFlowPayload,
   type IsolationFlowNodeDataPayload,
+  type IsolationFlowPayload,
 } from "../../lib/s1000d/isolationFlowBridge";
+
+export type IsolationFlowEditorProps = {
+  payload: IsolationFlowPayload;
+  onSave: (payload: IsolationFlowPayload) => void;
+  onCancel: () => void;
+};
 
 type IsolationNodeType = "isolationStep" | "isolationEnd";
 type BranchMode = "是否分支" | "自定义分支";
@@ -116,6 +121,7 @@ function IsolationStepNode({ id, data }: NodeProps<IsolationNodeData>) {
         <input
           className="ife-node-title-input nodrag"
           value={data.title}
+          placeholder="请输入步骤标题"
           onChange={(e) => data.onChange?.(id, { title: e.target.value })}
         />
         <button
@@ -237,6 +243,7 @@ function IsolationEndNode({ id, data }: NodeProps<IsolationNodeData>) {
         <input
           className="ife-node-title-input nodrag"
           value={data.title}
+          placeholder="请输入结束标题"
           onChange={(e) => data.onChange?.(id, { title: e.target.value })}
         />
         <button
@@ -276,13 +283,15 @@ const nodeTypes = {
   isolationEnd: IsolationEndNode,
 };
 
-function IsolationFlowEditorInner() {
+function IsolationFlowEditorInner({
+  payload,
+  onSave,
+  onCancel,
+}: IsolationFlowEditorProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const rfRef = useRef<ReactFlowInstance | null>(null);
-  const procedureKeyRef = useRef<string | null>(
-    new URLSearchParams(window.location.search).get("key"),
-  );
-  const initialLoadedRef = useRef(false);
+  const procedureKeyRef = useRef(payload.procedureKey);
+  procedureKeyRef.current = payload.procedureKey;
 
   const [nodes, setNodes, onNodesChange] = useNodesState<IsolationNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -426,57 +435,53 @@ function IsolationFlowEditorInner() {
     [copyNode, deleteNode, updateNodeData],
   );
 
+  const applyFlowPayload = useCallback(
+    (nextPayload: IsolationFlowPayload) => {
+      procedureKeyRef.current = nextPayload.procedureKey;
+
+      const flowNodes: Node<IsolationNodeData>[] = nextPayload.nodes.map(
+        (n) => ({
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          data: {
+            title: n.data.title,
+            action: n.data.action,
+            question: n.data.question,
+            branchMode: n.data.branchMode,
+            customBranchOptions: n.data.customBranchOptions,
+          },
+        }),
+      );
+
+      setNodes(attachNodeHandlers(flowNodes));
+      setEdges(
+        nextPayload.edges.map((e) => ({
+          ...e,
+          type: "bezier" as const,
+        })),
+      );
+      setHistory({ past: [], future: [] });
+    },
+    [attachNodeHandlers, setEdges, setNodes],
+  );
+
   useEffect(() => {
-    if (initialLoadedRef.current) return;
-    const key = procedureKeyRef.current;
-    if (!key) return;
-
-    const payload = readIsolationFlowPayload(key);
-    if (!payload) return;
-
-    initialLoadedRef.current = true;
-
-    const flowNodes: Node<IsolationNodeData>[] = payload.nodes.map((n) => ({
-      id: n.id,
-      type: n.type,
-      position: n.position,
-      data: {
-        title: n.data.title,
-        action: n.data.action,
-        question: n.data.question,
-        branchMode: n.data.branchMode,
-        customBranchOptions: n.data.customBranchOptions,
-      },
-    }));
-
-    setNodes(attachNodeHandlers(flowNodes));
-    setEdges(
-      payload.edges.map((e) => ({
-        ...e,
-        type: "bezier" as const,
-      })),
-    );
-    setHistory({ past: [], future: [] });
-  }, [attachNodeHandlers, setEdges, setNodes]);
+    applyFlowPayload(payload);
+  }, [applyFlowPayload, payload]);
 
   const handleSave = useCallback(() => {
-    const key = procedureKeyRef.current;
-    if (!key) {
-      window.close();
-      return;
-    }
-
-    const payload = payloadFromFlowSnapshot(
-      key,
+    const saved = payloadFromFlowSnapshot(
+      procedureKeyRef.current,
       snapshotRef.current.nodes,
       snapshotRef.current.edges,
     );
+    onSave(saved);
+  }, [onSave]);
 
-    const channel = new BroadcastChannel(ISOLATION_FLOW_CHANNEL);
-    channel.postMessage({ type: "SAVE", payload });
-    channel.close();
-    window.close();
-  }, []);
+  const handleCancel = useCallback(() => {
+    onCancel();
+  }, [onCancel]);
 
   const createNode = useCallback(
     (
@@ -489,7 +494,7 @@ function IsolationFlowEditorInner() {
         type,
         position,
         data: {
-          title: isStep ? "隔离步骤" : "流程结束",
+          title: "",
           action: "",
           question: isStep ? "" : undefined,
           branchMode: isStep ? "是否分支" : undefined,
@@ -746,9 +751,14 @@ function IsolationFlowEditorInner() {
             ))}
           </div>
         </div>
-        <button type="button" className="ife-save-btn" onClick={handleSave}>
-          保存
-        </button>
+        <div className="ife-topbar-actions">
+          <button type="button" className="ife-cancel-btn" onClick={handleCancel}>
+            取消
+          </button>
+          <button type="button" className="ife-save-btn" onClick={handleSave}>
+            保存
+          </button>
+        </div>
       </header>
 
       <div className="ife-main">
@@ -820,10 +830,10 @@ function IsolationFlowEditorInner() {
   );
 }
 
-export default function IsolationFlowEditor() {
+export default function IsolationFlowEditor(props: IsolationFlowEditorProps) {
   return (
     <ReactFlowProvider>
-      <IsolationFlowEditorInner />
+      <IsolationFlowEditorInner {...props} />
     </ReactFlowProvider>
   );
 }

@@ -110,6 +110,16 @@ export function mergeSourceXmlAttrKeysAfterPatch(input: {
 
 const figurePanelAttrSet = new Set<string>(FIGURE_PANEL_ATTR_NAMES)
 
+/** 故障隔离等：无源 XML 键列表时仍应在属性面板展示的属性 */
+const ALWAYS_SHOW_SECONDARY_ATTRS: Partial<
+  Record<string, readonly string[]>
+> = {
+  choice: ['nextActionRefId'],
+  yesAnswer: ['nextActionRefId'],
+  noAnswer: ['nextActionRefId'],
+  fault: ['faultCode'],
+}
+
 export function shouldShowSecondaryPanelAttr(input: {
   nodeType: string
   attrKey: string
@@ -121,6 +131,11 @@ export function shouldShowSecondaryPanelAttr(input: {
   if (primaryKey && attrKey === primaryKey) return false
 
   if (input.nodeType === 'figure' && figurePanelAttrSet.has(attrKey)) {
+    return true
+  }
+
+  const alwaysShow = ALWAYS_SHOW_SECONDARY_ATTRS[input.nodeType]
+  if (alwaysShow?.includes(attrKey)) {
     return true
   }
 

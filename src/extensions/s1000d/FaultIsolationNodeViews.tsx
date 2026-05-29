@@ -16,6 +16,7 @@ import {
 import {
   collectIsolationStepRefs,
   findChildNodePos,
+  findEnclosingIsolationStepRefId,
   type IsolationStepRefOption,
 } from "../../lib/s1000d/faultIsolationStepRefs";
 import {
@@ -465,11 +466,10 @@ function YesNoAnswerFields({
 }) {
   useEditorRefresh(editor);
 
-  const stepOptions = useMemo(
-    () => collectIsolationStepRefs(editor),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editor, editor.state.doc],
-  );
+  const stepOptions = useMemo(() => {
+    const excludeId = findEnclosingIsolationStepRefId(editor, yesNoPos);
+    return collectIsolationStepRefs(editor, { excludeId });
+  }, [editor, editor.state.doc, yesNoPos]);
 
   let yesPos: number | null = null;
   let noPos: number | null = null;
@@ -651,11 +651,12 @@ export function ChoiceNodeView(props: NodeViewProps) {
   const { editor, getPos, node, HTMLAttributes } = props;
   useEditorRefresh(editor);
 
-  const stepOptions = useMemo(
-    () => collectIsolationStepRefs(editor),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editor, editor.state.doc],
-  );
+  const stepOptions = useMemo(() => {
+    const pos = typeof getPos === "function" ? getPos() : undefined;
+    const excludeId =
+      pos != null ? findEnclosingIsolationStepRefId(editor, pos) : null;
+    return collectIsolationStepRefs(editor, { excludeId });
+  }, [editor, editor.state.doc, getPos]);
 
   const refId = String(node.attrs.nextActionRefId ?? "").trim();
 

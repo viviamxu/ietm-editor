@@ -31,6 +31,8 @@ import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
 import type { IsolationFlowPayload } from "../../lib/s1000d/isolationFlowBridge";
+import { useIsolationFlowOverlayStore } from "../../store/isolationFlowOverlayStore";
+import IsolationFlowEditor from "../IsolationFlowEditor";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
@@ -84,10 +86,35 @@ export const IETMEditorRoot = forwardRef<
   const onEditableChangeRef = useRef(props.onEditableChange);
   onEditableChangeRef.current = props.onEditableChange;
 
+  const flowSession = useIsolationFlowOverlayStore((s) => s.session);
+  const editableBeforeFlow = useIsolationFlowOverlayStore(
+    (s) => s.editableBeforeOpen,
+  );
+  const closeFlowOverlay = useIsolationFlowOverlayStore((s) => s.close);
+
   const applyEditable = useCallback((value: boolean) => {
     setEditable(value);
     onEditableChangeRef.current?.(value);
   }, []);
+
+  useEffect(() => {
+    if (!flowSession) return;
+    applyEditable(false);
+  }, [applyEditable, flowSession]);
+
+  const handleFlowSave = useCallback(
+    (payload: IsolationFlowPayload) => {
+      editorRef.current?.applyIsolationFlow(payload);
+      applyEditable(editableBeforeFlow);
+      closeFlowOverlay();
+    },
+    [applyEditable, closeFlowOverlay, editableBeforeFlow],
+  );
+
+  const handleFlowCancel = useCallback(() => {
+    applyEditable(editableBeforeFlow);
+    closeFlowOverlay();
+  }, [applyEditable, closeFlowOverlay, editableBeforeFlow]);
 
   useEffect(() => {
     if (!props.initialDescriptionSchema) return undefined;
@@ -183,6 +210,21 @@ export const IETMEditorRoot = forwardRef<
         <ReferencePublicationModal />
         <ExternalRefPublicationModal />
         <InternalRefModal />
+        {flowSession ? (
+          <div
+            className="ife-overlay-host"
+            role="dialog"
+            aria-modal="true"
+            aria-label="隔离流程编排器"
+          >
+            <IsolationFlowEditor
+              key={flowSession.procedureKey}
+              payload={flowSession}
+              onSave={handleFlowSave}
+              onCancel={handleFlowCancel}
+            />
+          </div>
+        ) : null}
       </ConfigProvider>
     </div>
   );
