@@ -421,3 +421,99 @@
   top: 50% !important;
   transform: translateY(-50%);
 }
+
+.react-flow__edge.ife-edge--inactive .react-flow__edge-path {
+  stroke-dasharray: 6 4;
+  opacity: 0.72;
+}
+
+.ife-validation-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.ife-validation-modal {
+  width: min(520px, 100%);
+  max-height: min(80vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.ife-validation-modal--success .ife-validation-modal__icon {
+  color: #00b42a;
+}
+
+.ife-validation-modal--error .ife-validation-modal__icon {
+  color: #f53f3f;
+}
+
+.ife-validation-modal__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px 0;
+}
+
+.ife-validation-modal__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ife-validation-modal__body {
+  padding: 12px 20px 0;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.5715;
+  color: #4b5563;
+}
+
+.ife-validation-modal__body p {
+  margin: 0;
+}
+
+.ife-validation-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 20px 18px;
+}
+
+.ife-validation-modal__ok {
+  min-width: 72px;
+  height: 32px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background: #165dff;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ife-validation-modal__ok:hover {
+  background: #4080ff;
+}
+
+.ife-validation-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ife-validation-list li {
+  margin: 0.35rem 0;
+  line-height: 1.5;
+  color: #1f2937;
+}

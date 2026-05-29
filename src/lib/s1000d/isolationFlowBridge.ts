@@ -11,6 +11,7 @@ import {
   buildYesNoAnswerJson,
 } from "./faultIsolationInsert";
 import { useIsolationFlowOverlayStore } from "../../store/isolationFlowOverlayStore";
+import { layoutIsolationFlowGraph } from "./isolationFlowLayout";
 
 export const ISOLATION_FLOW_CHANNEL = "ietm-isolation-flow";
 export const ISOLATION_FLOW_STORAGE_PREFIX = "ietm-isolation-flow:";
@@ -247,7 +248,6 @@ export function procedureToFlow(main: PMNode): {
   let index = 0;
   main.forEach((child) => {
     const refId = String(child.attrs.id ?? "").trim() || `tmp-${index}`;
-    const y = index * 220;
     index += 1;
 
     if (child.type.name === "isolationStep") {
@@ -256,7 +256,7 @@ export function procedureToFlow(main: PMNode): {
       nodes.push({
         id: refId,
         type: "isolationStep",
-        position: { x: 120, y },
+        position: { x: 0, y: 0 },
         data: {
           title: getTitleTextFromNode(titleNode),
           action: getInlineTextFromBlock(child, "action"),
@@ -303,7 +303,7 @@ export function procedureToFlow(main: PMNode): {
       nodes.push({
         id: refId,
         type: "isolationEnd",
-        position: { x: 120, y },
+        position: { x: 0, y: 0 },
         data: {
           title: getTitleTextFromNode(titleNode),
           action: getInlineTextFromBlock(child, "action"),
@@ -320,6 +320,43 @@ export function procedureToFlow(main: PMNode): {
   );
 
   return { nodes, edges: validEdges };
+}
+
+/** 合并 sessionStorage 中的节点坐标；无缓存或新节点用 Dagre 补全。 */
+export function mergeSessionLayoutIntoFlow(
+  procedureKey: string,
+  nodes: IsolationFlowNodePayload[],
+  edges: IsolationFlowEdgePayload[],
+): IsolationFlowNodePayload[] {
+  const cached = readIsolationFlowPayload(procedureKey);
+  if (
+    !cached ||
+    cached.procedureKey !== procedureKey ||
+    !cached.nodes?.length
+  ) {
+    return layoutIsolationFlowGraph(nodes, edges);
+  }
+
+  const positionById = new Map(
+    cached.nodes.map((n) => [n.id, n.position] as const),
+  );
+
+  const hasUncached = nodes.some((n) => !positionById.has(n.id));
+  const laidMap = hasUncached
+    ? new Map(
+        layoutIsolationFlowGraph(nodes, edges).map((n) => [
+          n.id,
+          n.position,
+        ]),
+      )
+    : null;
+
+  return nodes.map((n) => {
+    const cachedPos = positionById.get(n.id);
+    if (cachedPos) return { ...n, position: cachedPos };
+    const autoPos = laidMap?.get(n.id);
+    return autoPos ? { ...n, position: autoPos } : n;
+  });
 }
 
 function buildRefIdMap(
@@ -530,10 +567,15 @@ export function buildIsolationFlowPayload(
 
   const procedureKey = makeProcedureKey(procedurePos);
   const { nodes, edges } = procedureToFlow(main);
+  const nodesWithLayout = mergeSessionLayoutIntoFlow(
+    procedureKey,
+    nodes,
+    edges,
+  );
   return {
     version: 1,
     procedureKey,
-    nodes,
+    nodes: nodesWithLayout,
     edges,
   };
 }
@@ -559,10 +601,29 @@ export function readIsolationFlowPayload(
     );
     if (!raw) return null;
     const parsed = JSON.parse(raw) as IsolationFlowPayload;
-    if (parsed?.version !== 1 || !Array.isArray(parsed.nodes)) return null;
+    if (
+      parsed?.version !== 1 ||
+      parsed.procedureKey !== procedureKey ||
+      !Array.isArray(parsed.nodes)
+    ) {
+      return null;
+    }
     return parsed;
   } catch {
     return null;
+  }
+}
+
+export function writeIsolationFlowPayload(
+  payload: IsolationFlowPayload,
+): void {
+  try {
+    sessionStorage.setItem(
+      isolationFlowStorageKey(payload.procedureKey),
+      JSON.stringify(payload),
+    );
+  } catch {
+    // 忽略 quota / 隐私模式等写入失败
   }
 }
 

@@ -30,7 +30,10 @@ import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
-import type { IsolationFlowPayload } from "../../lib/s1000d/isolationFlowBridge";
+import {
+  writeIsolationFlowPayload,
+  type IsolationFlowPayload,
+} from "../../lib/s1000d/isolationFlowBridge";
 import { useIsolationFlowOverlayStore } from "../../store/isolationFlowOverlayStore";
 import IsolationFlowEditor from "../IsolationFlowEditor";
 export interface IETMEditorRootHandle {
@@ -105,6 +108,7 @@ export const IETMEditorRoot = forwardRef<
   const handleFlowSave = useCallback(
     (payload: IsolationFlowPayload) => {
       editorRef.current?.applyIsolationFlow(payload);
+      writeIsolationFlowPayload(payload);
       applyEditable(editableBeforeFlow);
       closeFlowOverlay();
     },

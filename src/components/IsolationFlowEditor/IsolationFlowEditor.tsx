@@ -34,6 +34,8 @@ import {
   type IsolationFlowNodeDataPayload,
   type IsolationFlowPayload,
 } from "../../lib/s1000d/isolationFlowBridge";
+import { isEdgeOnVisibleSourceHandle } from "../../lib/s1000d/isolationFlowGraphHandles";
+import { validateIsolationFlowGraph } from "../../lib/s1000d/validateIsolationFlowGraph";
 
 export type IsolationFlowEditorProps = {
   payload: IsolationFlowPayload;
@@ -67,6 +69,11 @@ type HistoryState = {
   past: FlowSnapshot[];
   future: FlowSnapshot[];
 };
+
+type ValidationModalState =
+  | { kind: "success" }
+  | { kind: "error"; issues: string[] }
+  | null;
 
 const DRAG_MIME = "application/isolation-flow-node";
 
@@ -295,12 +302,13 @@ function IsolationFlowEditorInner({
 
   const [nodes, setNodes, onNodesChange] = useNodesState<IsolationNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [viewportReady, setViewportReady] = useState(false);
   const [history, setHistory] = useState<HistoryState>({
     past: [],
     future: [],
   });
   const [toastMessage, setToastMessage] = useState("");
+  const [validationModal, setValidationModal] =
+    useState<ValidationModalState>(null);
   const snapshotRef = useRef<FlowSnapshot>({ nodes: [], edges: [] });
   const dragStartSnapshotRef = useRef<FlowSnapshot | null>(null);
   const duplicateWarnAtRef = useRef(0);
@@ -309,6 +317,31 @@ function IsolationFlowEditorInner({
   useEffect(() => {
     snapshotRef.current = { nodes, edges };
   }, [nodes, edges]);
+
+  const displayEdges = useMemo(() => {
+    return edges.map((edge) => {
+      const sourceNode = nodes.find((node) => node.id === edge.source);
+      if (
+        isEdgeOnVisibleSourceHandle(
+          sourceNode?.type,
+          sourceNode?.data,
+          edge.sourceHandle,
+        )
+      ) {
+        return edge;
+      }
+
+      return {
+        ...edge,
+        className: "ife-edge--inactive",
+        style: {
+          ...edge.style,
+          stroke: "#94a3b8",
+          strokeWidth: 1.5,
+        },
+      };
+    });
+  }, [edges, nodes]);
 
   const warnDuplicateOutput = useCallback(() => {
     const now = Date.now();
@@ -462,6 +495,12 @@ function IsolationFlowEditorInner({
         })),
       );
       setHistory({ past: [], future: [] });
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          rfRef.current?.fitView({ padding: 0.18, maxZoom: 1, duration: 200 });
+        });
+      });
     },
     [attachNodeHandlers, setEdges, setNodes],
   );
@@ -688,13 +727,26 @@ function IsolationFlowEditorInner({
     dragStartSnapshotRef.current = null;
   }, [isSameSnapshot]);
 
+  const runContentValidation = useCallback(() => {
+    const { nodes: flowNodes, edges: flowEdges } = snapshotRef.current;
+    const issues = validateIsolationFlowGraph(flowNodes, flowEdges);
+
+    if (issues.length === 0) {
+      setValidationModal({ kind: "success" });
+      return;
+    }
+
+    setValidationModal({ kind: "error", issues });
+  }, []);
+
   const handleToolbarClick = useCallback(
     (key: string) => {
       if (key === "undo") undo();
       if (key === "redo") redo();
       if (key === "clear") clearCanvas();
+      if (key === "check") runContentValidation();
     },
-    [clearCanvas, redo, undo],
+    [clearCanvas, redo, runContentValidation, undo],
   );
 
   const toolbarButtons = useMemo(
@@ -723,6 +775,70 @@ function IsolationFlowEditorInner({
         <div className="ife-toast ife-toast--error" role="alert">
           <CircleX size={16} className="ife-toast__icon" aria-hidden />
           <span className="ife-toast__text">{toastMessage}</span>
+        </div>
+      ) : null}
+      {validationModal ? (
+        <div
+          className="ife-validation-modal-backdrop"
+          role="presentation"
+          onClick={() => setValidationModal(null)}
+        >
+          <div
+            className={[
+              "ife-validation-modal",
+              validationModal.kind === "success"
+                ? "ife-validation-modal--success"
+                : "ife-validation-modal--error",
+            ].join(" ")}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="ife-validation-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ife-validation-modal__header">
+              {validationModal.kind === "success" ? (
+                <CheckCircle2
+                  size={20}
+                  className="ife-validation-modal__icon"
+                  aria-hidden
+                />
+              ) : (
+                <CircleX
+                  size={20}
+                  className="ife-validation-modal__icon"
+                  aria-hidden
+                />
+              )}
+              <h2
+                id="ife-validation-modal-title"
+                className="ife-validation-modal__title"
+              >
+                {validationModal.kind === "success"
+                  ? "内容校验通过"
+                  : "内容校验未通过"}
+              </h2>
+            </div>
+            <div className="ife-validation-modal__body">
+              {validationModal.kind === "success" ? (
+                <p>当前画布符合全部校验规则。</p>
+              ) : (
+                <ul className="ife-validation-list">
+                  {validationModal.issues.map((message, index) => (
+                    <li key={`${index}-${message}`}>{message}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="ife-validation-modal__footer">
+              <button
+                type="button"
+                className="ife-validation-modal__ok"
+                onClick={() => setValidationModal(null)}
+              >
+                知道了
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
       <header className="ife-topbar">
@@ -795,14 +911,13 @@ function IsolationFlowEditorInner({
         <section className="ife-canvas" ref={wrapperRef}>
           <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={displayEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onEdgesDelete={onEdgesDelete}
             onInit={(instance) => {
               rfRef.current = instance;
-              setViewportReady(true);
             }}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={{ type: "bezier" }}
@@ -818,7 +933,6 @@ function IsolationFlowEditorInner({
             onNodeDragStop={onNodeDragStop}
             onDragOver={onDragOverPane}
             onDrop={onDropPane}
-            fitView={viewportReady}
             proOptions={{ hideAttribution: true }}
           >
             <Background gap={24} size={1} color="#e5e7eb" />
