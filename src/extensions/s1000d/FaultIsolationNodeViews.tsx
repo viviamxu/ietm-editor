@@ -2,7 +2,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Button, Radio, Select } from "@arco-design/web-react";
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, PencilLine, Trash2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -24,6 +24,8 @@ import {
   insertIsolationStepInMainProcedure,
   replaceIsolationStepAnswerKind,
 } from "../../lib/s1000d/faultIsolationInsert";
+
+import { openIsolationFlowEditor } from "../../lib/s1000d/isolationFlowBridge";
 
 function useEditorRefresh(editor: NodeViewProps["editor"]) {
   const [, bump] = useReducer((n: number) => n + 1, 0);
@@ -125,6 +127,12 @@ export function FaultIsolationProcedureNodeView(props: NodeViewProps) {
     [editor, getPos, node],
   );
 
+  const openFlowEditor = useCallback(() => {
+    const pos = typeof getPos === "function" ? getPos() : undefined;
+    if (pos == null) return;
+    openIsolationFlowEditor(editor, pos);
+  }, [editor, getPos]);
+
   return (
     <NodeViewWrapper
       as="section"
@@ -160,6 +168,18 @@ export function FaultIsolationProcedureNodeView(props: NodeViewProps) {
           placeholder="故障代码"
           onChange={(e) => updateFaultCode(e.target.value)}
         />
+        <div className="s1000d-fault-procedure__header-actions" contentEditable={false}>
+          <button
+            type="button"
+            className="s1000d-fault-procedure__edit"
+            onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
+            onClick={openFlowEditor}
+            aria-label="编辑隔离流程"
+            title="编辑"
+          >
+            <PencilLine size={16} aria-hidden />
+          </button>
+        </div>
       </header>
       {!collapsed ? (
         <>

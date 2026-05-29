@@ -1,7 +1,7 @@
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { Film } from "lucide-react";
-import Cc3dSceneElement from "../../components/Cc3dSceneElement";
+import Cc3dSceneElement from "../../components/3d/Cc3dSceneElement";
 
 // 让 TypeScript 认识 cc-3d-scene 自定义元素
 declare global {

@@ -51,6 +51,7 @@ import {
   fillEmptyContentFromSchema,
 } from "./lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";
+import type { IsolationFlowPayload } from "./lib/s1000d/isolationFlowBridge";
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 import { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
 import {
@@ -260,6 +261,8 @@ export interface IETMEditorInstance {
    * 若预览窗格当前关闭，则会自动打开并加载。
    */
   refreshDmPdfPreview(): void;
+  /** 隔离流程编排器保存后写回对应隔离程序。 */
+  applyIsolationFlow(payload: IsolationFlowPayload): boolean;
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -445,6 +448,10 @@ export function createIETMEditor(
       return handleRef.current.insertMultimedia(items);
     },
     refreshDmPdfPreview: () => withHandle((h) => h.refreshDmPdfPreview()),
+    applyIsolationFlow: (payload) => {
+      if (disposed || !handleRef.current) return false;
+      return handleRef.current.applyIsolationFlow(payload);
+    },
     on: emitter.on,
     off: emitter.off,
     destroy: () => {

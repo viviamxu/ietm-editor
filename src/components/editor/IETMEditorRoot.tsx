@@ -30,6 +30,7 @@ import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
+import type { IsolationFlowPayload } from "../../lib/s1000d/isolationFlowBridge";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
   setEditable: (value: boolean) => void;
@@ -49,6 +50,7 @@ export interface IETMEditorRootHandle {
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
   refreshDmPdfPreview: () => void;
+  applyIsolationFlow: (payload: IsolationFlowPayload) => boolean;
 }
 
 interface IETMEditorRootProps {
@@ -142,6 +144,8 @@ export const IETMEditorRoot = forwardRef<
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,
       refreshDmPdfPreview: () => editorRef.current?.refreshDmPdfPreview(),
+      applyIsolationFlow: (payload) =>
+        editorRef.current?.applyIsolationFlow(payload) ?? false,
     }),
     [applyEditable],
   );

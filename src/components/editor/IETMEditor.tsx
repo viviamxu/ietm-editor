@@ -54,6 +54,10 @@ import {
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
 import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
+import {
+  applyIsolationFlowToEditor,
+  type IsolationFlowPayload,
+} from "../../lib/s1000d/isolationFlowBridge";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
 import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
@@ -130,6 +134,8 @@ export interface IETMEditorRefValue {
    * 若预览窗格当前关闭，则会自动打开并加载。
    */
   refreshDmPdfPreview: () => void;
+  /** 将隔离流程编排器保存结果写回当前 DM 中对应的 `faultIsolationProcedure`。 */
+  applyIsolationFlow: (payload: IsolationFlowPayload) => boolean;
 }
 
 interface IETMEditorProps {
@@ -570,6 +576,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         },
         refreshDmPdfPreview: () => {
           runOpenPdfPreview();
+        },
+        applyIsolationFlow: (payload) => {
+          if (!editor) return false;
+          return applyIsolationFlowToEditor(editor, payload);
         },
       }),
       [editor, runOpenPdfPreview],
