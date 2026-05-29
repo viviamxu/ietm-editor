@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/core";
-import type { Node as PMNode } from "@tiptap/pm/model";
+import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import type { ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
@@ -212,11 +212,37 @@ function resolveListLiftTarget($from: ResolvedPos): ListLiftTarget | null {
   return null;
 }
 
-function canUnwrapLevelledParaShallower($from: ResolvedPos): boolean {
+function selectionInLevelledParaTitle(
+  doc: PMNode,
+  levelledParaPos: number,
+): TextSelection | null {
+  if (levelledParaPos < 0 || levelledParaPos > doc.content.size) return null;
+
+  const node = doc.nodeAt(levelledParaPos);
+  if (!node || node.type.name !== LEVELLED_PARA) return null;
+
+  let offset = levelledParaPos + 1;
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i);
+    if (child.type.name === "title") {
+      const caret = Math.min(offset + 1, doc.content.size);
+      if (caret < 0 || caret > doc.content.size) return null;
+      return TextSelection.create(doc, caret);
+    }
+    offset += child.nodeSize;
+  }
+  const fallback = Math.min(levelledParaPos + 2, doc.content.size);
+  if (fallback < 0 || fallback > doc.content.size) return null;
+  return TextSelection.create(doc, fallback);
+}
+
+function canLiftLevelledParaToParentSibling($from: ResolvedPos): boolean {
   if (isInListNestingContext($from)) return false;
 
-  const lpDepths = collectAncestorDepths($from, LEVELLED_PARA);
-  if (lpDepths.length < 2) return false;
+  const childDepth = getInnermostLevelledParaDepth($from);
+  if (childDepth < 1) return false;
+  if ($from.node(childDepth - 1).type.name !== LEVELLED_PARA) return false;
+  if (collectAncestorDepths($from, LEVELLED_PARA).length < 2) return false;
 
   return isInLevelledParaTitleOrPara($from);
 }
@@ -325,25 +351,87 @@ function liftListItemAtTarget(editor: Editor, target: ListLiftTarget): boolean {
     .run();
 }
 
-function unwrapLevelledParaShallower(editor: Editor): boolean {
+/**
+ * 将光标所在的最内层 `levelledPara` 从父段中抽出，与父段并列（仍为完整 levelledPara）。
+ * 若父段在移除后无子节点，则去掉空父段，仅保留抬升后的节。
+ */
+function liftLevelledParaToParentSibling(editor: Editor): boolean {
   return editor
     .chain()
     .focus()
     .command(({ state, tr, dispatch }) => {
       const $from = state.selection.$from;
-      const lpDepth = getInnermostLevelledParaDepth($from);
-      if (lpDepth < 0) return false;
-      if (collectAncestorDepths($from, LEVELLED_PARA).length < 2) return false;
+      if (!canLiftLevelledParaToParentSibling($from)) return false;
 
-      const innerLp = $from.node(lpDepth);
-      const pos = $from.before(lpDepth);
-      const end = $from.after(lpDepth);
+      const childDepth = getInnermostLevelledParaDepth($from);
+      const parentDepth = childDepth - 1;
+      const grandDepth = parentDepth - 1;
+      if (grandDepth < 0) return false;
+
+      const childLp = $from.node(childDepth);
+      const parentLp = $from.node(parentDepth);
+      const grandparent = $from.node(grandDepth);
+      const parentIndex = $from.index(grandDepth);
+      const childIndexInParent = $from.index(parentDepth);
+
+      const parentChildren: PMNode[] = [];
+      for (let i = 0; i < parentLp.childCount; i++) {
+        if (i !== childIndexInParent) parentChildren.push(parentLp.child(i));
+      }
+
+      const lpType = parentLp.type;
+      let newParent: PMNode | null = null;
+      if (parentChildren.length > 0) {
+        try {
+          newParent = lpType.create(parentLp.attrs, parentChildren);
+        } catch {
+          return false;
+        }
+        if (!lpType.validContent(newParent.content)) return false;
+      }
+
+      const gpType = grandparent.type;
+      const gpChildren: PMNode[] = [];
+      for (let i = 0; i < grandparent.childCount; i++) {
+        if (i < parentIndex) {
+          gpChildren.push(grandparent.child(i));
+        } else if (i === parentIndex) {
+          if (newParent) gpChildren.push(newParent);
+          gpChildren.push(childLp);
+        } else {
+          gpChildren.push(grandparent.child(i));
+        }
+      }
+
+      let newGrandparent: PMNode;
+      try {
+        newGrandparent = gpType.create(grandparent.attrs, gpChildren);
+      } catch {
+        return false;
+      }
+      if (!gpType.validContent(newGrandparent.content)) return false;
 
       if (!dispatch) return true;
 
-      tr.replaceWith(pos, end, innerLp.content);
-      const mapped = tr.mapping.map(Math.min(pos + 1, tr.doc.content.size));
-      tr.setSelection(TextSelection.near(tr.doc.resolve(mapped), 1));
+      const childStart = $from.before(childDepth);
+      const grandFrom = grandDepth === 0 ? 0 : $from.before(grandDepth);
+      const grandTo =
+        grandDepth === 0 ? state.doc.content.size : $from.after(grandDepth);
+      if (grandDepth === 0) {
+        tr.replaceWith(grandFrom, grandTo, Fragment.from(gpChildren));
+      } else {
+        tr.replaceWith(grandFrom, grandTo, newGrandparent);
+      }
+
+      const mappedChildStart = tr.mapping.map(childStart);
+      const sel =
+        selectionInLevelledParaTitle(tr.doc, mappedChildStart) ??
+        TextSelection.near(
+          tr.doc.resolve(Math.min(mappedChildStart + 1, tr.doc.content.size)),
+          1,
+        );
+      tr.setSelection(sel);
+
       dispatch(tr);
       return true;
     })
@@ -354,7 +442,7 @@ export function canPromoteNesting(editor: Editor): boolean {
   if (!editor.isEditable) return false;
   const $from = editor.state.selection.$from;
   if (resolveListLiftTarget($from)) return true;
-  return canUnwrapLevelledParaShallower($from);
+  return canLiftLevelledParaToParentSibling($from);
 }
 
 export function promoteNesting(editor: Editor): boolean {
@@ -367,8 +455,8 @@ export function promoteNesting(editor: Editor): boolean {
     return liftListItemAtTarget(editor, listTarget);
   }
 
-  if (canUnwrapLevelledParaShallower($from)) {
-    return unwrapLevelledParaShallower(editor);
+  if (canLiftLevelledParaToParentSibling($from)) {
+    return liftLevelledParaToParentSibling(editor);
   }
 
   return false;

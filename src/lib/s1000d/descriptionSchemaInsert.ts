@@ -1,8 +1,13 @@
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Fragment, Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
+import { Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
-import { getInnermostLevelledParaDepth } from "../editor/nestingLevelShared";
+import {
+  LEVELLED_PARA,
+  TITLE_LEVEL_CAP,
+  collectAncestorDepths,
+  getInnermostLevelledParaDepth,
+} from "../editor/nestingLevelShared";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
@@ -93,39 +98,6 @@ export function buildInsertLevelledParaJson(
   return { type: "levelledPara", content: children };
 }
 
-/**
- * 光标落在 `levelledPara` 的哪一个直接子节点上（含块边界缝：标题行尾等）。
- */
-function getLevelledParaDirectChildIndex(
-  $from: ResolvedPos,
-  lpDepth: number,
-): number {
-  const lp = $from.node(lpDepth);
-  const lpStart = $from.before(lpDepth);
-  const pos = $from.pos;
-  if (lp.childCount === 0) return -1;
-
-  const ranges: { start: number; end: number }[] = [];
-  let offset = lpStart + 1;
-  for (let i = 0; i < lp.childCount; i++) {
-    const child = lp.child(i);
-    ranges.push({ start: offset, end: offset + child.nodeSize });
-    offset += child.nodeSize;
-  }
-
-  for (let i = 0; i < ranges.length; i++) {
-    const { start, end } = ranges[i]!;
-    if (pos > start && pos < end) return i;
-  }
-  for (let i = 0; i < ranges.length; i++) {
-    if (pos === ranges[i]!.end) return i;
-  }
-  for (let i = 0; i < ranges.length; i++) {
-    if (pos === ranges[i]!.start) return i;
-  }
-  return ranges.length - 1;
-}
-
 function selectionInLevelledParaTitle(
   doc: PMNode,
   levelledParaPos: number,
@@ -148,43 +120,33 @@ function selectionInLevelledParaTitle(
   return TextSelection.create(doc, fallback);
 }
 
+/** 在 host `levelledPara` 内、直接子节点 `childIndex` 处的文档插入位置。 */
+function insertPosInLevelledParaHost(
+  hostPos: number,
+  host: PMNode,
+  childIndex: number,
+): number {
+  let pos = hostPos + 1;
+  for (let i = 0; i < childIndex; i++) {
+    pos += host.child(i)!.nodeSize;
+  }
+  return pos;
+}
+
 /**
- * 拆分光标所在的最内层 `levelledPara` 并插入同级块：
- * 原块保留「光标所在直接子节点及之前」；新块以空 title 开头并承接之后的直接子节点。
+ * 在当前最内层 `levelledPara` 末尾插入空子节（S1000D `levelledPara*` 区）。
  */
-function splitLevelledParaAndInsertSibling(
-  $from: ResolvedPos,
-  lpDepth: number,
+function buildChildLevelledParaNode(
+  pmSchema: PMNode["type"]["schema"],
+  schema: DescriptionSchema,
   lpType: PMNode["type"],
-  titleType: PMNode["type"],
-): { left: PMNode; right: PMNode } | null {
-  const lp = $from.node(lpDepth);
-  const splitIndex = getLevelledParaDirectChildIndex($from, lpDepth);
-  if (splitIndex < 0) return null;
-
-  const leftChildren: PMNode[] = [];
-  for (let i = 0; i <= splitIndex; i++) {
-    leftChildren.push(lp.child(i));
-  }
-
-  const movedChildren: PMNode[] = [];
-  for (let i = splitIndex + 1; i < lp.childCount; i++) {
-    movedChildren.push(lp.child(i));
-  }
-
-  const emptyTitle = titleType.create(null, []);
-  const rightChildren = [emptyTitle, ...movedChildren];
-
+): PMNode | null {
+  const json = buildInsertLevelledParaJson(schema);
+  if (!json) return null;
   try {
-    const left = lpType.create(lp.attrs, Fragment.from(leftChildren));
-    const right = lpType.create(lp.attrs, Fragment.from(rightChildren));
-    if (
-      !left.type.validContent(left.content) ||
-      !right.type.validContent(right.content)
-    ) {
-      return null;
-    }
-    return { left, right };
+    const child = PMNode.fromJSON(pmSchema, json);
+    if (child.type !== lpType) return null;
+    return child;
   } catch {
     return null;
   }
@@ -197,8 +159,7 @@ export function insertLevelledParaFromSchema(
   if (!requireSchemaNode(schema, "levelledPara")) return false;
 
   const lpType = editor.state.schema.nodes.levelledPara;
-  const titleType = editor.state.schema.nodes.title;
-  if (!lpType || !titleType) return false;
+  if (!lpType) return false;
 
   if (getInnermostLevelledParaDepth(editor.state.selection.$from) < 0) {
     const json = buildInsertLevelledParaJson(schema);
@@ -214,22 +175,30 @@ export function insertLevelledParaFromSchema(
       const lpDepth = getInnermostLevelledParaDepth($from);
       if (lpDepth < 0) return false;
 
-      const split = splitLevelledParaAndInsertSibling(
-        $from,
-        lpDepth,
-        lpType,
-        titleType,
+      if (
+        collectAncestorDepths($from, LEVELLED_PARA).length >= TITLE_LEVEL_CAP
+      ) {
+        return false;
+      }
+
+      const host = $from.node(lpDepth);
+      const hostPos = $from.before(lpDepth);
+      const child = buildChildLevelledParaNode(state.schema, schema, lpType);
+      if (!child) return false;
+
+      const nextContent = host.content.addToEnd(child);
+      if (!lpType.validContent(nextContent)) return false;
+
+      const insertPos = insertPosInLevelledParaHost(
+        hostPos,
+        host,
+        host.childCount,
       );
-      if (!split) return false;
 
       if (!dispatch) return true;
 
-      const from = $from.before(lpDepth);
-      const to = $from.after(lpDepth);
-      tr.replaceWith(from, to, [split.left, split.right]);
-
-      const newSiblingPos = from + split.left.nodeSize;
-      const sel = selectionInLevelledParaTitle(tr.doc, newSiblingPos);
+      tr.insert(insertPos, child);
+      const sel = selectionInLevelledParaTitle(tr.doc, insertPos);
       if (sel) tr.setSelection(sel);
 
       dispatch(tr);
@@ -701,6 +670,7 @@ const ignoredExportAttrs = [
   "class",
   "rawXml",
   "displayLevel",
+  "sectionNumber",
   "start",
   "sourceXmlAttrKeys",
   "src",

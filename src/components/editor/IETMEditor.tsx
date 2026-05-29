@@ -25,6 +25,10 @@ import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
+  dispatchSectionNumbersSync,
+  S1000dSectionNumbersExtension,
+} from "../../extensions/s1000d/s1000dSectionNumbers";
+import {
   getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
@@ -328,6 +332,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000DParagraph,
         S1000DListExitKeymap,
         S1000DNestingKeymap,
+        S1000dSectionNumbersExtension,
         MigrateParagraphToParaExtension,
         PasteWordTableExtension,
         TextStyleKit.configure({
@@ -495,6 +500,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           void hydrateMultimediaObjectsInEditor(editor);
+          queueMicrotask(() => dispatchSectionNumbersSync(editor));
           return true;
         },
         setDmDocumentName: (name) => {

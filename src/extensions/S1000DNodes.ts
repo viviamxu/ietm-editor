@@ -41,6 +41,7 @@ import {
   readXlinkHrefFromElement,
 } from "../lib/s1000d/xlinkHref";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
+import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
 
 export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
 export { S1000DEmphasis };
@@ -593,6 +594,25 @@ export const S1000DTitle = Node.create({
             ),
           ),
         }),
+      },
+      /**
+       * 章节自动序号（如 `2.1.`）；仅编辑区 CSS 展示，不入 JSON 导出 / S1000D XML。
+       */
+      sectionNumber: {
+        default: null,
+        rendered: true,
+        parseHTML: (el) => {
+          if (!(el instanceof Element)) return null;
+          const raw = el.getAttribute("data-s1000d-section-number");
+          return normalizeSectionNumberAttr(raw);
+        },
+        renderHTML: (attrs) => {
+          const num = normalizeSectionNumberAttr(
+            (attrs as { sectionNumber?: string | null }).sectionNumber,
+          );
+          if (!num) return {};
+          return { "data-s1000d-section-number": num };
+        },
       },
     };
   },

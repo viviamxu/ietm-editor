@@ -120,9 +120,14 @@ export function FormatToolbar({
     const onTxn = () => {
       refresh();
     };
+    const onSelection = () => {
+      refresh();
+    };
     editor.on("transaction", onTxn);
+    editor.on("selectionUpdate", onSelection);
     return () => {
       editor.off("transaction", onTxn);
+      editor.off("selectionUpdate", onSelection);
     };
   }, [editor]);
 
@@ -340,8 +345,8 @@ export function FormatToolbar({
             disabled={formatBarLocked}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertLevelledParaFromSchema(editor, schema)}
-            title="插入层级段落"
-            aria-label="插入层级段落"
+            title="在当前节下插入子层级段落"
+            aria-label="在当前节下插入子层级段落"
           >
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>

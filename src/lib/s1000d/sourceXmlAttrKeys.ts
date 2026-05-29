@@ -91,6 +91,7 @@ export function mergeSourceXmlAttrKeysAfterPatch(input: {
       if (skip.has(k)) continue
       if (k === primaryKey) continue
       if (k === "displayLevel") continue
+      if (k === "sectionNumber") continue
       if (attrValueNonEmpty(liveAttrs[k])) next.add(k)
     }
   }
@@ -153,6 +154,7 @@ export function shouldShowSecondaryPanelAttr(input: {
 
   /** 编辑器内部级数，默认恒为数值；不得用「非空」兜底显示，否则会冒充源 XML 属性 */
   if (attrKey === "displayLevel") return false
+  if (attrKey === "sectionNumber") return false
   /** 对齐由格式工具栏控制，非 S1000D 源 XML 属性 */
   if (attrKey === "textAlign") return false
 
