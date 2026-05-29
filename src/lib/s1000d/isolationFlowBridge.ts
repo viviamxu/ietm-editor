@@ -70,17 +70,18 @@ function textToInlineContent(text: string): JSONContent[] {
   return [{ type: "text", text: t }];
 }
 
+function findChildByName(node: PMNode, childName: string): PMNode | null {
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i);
+    if (child.type.name === childName) return child;
+  }
+  return null;
+}
+
 function getInlineTextFromBlock(node: PMNode, blockName: string): string {
-  let block: PMNode | null = null;
-  node.forEach((c) => {
-    if (c.type.name === blockName) block = c;
-  });
+  const block = findChildByName(node, blockName);
   if (!block) return "";
-  let text = "";
-  block.descendants((n) => {
-    if (n.isText) text += n.text ?? "";
-  });
-  return text.trim();
+  return getInlineTextFromNode(block);
 }
 
 function getInlineTextFromNode(node: PMNode): string {
@@ -176,10 +177,7 @@ function readStepBranch(
   noRef: string;
   choiceRefs: Array<{ text: string; ref: string }>;
 } {
-  let answer: PMNode | null = null;
-  step.forEach((c) => {
-    if (c.type.name === "isolationStepAnswer") answer = c;
-  });
+  const answer = findChildByName(step, "isolationStepAnswer");
 
   const empty = {
     branchMode: "是否分支" as BranchMode,
@@ -251,10 +249,7 @@ export function procedureToFlow(main: PMNode): {
     index += 1;
 
     if (child.type.name === "isolationStep") {
-      let titleNode: PMNode | null = null;
-      child.forEach((c) => {
-        if (c.type.name === "title") titleNode = c;
-      });
+      const titleNode = findChildByName(child, "title");
       const branch = readStepBranch(child);
       nodes.push({
         id: refId,
@@ -302,10 +297,7 @@ export function procedureToFlow(main: PMNode): {
         });
       }
     } else if (child.type.name === "isolationProcedureEnd") {
-      let titleNode: PMNode | null = null;
-      child.forEach((c) => {
-        if (c.type.name === "title") titleNode = c;
-      });
+      const titleNode = findChildByName(child, "title");
       nodes.push({
         id: refId,
         type: "isolationEnd",
