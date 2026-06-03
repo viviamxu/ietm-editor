@@ -1,0 +1,58 @@
+{
+  "numbering": {
+    "enabled": true,
+    "separator": ".",
+    "suffix": "."
+  },
+  "procedureOutline": [
+    {
+      "node": "preliminaryRqmts",
+      "label": "前置条件",
+      "children": [
+        { "node": "reqCondGroup", "label": "作业条件" },
+        {
+          "node": "reqPersons",
+          "label": "人员要求",
+          "presentation": "table",
+          "tableKey": "personnel"
+        },
+        {
+          "node": "reqSupportEquips",
+          "label": "工装工具",
+          "presentation": "table",
+          "tableKey": "supportEquipDescr"
+        },
+        {
+          "node": "reqSupplies",
+          "label": "辅料",
+          "presentation": "table",
+          "tableKey": "supplyDescr"
+        },
+        {
+          "node": "reqSpares",
+          "label": "备品备件",
+          "presentation": "table",
+          "tableKey": "spareDescr"
+        },
+        { "node": "reqSafety", "label": "安全要求" }
+        
+      ]
+    },
+    {
+      "node": "mainProcedure",
+      "label": "作业步骤",
+      "children": [
+        {
+          "node": "proceduralStep",
+          "label": "操作步骤",
+          "repeatable": true,
+          "nestable": true
+        }
+      ]
+    },
+    {
+      "node": "closeRqmts",
+      "label": "结束要求"
+    }
+  ]
+}

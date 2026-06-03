@@ -4,6 +4,8 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
+import type { DescriptionSchema } from "../types/descriptionSchema";
+
 import { DmRefNodeView } from "./s1000d/DmRefNodeView";
 import { InternalRefNodeView } from "./s1000d/InternalRefNodeView";
 import { S1000DEmphasis } from "./s1000dEmphasis";
@@ -70,9 +72,17 @@ function isS1000DTitleParent(parent: Element | null): boolean {
     return true;
   }
 
+  if (
+    parent.getAttribute("data-s1000d-node") === "proceduralStep" ||
+    parent.classList.contains("s1000d-procedural-step__content")
+  ) {
+    return true;
+  }
+
   const ln = parent.localName.toLowerCase();
   return (
     ln === "levelledpara" ||
+    ln === "proceduralstep" ||
     ln === "figure" ||
     ln === "table" ||
     ln === "sequentiallist" ||
@@ -108,6 +118,7 @@ function normalizeTitleDisplayLevel(raw: number | null | undefined): number {
 
 /**
  * `levelledPara` 下 title：按祖先 `levelledPara` 深度 1~6。
+ * `proceduralStep` 下 title：按祖先 `proceduralStep` 嵌套深度 +1 映射为 2~6（1 留给节块标题）。
  * `figure` / `table` / `multimedia` 下 title：固定为 0（图题/表题，不用 levelledPara 深度）。
  */
 function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
@@ -126,11 +137,17 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
         return S1000D_TITLE_CAPTION_LEVEL;
       }
     }
-    let count = 0;
+    let levelledParaCount = 0;
+    let proceduralStepCount = 0;
     for (let d = $pos.depth; d > 0; d--) {
-      if ($pos.node(d).type.name === "levelledPara") count++;
+      const name = $pos.node(d).type.name;
+      if (name === "levelledPara") levelledParaCount++;
+      if (name === "proceduralStep") proceduralStepCount++;
     }
-    return clampS1000dTitleDisplayLevel(Math.max(1, count));
+    if (proceduralStepCount > 0 && levelledParaCount === 0) {
+      return clampS1000dTitleDisplayLevel(proceduralStepCount + 1);
+    }
+    return clampS1000dTitleDisplayLevel(Math.max(1, levelledParaCount));
   } catch {
     return 1;
   }
@@ -1994,19 +2011,102 @@ export function getFaultIsolationInnerXmlFromDmXml(
   return preprocessS1000dDescriptionHtmlFragment(joined);
 }
 
+/** 将 `simplePara` 内联化，便于 `remarks` 等 `inline*` 节点导入。 */
+function flattenSimpleParaInSubtree(root: Element) {
+  const paras = Array.from(
+    root.querySelectorAll("simplePara, simplepara"),
+  );
+  for (const sp of paras) {
+    const parent = sp.parentElement;
+    if (!parent) continue;
+    while (sp.firstChild) {
+      parent.insertBefore(sp.firstChild, sp);
+    }
+    parent.removeChild(sp);
+  }
+}
+
+function normalizeProcedureInnerXmlForEditor(procedureRoot: Element) {
+  normalizeWarningAndCautionParasForEditor(procedureRoot);
+  normalizeNoteParasForEditor(procedureRoot);
+  normalizeS1000dListsForEditor(procedureRoot);
+  flattenSimpleParaInSubtree(procedureRoot);
+}
+
 /**
- * 按 schema 正文类型从 DM 抽取可 `setContent` 的片段；类型不匹配时尝试另一种根元素。
+ * 从 DM 中取出 `<content>/<procedure>` 的直接子节点 XML 片段（无 `<procedure>` 外壳）。
+ */
+export function getProcedureInnerXmlFromDmXml(
+  xmlString: string,
+): string | null {
+  extractIdentAndStatusSection(xmlString);
+  const contentRoot = extractContentElementFromDmXml(xmlString);
+  if (!contentRoot) return null;
+  const procedure = Array.from(contentRoot.children).find(
+    (c) => c.localName === "procedure",
+  );
+  if (!procedure) return null;
+
+  normalizeProcedureInnerXmlForEditor(procedure);
+
+  const serializer = new XMLSerializer();
+  const atomNodes = procedure.querySelectorAll("dmRef");
+  atomNodes.forEach((node) => {
+    const pureXml = serializer.serializeToString(node);
+    node.setAttribute("data-raw-xml", encodeURIComponent(pureXml));
+  });
+
+  const parts: string[] = [];
+  for (const child of Array.from(procedure.children)) {
+    parts.push(serializer.serializeToString(child));
+  }
+  const joined = parts.length > 0 ? parts.join("") : null;
+  if (!joined) return null;
+  return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
+/**
+ * 按 schema 正文类型从 DM 抽取可 `setContent` 的片段；类型不匹配时尝试其它根元素。
  */
 export function getDmInnerXmlFromDmXml(
   xmlString: string,
-  preferFaultIsolation: boolean,
+  schemaOrPreferFault?: DescriptionSchema | boolean,
 ): string | null {
   const description = getDescriptionInnerXmlFromDmXml(xmlString);
   const fault = getFaultIsolationInnerXmlFromDmXml(xmlString);
-  if (preferFaultIsolation) {
-    return fault ?? description;
+  const procedure = getProcedureInnerXmlFromDmXml(xmlString);
+
+  let kind: "description" | "faultIsolation" | "procedure" = "description";
+  if (typeof schemaOrPreferFault === "boolean") {
+    kind = schemaOrPreferFault ? "faultIsolation" : "description";
+  } else if (schemaOrPreferFault) {
+    const contentRule = schemaOrPreferFault.content?.content ?? "";
+    if (/\bfaultIsolation\b/.test(contentRule)) kind = "faultIsolation";
+    else if (/\bprocedure\b/.test(contentRule)) kind = "procedure";
+    else if (/\bdescription\b/.test(contentRule)) kind = "description";
+    else if (
+      Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "procedure") &&
+      !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "description")
+    ) {
+      kind = "procedure";
+    } else if (
+      Object.prototype.hasOwnProperty.call(
+        schemaOrPreferFault,
+        "faultIsolation",
+      ) &&
+      !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "description")
+    ) {
+      kind = "faultIsolation";
+    }
   }
-  return description ?? fault;
+
+  if (kind === "faultIsolation") {
+    return fault ?? procedure ?? description;
+  }
+  if (kind === "procedure") {
+    return procedure ?? description ?? fault;
+  }
+  return description ?? procedure ?? fault;
 }
 
 /**

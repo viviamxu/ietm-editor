@@ -1,6 +1,14 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type { ResolvedPos } from "@tiptap/pm/model";
 
+import { getProcedureUiConfig } from "../../store/procedureUiConfigStore";
+import type { ProcedureUiConfig } from "../../types/procedureUiConfig";
+import {
+  PROCEDURAL_STEP,
+  computeProcedureSectionNumberSegments,
+  findProceduralStepPosForTitle,
+} from "./procedureSectionHeading";
+
 export const LEVELLED_PARA = "levelledPara";
 export const TITLE = "title";
 
@@ -44,9 +52,52 @@ function isChapterSectionTitleAtResolved($pos: ResolvedPos): boolean {
   if (TITLE_CAPTION_PARENT_TYPES.has(parentType)) return false;
 
   for (let d = titleDepth - 1; d > 0; d--) {
-    if ($pos.node(d).type.name === LEVELLED_PARA) return true;
+    const ancestor = $pos.node(d).type.name;
+    if (ancestor === LEVELLED_PARA || ancestor === PROCEDURAL_STEP) return true;
   }
   return false;
+}
+
+export function isProceduralStepSectionTitle(
+  doc: PMNode,
+  titlePos: number,
+): boolean {
+  try {
+    const $pos = doc.resolve(titlePos + 1);
+    let titleDepth = -1;
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name === TITLE) {
+        titleDepth = d;
+        break;
+      }
+    }
+    if (titleDepth < 0) return false;
+    const parentType = $pos.node(titleDepth - 1).type.name;
+    if (TITLE_CAPTION_PARENT_TYPES.has(parentType)) return false;
+    return parentType === PROCEDURAL_STEP;
+  } catch {
+    return false;
+  }
+}
+
+/** 章节标题序号路径（levelledPara 或含大纲节号的 proceduralStep）。 */
+export function computeSectionNumberPathForTitle(
+  doc: PMNode,
+  titlePos: number,
+  procedureConfig: ProcedureUiConfig = getProcedureUiConfig(),
+): number[] {
+  if (isProceduralStepSectionTitle(doc, titlePos)) {
+    if (!procedureConfig.numbering.enabled) return [];
+    const stepPos = findProceduralStepPosForTitle(doc, titlePos);
+    if (stepPos == null) return [];
+    return computeProcedureSectionNumberSegments(
+      doc,
+      stepPos,
+      procedureConfig.procedureOutline,
+      PROCEDURAL_STEP,
+    );
+  }
+  return computeLevelledParaSectionPath(doc, titlePos);
 }
 
 /** 从 `title` 位置向上收集各级 `levelledPara` 在同级中的序号路径 */
@@ -108,9 +159,8 @@ export function collectSectionNumberAssignments(
       return true;
     }
 
-    const path = computeLevelledParaSectionPath(doc, pos);
-    const next =
-      path.length > 0 ? formatSectionNumber(path) : null;
+    const path = computeSectionNumberPathForTitle(doc, pos);
+    const next = path.length > 0 ? formatSectionNumber(path) : null;
     const curr = normalizeSectionNumberAttr(
       (node.attrs as { sectionNumber?: string | null }).sectionNumber,
     );

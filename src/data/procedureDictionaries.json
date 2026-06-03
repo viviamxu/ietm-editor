@@ -1,0 +1,19 @@
+{
+  "personCategory": [
+    { "code": "pcc01", "label": "电工" },
+    { "code": "pcc02", "label": "机械师" },
+    { "code": "pcc03", "label": "检验员" },
+    { "code": "pcc04", "label": "操作员" }
+  ],
+  "personSkill": [
+    { "code": "sk01", "label": "初级" },
+    { "code": "sk02", "label": "中级" },
+    { "code": "sk03", "label": "高级" },
+    { "code": "sk04", "label": "专家" }
+  ],
+  "timeUnit": [
+    { "code": "h", "label": "h(小时)" },
+    { "code": "min", "label": "min(分钟)" },
+    { "code": "d", "label": "d(天)" }
+  ]
+}

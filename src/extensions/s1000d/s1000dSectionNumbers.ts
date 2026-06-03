@@ -4,12 +4,13 @@ import type { EditorView } from "@tiptap/pm/view";
 
 import {
   collectSectionNumberAssignments,
-  computeLevelledParaSectionPath,
+  computeSectionNumberPathForTitle,
   isChapterSectionTitle,
   normalizeSectionNumberAttr,
   sectionNumberAttrsEqual,
   stripLeadingSectionNumberFromTitleNode,
 } from "../../lib/s1000d/sectionNumbers";
+import { getProcedureUiConfig } from "../../store/procedureUiConfigStore";
 
 export const s1000dSectionNumbersKey = new PluginKey<{
   forceInitialSync?: true;
@@ -67,7 +68,11 @@ export function createS1000dSectionNumbersPlugin() {
         ) {
           const path =
             pathFromSectionNumber(next) ??
-            computeLevelledParaSectionPath(tr.doc, titlePos);
+            computeSectionNumberPathForTitle(
+              tr.doc,
+              titlePos,
+              getProcedureUiConfig(),
+            );
           if (path.length > 0) {
             const stripped = stripLeadingSectionNumberFromTitleNode(
               titleNode,
@@ -115,7 +120,7 @@ export function createS1000dSectionNumbersPlugin() {
   });
 }
 
-/** 描述类 DM：章节标题自动序号（仅编辑区展示，不入库） */
+/** 描述类 / 程序类 DM：章节标题自动序号（仅编辑区展示，不入库） */
 export const S1000dSectionNumbersExtension = Extension.create({
   name: "s1000dSectionNumbers",
   priority: 1015,

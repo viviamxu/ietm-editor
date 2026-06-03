@@ -34,6 +34,7 @@ import {
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
+import { s1000dProcedureNodes, PROCEDURE_TEXT_ALIGN_NODE_TYPES } from "../../extensions/s1000d/procedureNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
@@ -57,7 +58,6 @@ import {
   insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
-import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
 import {
   applyIsolationFlowToEditor,
   type IsolationFlowPayload,
@@ -342,7 +342,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         Overline,
         Strikethrough,
         TextAlign.configure({
-          types: ["para", "paragraph"],
+          types: ["para", "paragraph", ...PROCEDURE_TEXT_ALIGN_NODE_TYPES],
           alignments: ["left", "center", "right", "justify"],
           defaultAlignment: "left",
         }),
@@ -353,6 +353,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         ...s1000dPhase1Nodes,
         ...s1000dFaultIsolationNodes,
+        ...s1000dProcedureNodes,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
@@ -491,10 +492,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               .setDocumentDisplayTitle(normalizeDmDocumentName(documentName));
           }
           const schema = getDescriptionSchema();
-          const inner = getDmInnerXmlFromDmXml(
-            dmXml,
-            getDmContentKind(schema) === "faultIsolation",
-          );
+          const inner = getDmInnerXmlFromDmXml(dmXml, getDescriptionSchema());
           if (inner == null) {
             return applyFillEmptyContentFromSchema(editor, schema);
           }

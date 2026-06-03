@@ -9,13 +9,15 @@ import {
   type IETMEditorInstance,
 } from "./index";
 
-import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
+// import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
 
 // import faultDmXml from "./data/故障类.XML?raw";
+import procedureDmXml from "./data/程序类.xml?raw";
 
-import faultIsolationSchema from "./data/描述类Schema.json";
+// import faultIsolationSchema from "./data/描述类Schema.json";
 
 // import faultIsolationSchema from "./data/故障隔离.json";
+import procedureSchema from "./data/程序类.json";
 
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 
@@ -32,15 +34,15 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: bikeDmSampleXml,
+      dmXml: procedureDmXml,
 
-      dmDocumentName: "bikeDmSample.xml",
+      dmDocumentName: "procedureDm.xml",
 
       // dmXml: faultDmXml,
 
       // dmDocumentName: "故障类.XML",
 
-      descriptionSchema: faultIsolationSchema as DescriptionSchema,
+      descriptionSchema: procedureSchema as DescriptionSchema,
     });
 
     instanceRef.current = instance;

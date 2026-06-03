@@ -4,6 +4,7 @@ import type { JSONContent } from "@tiptap/core";
 import {
   getDescriptionInnerXmlFromDmXml,
   getFaultIsolationInnerXmlFromDmXml,
+  getProcedureInnerXmlFromDmXml,
   getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
 } from "./extensions/S1000DNodes";
@@ -26,6 +27,14 @@ import {
   setDescriptionSchema,
   useDescriptionSchemaStore,
 } from "./store/descriptionSchemaStore";
+import {
+  resetProcedureDictionaries,
+  setProcedureDictionaries,
+} from "./store/procedureDictionaryStore";
+import {
+  resetProcedureUiConfig,
+  setProcedureUiConfig,
+} from "./store/procedureUiConfigStore";
 import { useToolbarConfigStore } from "./store/toolbarConfigStore";
 import type {
   BuiltinToolbarItemId,
@@ -42,6 +51,8 @@ import type {
   DescriptionSchema,
   DescriptionSchemaRule,
 } from "./types/descriptionSchema";
+import type { ProcedureDictionaries } from "./types/procedureDictionaries";
+import type { ProcedureUiConfig } from "./types/procedureUiConfig";
 import type { InsertMultimediaPayload } from "./lib/editor/insertMultimedia";
 import {
   buildEmptyDescriptionBodyFromSchema,
@@ -52,7 +63,6 @@ import {
 } from "./lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";
 import type { IsolationFlowPayload } from "./lib/s1000d/isolationFlowBridge";
-import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 import { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
 import {
   DEFAULT_DM_PDF_PREVIEW_PATH,
@@ -74,16 +84,30 @@ export {
 export {
   getDescriptionInnerXmlFromDmXml,
   getFaultIsolationInnerXmlFromDmXml,
+  getProcedureInnerXmlFromDmXml,
   getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
 };
-export { getDmContentKind, isDescriptionDm, isFaultIsolationDm } from "./lib/s1000d/dmContentKind";
+export {
+  getDmContentKind,
+  isDescriptionDm,
+  isFaultIsolationDm,
+  isProcedureDm,
+} from "./lib/s1000d/dmContentKind";
 export type { DmContentKind } from "./lib/s1000d/dmContentKind";
 export {
   buildEmptyFaultIsolationDocJson,
   buildMinimalFaultIsolationProcedureJson,
   insertFaultIsolationFromSchema,
 } from "./lib/s1000d/faultIsolationInsert";
+export {
+  buildEmptyProcedureDocJson,
+  buildMinimalMainProcedureJson,
+  buildMinimalPreliminaryRqmtsJson,
+  buildMinimalCloseRqmtsJson,
+  buildMinimalProceduralStepJson,
+  insertProceduralStepAtCursor,
+} from "./lib/s1000d/procedureInsert";
 export { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";
 export {
   buildEmptyDescriptionBodyFromSchema,
@@ -95,6 +119,34 @@ export {
 
 export type { JSONContent };
 export type { DescriptionSchema, DescriptionSchemaRule };
+export {
+  getProcedureDictionaries,
+  resetProcedureDictionaries,
+  setProcedureDictionaries,
+  useProcedureDictionaryStore,
+} from "./store/procedureDictionaryStore";
+export type {
+  ProcedureDictionaries,
+  ProcedureDictionaryOption,
+} from "./types/procedureDictionaries";
+export {
+  getProcedureUiConfig,
+  resetProcedureUiConfig,
+  setProcedureUiConfig,
+  useProcedureUiConfigStore,
+} from "./store/procedureUiConfigStore";
+export {
+  resolveProcedureSectionHeading,
+  formatProcedureSectionNumber,
+  computeProcedureSectionNumberSegments,
+} from "./lib/s1000d/procedureSectionHeading";
+export type {
+  ProcedureUiConfig,
+  ProcedureOutlineEntry,
+  ProcedureNumberingConfig,
+  ProcedureSectionHeading,
+  ProcedureSectionPresentation,
+} from "./types/procedureUiConfig";
 export {
   getDescriptionSchema,
   resetDescriptionSchema,
@@ -155,6 +207,10 @@ export interface IETMEditorOptions {
   editable?: boolean;
   /** 服务端下发的描述类 schema；不传则使用内置默认，卸载实例时会恢复默认（若创建时传入了本字段） */
   descriptionSchema?: DescriptionSchema;
+  /** 程序类人员/技能/工时单位字典；不传则使用 `src/data/procedureDictionaries.json` */
+  procedureDictionaries?: ProcedureDictionaries;
+  /** 程序类大纲标题与编号；不传则使用 `src/data/procedureUiConfig.json` */
+  procedureUiConfig?: ProcedureUiConfig;
   /**
    * 工具栏「保存」：传入时生成完整 DM XML 并调用本回调（不触发下载）；不传时与原先一致，触发本地下载。
    */
@@ -319,8 +375,7 @@ function resolveInitialEditorContent(
 ): JSONContent | string | undefined {
   if (typeof options.dmXml === "string") {
     const schema = options.descriptionSchema ?? getDescriptionSchema();
-    const preferFault = getDmContentKind(schema) === "faultIsolation";
-    const inner = getDmInnerXmlFromDmXml(options.dmXml, preferFault);
+    const inner = getDmInnerXmlFromDmXml(options.dmXml, schema);
     if (inner != null) return inner;
     if (options.content !== undefined) return options.content;
     return buildEmptyDocJsonFromSchema(schema);
@@ -350,6 +405,14 @@ export function createIETMEditor(
     useDmMetadataStore
       .getState()
       .setDocumentDisplayTitle(normalizeDmDocumentName(options.dmDocumentName));
+  }
+
+  if (options.procedureDictionaries) {
+    setProcedureDictionaries(options.procedureDictionaries);
+  }
+
+  if (options.procedureUiConfig) {
+    setProcedureUiConfig(options.procedureUiConfig);
   }
 
   const withHandle = (fn: (handle: IETMEditorRootHandle) => void) => {
@@ -461,6 +524,12 @@ export function createIETMEditor(
       pending.length = 0;
       emitter.clear();
       useToolbarConfigStore.getState().resetToolbarConfig();
+      if (options.procedureDictionaries) {
+        resetProcedureDictionaries();
+      }
+      if (options.procedureUiConfig) {
+        resetProcedureUiConfig();
+      }
       queueMicrotask(() => root.unmount());
     },
   };

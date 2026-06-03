@@ -429,12 +429,85 @@ export function insertExternalRefFromSchema(
   useExternalRefModalStore.getState().openExternalRef(editor);
 }
 
-/** 可编辑前导正文（对应 schema `warningAndCautionPara` 的 `text*`，导出时剥壳） */
+const attentionListItemParaEmpty: JSONContent = {
+  type: "attentionListItemPara",
+  content: [],
+};
+
+/** 与样例 DM / `notePara` 一致：空 `attentionRandomList` + 一条可编辑列表项。 */
+const minimalAttentionRandomListJson: JSONContent = {
+  type: "attentionRandomList",
+  content: [
+    {
+      type: "attentionRandomListItem",
+      content: [attentionListItemParaEmpty],
+    },
+  ],
+};
+
+/** 可编辑前导 + 列表（对应 schema `warningAndCautionPara` 的 `text*` + 样例并排结构）。 */
 function buildMinimalWarningAndCautionParaJson(): JSONContent {
   return {
     type: "warningAndCautionPara",
-    content: [{ type: "warningAndCautionLead", content: [] }],
+    content: [
+      { type: "warningAndCautionLead", content: [] },
+      minimalAttentionRandomListJson,
+    ],
   };
+}
+
+/** 插入 warning/caution 后把光标放进 `warningAndCautionLead`。 */
+function selectionInWarningAndCautionLeadFromResolved(
+  doc: PMNode,
+  $from: ResolvedPos,
+): TextSelection | null {
+  let paraDepth = -1;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "warningAndCautionPara") {
+      paraDepth = d;
+      break;
+    }
+  }
+  if (paraDepth < 0) return null;
+
+  const para = $from.node(paraDepth);
+  const paraStart = $from.before(paraDepth);
+  let childPos = paraStart + 1;
+  for (let i = 0; i < para.childCount; i++) {
+    const child = para.child(i);
+    if (child.type.name === "warningAndCautionLead") {
+      const caret = childPos + 1;
+      if (caret < 0 || caret > doc.content.size) return null;
+      return TextSelection.create(doc, caret);
+    }
+    childPos += child.nodeSize;
+  }
+  return null;
+}
+
+function insertAttentionBlockFromSchema(
+  editor: Editor,
+  buildNode: (schema: DescriptionSchema) => JSONContent | null,
+  schema: DescriptionSchema,
+): boolean {
+  const node = buildNode(schema);
+  if (!node) return false;
+  return editor
+    .chain()
+    .focus()
+    .insertContent(node)
+    .command(({ state, tr, dispatch }) => {
+      const sel = selectionInWarningAndCautionLeadFromResolved(
+        state.doc,
+        state.selection.$from,
+      );
+      if (!sel) return true;
+      if (!dispatch) return true;
+      tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
 }
 
 /** `warning`：`warningAndCautionPara+`（schema 描述类规则） */
@@ -467,39 +540,22 @@ export function insertWarningFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const node = buildInsertWarningJson(schema);
-  if (!node) return false;
-  return editor.chain().focus().insertContent(node).run();
+  return insertAttentionBlockFromSchema(editor, buildInsertWarningJson, schema);
 }
 
 export function insertCautionFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const node = buildInsertCautionJson(schema);
-  if (!node) return false;
-  return editor.chain().focus().insertContent(node).run();
+  return insertAttentionBlockFromSchema(editor, buildInsertCautionJson, schema);
 }
-
-const attentionListItemParaEmpty: JSONContent = {
-  type: "attentionListItemPara",
-  content: [],
-};
 
 function buildMinimalNoteParaJson(): JSONContent {
   return {
     type: "notePara",
     content: [
       { type: "noteLead", content: [] },
-      {
-        type: "attentionRandomList",
-        content: [
-          {
-            type: "attentionRandomListItem",
-            content: [attentionListItemParaEmpty],
-          },
-        ],
-      },
+      minimalAttentionRandomListJson,
     ],
   };
 }
@@ -757,7 +813,7 @@ function serializeChildrenToXml(node: JSONContent): string {
       .join("");
   }
 
-  if (node.type === "levelledPara" || node.type === "doc") {
+  if (node.type === "levelledPara" || node.type === "proceduralStep" || node.type === "doc") {
     return serializeChildrenWithListsWrappedInPara(node);
   }
 
@@ -1017,6 +1073,9 @@ function serializeNodeToXml(node: JSONContent): string {
     if (kind === "faultIsolation") {
       return `<content>\n  <faultIsolation>\n${children}\n  </faultIsolation>\n</content>`;
     }
+    if (kind === "procedure") {
+      return `<content>\n  <procedure>\n${children}\n  </procedure>\n</content>`;
+    }
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
   }
 
@@ -1047,13 +1106,22 @@ export function exportEditorToDmXmlString(editor: Editor): string {
   const finalIdentXml =
     identAndStatusXml || `<identAndStatusSection>\n  </identAndStatusSection>`;
 
+  const schema = getDescriptionSchema();
+  const kind = getDmContentKind(schema);
+  const xsd =
+    kind === "procedure"
+      ? "proced.xsd"
+      : kind === "faultIsolation"
+        ? "fault.xsd"
+        : "descript.xsd";
+
   return `<?xml version="1.0" encoding="utf-8"?>
 ${doctypeXml}
 <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xmlns:dc="http://www.purl.org/dc/elements/1.1/"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:xlink="http://www.w3.org/1999/xlink"
-   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
+   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/${xsd}">
 
    ${finalIdentXml}
    ${contentXml}

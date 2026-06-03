@@ -23,6 +23,7 @@ import {
   insertIsolationProcedureEndAtCursor,
   insertIsolationStepAtCursor,
 } from "../../lib/s1000d/faultIsolationInsert";
+import { insertProceduralStepAtCursor } from "../../lib/s1000d/procedureInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
@@ -107,7 +108,9 @@ export function FormatToolbar({
   const schema = useDescriptionSchemaStore((s) => s.schema);
   const contentKind = getDmContentKind(schema);
   const isDescriptionDm = contentKind === "description";
+  const isProcedureDm = contentKind === "procedure";
   const isFaultDm = contentKind === "faultIsolation";
+  const isRichTextDm = isDescriptionDm || isProcedureDm;
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
   const onInsertImageClick = useToolbarConfigStore((s) => s.onInsertImageClick);
   const onInsertFilmClick = useToolbarConfigStore((s) => s.onInsertFilmClick);
@@ -338,6 +341,19 @@ export function FormatToolbar({
             </button>
           </>
         ) : null}
+        {isProcedureDm ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => insertProceduralStepAtCursor(editor)}
+            title="插入程序步骤（proceduralStep）"
+            aria-label="插入程序步骤"
+          >
+            <SquarePilcrow size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
         {isDescriptionDm && isBuiltinVisible("insertLevelledPara") ? (
           <button
             type="button"
@@ -378,7 +394,7 @@ export function FormatToolbar({
           </>
         ) : null}
 
-        {isDescriptionDm && isBuiltinVisible("insertSequentialList") ? (
+        {isRichTextDm && isBuiltinVisible("insertSequentialList") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -395,6 +411,7 @@ export function FormatToolbar({
             type="button"
             className="ietm-icon-btn"
             disabled={formatBarLocked}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() =>
               insertRandomOrAttentionListFromSchema(editor, schema)
             }
@@ -435,7 +452,7 @@ export function FormatToolbar({
             <Film size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isDescriptionDm ? (
+        {isRichTextDm ? (
           <>
             <ToolbarCustomItems placement="insert" ctx={toolbarCtx} />
             <button
@@ -520,7 +537,7 @@ export function FormatToolbar({
         </button>
       </div>
 
-      {isDescriptionDm ? (
+      {isRichTextDm ? (
         <>
           <span
             className="ietm-format-toolbar__divider"
