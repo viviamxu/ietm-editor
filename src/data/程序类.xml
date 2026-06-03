@@ -165,10 +165,10 @@
       <procedure>
          <preliminaryRqmts>
             <reqCondGroup>
-               <!-- <noConds /> -->
-               <reqCondNoRef>
+               <noConds />
+               <!-- <reqCondNoRef>
                   <reqCond>天亮就出发，天黑就休息</reqCond>
-               </reqCondNoRef>
+               </reqCondNoRef> -->
             </reqCondGroup>
             <reqPersons>
                <personnel numRequired="2">
@@ -289,7 +289,8 @@
             <reqSafety>
                <safetyRqmts>
                   <warning>
-                     <warningAndCautionPara>警告文本...此处省略</warningAndCautionPara>
+                     <warningAndCautionPara>警告文本1</warningAndCautionPara>
+                     <warningAndCautionPara>警告文本2</warningAndCautionPara>
                   </warning>
                </safetyRqmts>
             </reqSafety>
@@ -297,7 +298,28 @@
          <mainProcedure>
             <proceduralStep>
                <title>操作步骤（一级）</title>
-               <para>此处省略...</para>
+               <warning>
+                  <warningAndCautionPara>注文本 <attentionRandomList>
+                        <attentionRandomListItem>
+                           <attentionListItemPara>注无序列表：推荐在网络环境稳定的情况下进行大文件上传，以避免超时。</attentionListItemPara>
+                        </attentionRandomListItem>
+                        <attentionRandomListItem>
+                           <attentionListItemPara>注无序列表：部分旧版浏览器可能无法完美渲染高级排版特性。</attentionListItemPara>
+                        </attentionRandomListItem>
+                     </attentionRandomList>
+                  </warningAndCautionPara>
+               </warning>
+               <note>
+                  <notePara> 注文本 <attentionRandomList>
+                        <attentionRandomListItem>
+                           <attentionListItemPara>注无序列表：推荐在网络环境稳定的情况下进行大文件上传，以避免超时。</attentionListItemPara>
+                        </attentionRandomListItem>
+                        <attentionRandomListItem>
+                           <attentionListItemPara>注无序列表：部分旧版浏览器可能无法完美渲染高级排版特性。</attentionListItemPara>
+                        </attentionRandomListItem>
+                     </attentionRandomList>
+                  </notePara>
+               </note>
             </proceduralStep>
             <proceduralStep>
                <title>操作步骤</title>

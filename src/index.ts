@@ -12,9 +12,7 @@ import {
   IETMEditorRoot,
   type IETMEditorRootHandle,
 } from "./components/editor/IETMEditorRoot";
-import type {
-  InsertTableOptions,
-} from "./components/editor/IETMEditor";
+import type { InsertTableOptions } from "./components/editor/IETMEditor";
 import type {
   OpenDmPdfPreviewContext,
   OpenDmPdfPreviewHandler,
@@ -201,7 +199,7 @@ export interface IETMEditorOptions {
   dmXml?: string;
   /**
    * 顶栏文档标题：XML 文件名（可含 `.xml` 或路径，展示时去掉后缀）。
-   * 例如 `bikeDmSample.xml` → `bikeDmSample`。
+   * 例如 `描述类.xml` → `描述类`。
    */
   dmDocumentName?: string;
   editable?: boolean;
@@ -279,7 +277,7 @@ export interface IETMEditorInstance {
    * @returns 未就绪或写入失败时为 `false`
    */
   loadDmXml(dmXml: string, documentName?: string): boolean;
-  /** 设置顶栏文档标题（XML 文档名，如 `bikeDmSample` 或 `bikeDmSample.xml`） */
+  /** 设置顶栏文档标题（XML 文档名，如 `描述类` 或 `描述类.xml`） */
   setDmDocumentName(name: string): void;
   /**
    * 按当前描述类 schema（`getDescriptionSchema()`，含创建实例时传入的 `descriptionSchema`）
@@ -493,8 +491,7 @@ export function createIETMEditor(
       disposed || !handleRef.current
         ? false
         : handleRef.current.addTableColumnAfter(),
-    setFooterStatus: (status) =>
-      withHandle((h) => h.setFooterStatus(status)),
+    setFooterStatus: (status) => withHandle((h) => h.setFooterStatus(status)),
     setToolbarConfig: (config) => {
       useToolbarConfigStore.getState().setToolbarConfig(config);
     },

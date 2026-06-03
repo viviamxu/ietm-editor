@@ -5,7 +5,9 @@ import {
   CloseRqmtsNodeView,
   MainProcedureNodeView,
   PreliminaryRqmtsNodeView,
+  ProcedureEmptyPlaceholderNodeView,
   ProceduralStepNodeView,
+  ReqCondNoRefNodeView,
   ReqGroupNodeView,
 } from "./ProcedureNodeViews";
 import {
@@ -59,6 +61,23 @@ function createInlineTextNode(
     parseHTML: () => tagRules(name),
     renderHTML({ HTMLAttributes }) {
       return [name, mergeAttributes(HTMLAttributes), 0];
+    },
+  });
+}
+
+/** `noConds` / `noSupportEquips` 等：空占位，编辑区展示「无」，不落正文。 */
+function createProcedureEmptyPlaceholderNode(name: string) {
+  return Node.create({
+    name,
+    group: PROCEDURE_ITEM_GROUP,
+    atom: true,
+    selectable: false,
+    parseHTML: () => tagRules(name),
+    renderHTML({ HTMLAttributes }) {
+      return [name, mergeAttributes(HTMLAttributes)];
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(ProcedureEmptyPlaceholderNodeView);
     },
   });
 }
@@ -141,10 +160,14 @@ export const S1000DReqCondNoRef = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["reqCondNoRef", mergeAttributes(HTMLAttributes), 0];
   },
+  addNodeView() {
+    return ReactNodeViewRenderer(ReqCondNoRefNodeView);
+  },
 });
 
 export const S1000DReqCond = createInlineTextNode("reqCond");
-export const S1000DNoConds = createInlineTextNode("noConds");
+
+export const S1000DNoConds = createProcedureEmptyPlaceholderNode("noConds");
 
 export const S1000DReqPersons = Node.create({
   name: "reqPersons",
@@ -228,7 +251,8 @@ export const S1000DReqSupportEquips = Node.create({
   },
 });
 
-export const S1000DNoSupportEquips = createInlineTextNode("noSupportEquips");
+export const S1000DNoSupportEquips =
+  createProcedureEmptyPlaceholderNode("noSupportEquips");
 export const S1000DSupportEquipDescrGroup = Node.create({
   name: "supportEquipDescrGroup",
   group: PROCEDURE_ITEM_GROUP,
@@ -268,7 +292,7 @@ export const S1000DReqSupplies = Node.create({
   },
 });
 
-export const S1000DNoSupplies = createInlineTextNode("noSupplies");
+export const S1000DNoSupplies = createProcedureEmptyPlaceholderNode("noSupplies");
 export const S1000DSupplyDescrGroup = Node.create({
   name: "supplyDescrGroup",
   group: PROCEDURE_ITEM_GROUP,
@@ -311,7 +335,7 @@ export const S1000DReqSpares = Node.create({
   },
 });
 
-export const S1000DNoSpares = createInlineTextNode("noSpares");
+export const S1000DNoSpares = createProcedureEmptyPlaceholderNode("noSpares");
 export const S1000DSpareDescrGroup = Node.create({
   name: "spareDescrGroup",
   group: PROCEDURE_ITEM_GROUP,
@@ -351,7 +375,7 @@ export const S1000DReqSafety = Node.create({
   },
 });
 
-export const S1000DNoSafety = createInlineTextNode("noSafety");
+export const S1000DNoSafety = createProcedureEmptyPlaceholderNode("noSafety");
 export const S1000DSafetyRqmts = Node.create({
   name: "safetyRqmts",
   group: PROCEDURE_ITEM_GROUP,
@@ -411,15 +435,10 @@ export const S1000DRemarks = Node.create({
 /** 程序类 `inline*` 文本块：与 `para` 一样支持编辑器内 textAlign（不落 S1000D XML）。 */
 export const PROCEDURE_TEXT_ALIGN_NODE_TYPES = [
   "reqCond",
-  "noConds",
   "personCategory",
   "personSkill",
   "trade",
   "estimatedTime",
-  "noSupportEquips",
-  "noSupplies",
-  "noSpares",
-  "noSafety",
   "partNumber",
   "name",
   "natoStockNumber",

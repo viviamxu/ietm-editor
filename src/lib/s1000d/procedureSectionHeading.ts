@@ -51,18 +51,71 @@ export function findProceduralStepPosForTitle(
   return null;
 }
 
-function proceduralStepIndexInParent(
+export function proceduralStepIndexInParent(
   parent: PMNode,
   childNode: PMNode,
 ): number {
   let index = 0;
   for (let i = 0; i < parent.childCount; i++) {
     const child = parent.child(i);
-    if (child.type.name !== "proceduralStep") continue;
+    if (child.type.name !== PROCEDURAL_STEP) continue;
     index++;
     if (child === childNode) return index;
   }
   return index > 0 ? index : 1;
+}
+
+/**
+ * 与 `computeLevelledParaSectionPath` 同逻辑：沿祖先收集各级 `proceduralStep`
+ * 在同级中的序号（1-based），不依赖大纲 `children` 深度。
+ */
+export function computeProceduralStepSectionPath(
+  doc: PMNode,
+  pos: number,
+  nodeType?: string,
+): number[] {
+  try {
+    const $pos = resolveProcedureNodePos(doc, pos, nodeType);
+    const path: number[] = [];
+    for (let d = 1; d <= $pos.depth; d++) {
+      if ($pos.node(d).type.name !== PROCEDURAL_STEP) continue;
+      const parent = $pos.node(d - 1);
+      const stepNode = $pos.node(d);
+      const index = proceduralStepIndexInParent(parent, stepNode);
+      if (index > 0) path.push(index);
+    }
+    return path;
+  } catch {
+    return [];
+  }
+}
+
+/** 大纲固定节（`mainProcedure` 等）的前缀段；可重复的 `proceduralStep` 由 {@link computeProceduralStepSectionPath} 计数。 */
+function computeOutlinePrefixSegments(
+  doc: PMNode,
+  pos: number,
+  outline: ProcedureOutlineEntry[],
+  nodeType?: string,
+): number[] {
+  const $pos = resolveProcedureNodePos(doc, pos, nodeType);
+  const segments: number[] = [];
+  let outlineLevel = outline;
+
+  for (let d = 1; d <= $pos.depth; d++) {
+    const nodeName = $pos.node(d).type.name;
+    if (nodeName === "doc" || nodeName === PROCEDURAL_STEP) continue;
+
+    const entryIndex = outlineLevel.findIndex((e) => e.node === nodeName);
+    if (entryIndex < 0) continue;
+
+    const entry = outlineLevel[entryIndex]!;
+    if (!entry.repeatable) {
+      segments.push(entryIndex + 1);
+    }
+    outlineLevel = entry.children ?? [];
+  }
+
+  return segments;
 }
 
 /**
@@ -86,37 +139,19 @@ function resolveProcedureNodePos(
   return $before;
 }
 
-/** 从节点位置沿文档祖先与大纲树对齐，计算编号路径。 */
+/**
+ * 程序类编号：大纲固定节前缀 + `proceduralStep` 嵌套序号（与 `levelledPara` 同级计数一致）。
+ */
 export function computeProcedureSectionNumberSegments(
   doc: PMNode,
   pos: number,
   outline: ProcedureOutlineEntry[],
   nodeType?: string,
 ): number[] {
-  const $pos = resolveProcedureNodePos(doc, pos, nodeType);
-  const segments: number[] = [];
-  let outlineLevel = outline;
-
-  for (let d = 1; d <= $pos.depth; d++) {
-    const nodeName = $pos.node(d).type.name;
-    if (nodeName === "doc") continue;
-
-    const entryIndex = outlineLevel.findIndex((e) => e.node === nodeName);
-    if (entryIndex < 0) continue;
-
-    const entry = outlineLevel[entryIndex]!;
-    if (entry.repeatable) {
-      segments.push(
-        proceduralStepIndexInParent($pos.node(d - 1), $pos.node(d)),
-      );
-    } else {
-      segments.push(entryIndex + 1);
-    }
-
-    outlineLevel = entry.children ?? [];
-  }
-
-  return segments;
+  return [
+    ...computeOutlinePrefixSegments(doc, pos, outline, nodeType),
+    ...computeProceduralStepSectionPath(doc, pos, nodeType),
+  ];
 }
 
 export function getProcedureNodePath(

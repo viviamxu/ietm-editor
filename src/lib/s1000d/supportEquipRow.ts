@@ -9,12 +9,54 @@ export type SupportEquipRowData = {
   remarks: string;
 };
 
-const DEFAULT_UNIT_OF_MEASURE = "set";
+const DEFAULT_UNIT_OF_MEASURE = "套";
+
+/** 与样例 DM `unitOfMeasure="套"` 一致；兼容旧编辑器内部 code。 */
+const LEGACY_UNIT_OF_MEASURE: Record<string, string> = {
+  set: "套",
+  ea: "个",
+  pcs: "件",
+};
+
+export const QUANTITY_UNIT_OPTIONS = [
+  { code: "套", label: "套" },
+  { code: "个", label: "个" },
+  { code: "件", label: "件" },
+] as const;
+
+export function normalizeUnitOfMeasure(raw: unknown): string {
+  const trimmed = String(raw ?? "").trim();
+  if (!trimmed) return DEFAULT_UNIT_OF_MEASURE;
+  return LEGACY_UNIT_OF_MEASURE[trimmed] ?? trimmed;
+}
 type EquipRowNodeType = "supportEquipDescr" | "supplyDescr" | "spareDescr";
 type EquipGroupNodeType =
   | "supportEquipDescrGroup"
   | "supplyDescrGroup"
   | "spareDescrGroup";
+
+const REQ_EQUIP_DESCR_CONFIG = {
+  reqSupportEquips: {
+    noType: "noSupportEquips",
+    groupType: "supportEquipDescrGroup",
+    rowType: "supportEquipDescr",
+  },
+  reqSupplies: {
+    noType: "noSupplies",
+    groupType: "supplyDescrGroup",
+    rowType: "supplyDescr",
+  },
+  reqSpares: {
+    noType: "noSpares",
+    groupType: "spareDescrGroup",
+    rowType: "spareDescr",
+  },
+} as const satisfies Record<
+  string,
+  { noType: string; groupType: EquipGroupNodeType; rowType: EquipRowNodeType }
+>;
+
+export type EquipReqContainerType = keyof typeof REQ_EQUIP_DESCR_CONFIG;
 
 function findChild(node: PMNode, typeName: string): PMNode | null {
   let found: PMNode | null = null;
@@ -56,9 +98,7 @@ export function readSupportEquipRowData(node: PMNode): SupportEquipRowData {
     name: name?.textContent ?? "",
     natoStockNumber: natoStockNumber?.textContent ?? "",
     reqQuantity: reqQuantity?.textContent ?? "",
-    unitOfMeasure:
-      String(reqQuantity?.attrs.unitOfMeasure ?? "").trim() ||
-      DEFAULT_UNIT_OF_MEASURE,
+    unitOfMeasure: normalizeUnitOfMeasure(reqQuantity?.attrs.unitOfMeasure),
     remarks: remarks?.textContent ?? "",
   };
 }
@@ -79,10 +119,11 @@ export function buildSupportEquipRowNode(
     inlineTextNode(schema, "natoStockNumber", data.natoStockNumber),
   ];
   if (identNumberNode) children.push(identNumberNode);
-  if (data.reqQuantity.trim() || data.unitOfMeasure.trim()) {
+  const unit = normalizeUnitOfMeasure(data.unitOfMeasure);
+  if (data.reqQuantity.trim() || unit !== DEFAULT_UNIT_OF_MEASURE) {
     children.push(
       inlineTextNode(schema, "reqQuantity", data.reqQuantity, {
-        unitOfMeasure: data.unitOfMeasure || DEFAULT_UNIT_OF_MEASURE,
+        unitOfMeasure: unit,
       }),
     );
   }
@@ -113,6 +154,45 @@ export function applySupportEquipRowUpdate(
   );
 }
 
+function equipCfgForRowType(rowNodeType: EquipRowNodeType) {
+  for (const entry of Object.entries(REQ_EQUIP_DESCR_CONFIG)) {
+    const [reqType, cfg] = entry as [EquipReqContainerType, (typeof REQ_EQUIP_DESCR_CONFIG)[EquipReqContainerType]];
+    if (cfg.rowType === rowNodeType) return { reqType, ...cfg };
+  }
+  return null;
+}
+
+function countEquipRowsInGroup(
+  group: PMNode,
+  rowNodeType: EquipRowNodeType,
+): number {
+  let count = 0;
+  group.forEach((child) => {
+    if (child.type.name === rowNodeType) count += 1;
+  });
+  return count;
+}
+
+/** 将 `reqSupportEquips` 等整块内容替换为 `noSupportEquips` 等空占位。 */
+export function replaceReqEquipWithNoPlaceholder(
+  editor: Editor,
+  reqPos: number,
+  reqType: EquipReqContainerType,
+): void {
+  const cfg = REQ_EQUIP_DESCR_CONFIG[reqType];
+  const req = editor.state.doc.nodeAt(reqPos);
+  if (!req || req.type.name !== reqType) return;
+
+  const noSchema = editor.schema.nodes[cfg.noType];
+  if (!noSchema) return;
+
+  const from = reqPos + 1;
+  const to = from + req.content.size;
+  editor.view.dispatch(
+    editor.state.tr.replaceWith(from, to, noSchema.create()),
+  );
+}
+
 export function deleteSupportEquipRow(
   editor: Editor,
   pos: number,
@@ -120,6 +200,35 @@ export function deleteSupportEquipRow(
 ): void {
   const current = editor.state.doc.nodeAt(pos);
   if (!current || current.type.name !== rowNodeType) return;
+
+  const cfg = equipCfgForRowType(rowNodeType);
+  if (!cfg) {
+    editor.view.dispatch(editor.state.tr.delete(pos, pos + current.nodeSize));
+    return;
+  }
+
+  const $pos = editor.state.doc.resolve(pos);
+  let reqPos: number | null = null;
+  let groupNode: PMNode | null = null;
+  for (let d = $pos.depth; d > 0; d--) {
+    const name = $pos.node(d).type.name;
+    if (name === cfg.groupType) groupNode = $pos.node(d);
+    if (name === cfg.reqType) {
+      reqPos = $pos.before(d);
+      break;
+    }
+  }
+
+  if (reqPos == null || !groupNode) {
+    editor.view.dispatch(editor.state.tr.delete(pos, pos + current.nodeSize));
+    return;
+  }
+
+  if (countEquipRowsInGroup(groupNode, rowNodeType) <= 1) {
+    replaceReqEquipWithNoPlaceholder(editor, reqPos, cfg.reqType);
+    return;
+  }
+
   editor.view.dispatch(editor.state.tr.delete(pos, pos + current.nodeSize));
 }
 
@@ -139,4 +248,36 @@ export function insertSupportEquipRowAtEnd(
     rowNodeType,
   );
   editor.view.dispatch(editor.state.tr.insert(insertPos, row));
+}
+
+/** 将 `noSupportEquips` / `noSupplies` / `noSpares` 替换为含一行的 descr 组，或向已有组追加一行。 */
+export function insertFirstEquipDescrGroupAtReq(
+  editor: Editor,
+  reqPos: number,
+  reqType: EquipReqContainerType,
+): void {
+  const cfg = REQ_EQUIP_DESCR_CONFIG[reqType];
+  const req = editor.state.doc.nodeAt(reqPos);
+  if (!req || req.type.name !== reqType) return;
+
+  const groupSchema = editor.schema.nodes[cfg.groupType];
+  if (!groupSchema) return;
+
+  const row = buildSupportEquipRowNode(
+    editor.schema,
+    defaultSupportEquipRowData(),
+    cfg.rowType,
+  );
+
+  if (req.childCount === 1 && req.firstChild?.type.name === cfg.noType) {
+    const group = groupSchema.create({}, row);
+    const from = reqPos + 1;
+    const to = from + req.firstChild.nodeSize;
+    editor.view.dispatch(editor.state.tr.replaceWith(from, to, group));
+    return;
+  }
+
+  if (req.firstChild?.type.name === cfg.groupType) {
+    insertSupportEquipRowAtEnd(editor, reqPos + 1, cfg.groupType, cfg.rowType);
+  }
 }

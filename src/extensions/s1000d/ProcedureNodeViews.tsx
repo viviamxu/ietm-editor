@@ -1,16 +1,38 @@
 import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
-import { Brackets } from "lucide-react";
+import { Button } from "@arco-design/web-react";
+import { Brackets, Plus } from "lucide-react";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
 import { useProcedureSectionHeading } from "../../hooks/useProcedureSectionHeading";
+import {
+  getReqCondNoRefIndex,
+  insertReqCondNoRefAtEnd,
+} from "../../lib/s1000d/reqCondRow";
+import { insertSafetyRqmtsFromNoPlaceholder } from "../../lib/s1000d/procedureInsert";
+import {
+  insertFirstEquipDescrGroupAtReq,
+  type EquipReqContainerType,
+} from "../../lib/s1000d/supportEquipRow";
+
+function useEditorRefresh(editor: NodeViewProps["editor"]) {
+  const [, bump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    const on = () => bump();
+    editor.on("transaction", on);
+    return () => {
+      editor.off("transaction", on);
+    };
+  }, [editor]);
+}
 
 function selectionInsideBlock(
   props: NodeViewProps,
@@ -220,13 +242,60 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
   );
 }
 
+/** 程序类 `noConds` / `noSupportEquips` 等空占位：仅 UI 展示「无」。 */
+export function ProcedureEmptyPlaceholderNodeView(props: NodeViewProps) {
+  return (
+    <NodeViewWrapper
+      as="div"
+      className="s1000d-procedure-empty-placeholder"
+      data-s1000d-node={props.node.type.name}
+      contentEditable={false}
+    >
+      无
+    </NodeViewWrapper>
+  );
+}
+
+/** @deprecated 使用 {@link ProcedureEmptyPlaceholderNodeView} */
+export const NoCondsNodeView = ProcedureEmptyPlaceholderNodeView;
+
+/** `reqCondNoRef`：组内自动序号（1. 2. …），仅编辑区展示。 */
+export function ReqCondNoRefNodeView(props: NodeViewProps) {
+  const { editor, getPos } = props;
+  useEditorRefresh(editor);
+
+  const index = useMemo(() => {
+    const pos = typeof getPos === "function" ? getPos() : null;
+    if (pos == null) return 1;
+    return getReqCondNoRefIndex(editor.state.doc, pos);
+  }, [editor.state.doc, getPos]);
+
+  return (
+    <NodeViewWrapper
+      as="div"
+      className="s1000d-req-cond-no-ref"
+      data-s1000d-node="reqCondNoRef"
+    >
+      <span
+        className="s1000d-req-cond-no-ref__number"
+        contentEditable={false}
+        aria-hidden
+      >
+        {index}.
+      </span>
+      <NodeViewContent className="s1000d-req-cond-no-ref__content" />
+    </NodeViewWrapper>
+  );
+}
+
 export function ReqGroupNodeView(props: NodeViewProps) {
+  const { editor, getPos } = props;
   const { full: label } = useProcedureSectionHeading(props);
   const nodeName = props.node.type.name;
   const parentName = (() => {
-    const pos = typeof props.getPos === "function" ? props.getPos() : null;
+    const pos = typeof getPos === "function" ? getPos() : null;
     if (pos == null) return "";
-    const $pos = props.editor.state.doc.resolve(pos);
+    const $pos = editor.state.doc.resolve(pos);
     return $pos.depth > 0 ? $pos.node($pos.depth).type.name : "";
   })();
   const isTableLikeGroup =
@@ -236,6 +305,58 @@ export function ReqGroupNodeView(props: NodeViewProps) {
   const hideLabelInCloseRqmts =
     nodeName === "reqCondGroup" && parentName === "closeRqmts";
   const displayLabel = hideLabelInCloseRqmts ? "" : label;
+  const reqCondAddLabel =
+    parentName === "closeRqmts"
+      ? "添加结束要求"
+      : parentName === "preliminaryRqmts"
+        ? "添加作业条件"
+        : null;
+  const showReqCondAddBtn =
+    nodeName === "reqCondGroup" && reqCondAddLabel != null;
+
+  const emptyPlaceholderAddLabel = (() => {
+    const onlyChild = props.node.firstChild?.type.name;
+    if (props.node.childCount !== 1 || !onlyChild) return null;
+    if (onlyChild === "noSupportEquips") return "添加工装工具";
+    if (onlyChild === "noSupplies") return "添加辅料";
+    if (onlyChild === "noSpares") return "添加备件";
+    if (onlyChild === "noSafety") return "添加安全要求";
+    return null;
+  })();
+
+  const addReqCond = useCallback(
+    (e?: { preventDefault?: () => void }) => {
+      e?.preventDefault?.();
+      const pos = typeof getPos === "function" ? getPos() : null;
+      if (pos == null) return;
+      insertReqCondNoRefAtEnd(editor, pos);
+      editor.commands.focus();
+    },
+    [editor, getPos],
+  );
+
+  const addEmptyPlaceholderContent = useCallback(
+    (e?: { preventDefault?: () => void }) => {
+      e?.preventDefault?.();
+      const pos = typeof getPos === "function" ? getPos() : null;
+      if (pos == null) return;
+      if (nodeName === "reqSafety") {
+        insertSafetyRqmtsFromNoPlaceholder(editor, pos);
+      } else if (
+        nodeName === "reqSupportEquips" ||
+        nodeName === "reqSupplies" ||
+        nodeName === "reqSpares"
+      ) {
+        insertFirstEquipDescrGroupAtReq(
+          editor,
+          pos,
+          nodeName as EquipReqContainerType,
+        );
+      }
+      editor.commands.focus();
+    },
+    [editor, getPos, nodeName],
+  );
 
   return (
     <NodeViewWrapper
@@ -260,6 +381,34 @@ export function ReqGroupNodeView(props: NodeViewProps) {
         </div>
       ) : null}
       <NodeViewContent className="s1000d-procedure-req-group__content" />
+      {showReqCondAddBtn || emptyPlaceholderAddLabel ? (
+        <div className="s1000d-support-equip__toolbar" contentEditable={false}>
+          {showReqCondAddBtn ? (
+            <Button
+              type="text"
+              size="small"
+              className="s1000d-support-equip__add-btn"
+              icon={<Plus size={14} aria-hidden />}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={addReqCond}
+            >
+              {reqCondAddLabel}
+            </Button>
+          ) : null}
+          {emptyPlaceholderAddLabel ? (
+            <Button
+              type="text"
+              size="small"
+              className="s1000d-support-equip__add-btn"
+              icon={<Plus size={14} aria-hidden />}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={addEmptyPlaceholderContent}
+            >
+              {emptyPlaceholderAddLabel}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </NodeViewWrapper>
   );
 }

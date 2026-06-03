@@ -3,7 +3,7 @@ import { create } from "zustand";
 
 type DmMetadataState = {
   identAndStatusXml: string;
-  /** 顶栏 `.ietm-doc-title` 展示文案（宿主传入的 XML 文档名，如 `bikeDmSample`） */
+  /** 顶栏 `.ietm-doc-title` 展示文案（宿主传入的 XML 文档名，如 `描述类`） */
   documentDisplayTitle: string;
   setIdentAndStatusXml: (xml: string) => void;
   setDocumentDisplayTitle: (title: string) => void;

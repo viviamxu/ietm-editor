@@ -19,6 +19,28 @@
   color: #0f172a;
 }
 
+/* preliminaryRqmts 内标题：统一 1.22rem，颜色继承正文 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-procedure-section--preliminary
+  .s1000d-procedure-section__heading,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-procedure-section--preliminary
+  .s1000d-procedure-req-group__label,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-procedure-section--preliminary
+  .s1000d-procedure-req-group__label--table-like,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-procedure-section--preliminary
+  .s1000d-req-persons__label {
+  font-size: 1.22rem;
+  line-height: 1.32;
+  color: inherit;
+}
+
 .ietm-editor-surface .tiptap .s1000d-procedure-section__block-handle {
   display: inline-flex;
   align-items: center;
@@ -81,6 +103,7 @@
 
 .ietm-editor-surface .tiptap .s1000d-procedure-req-group__content {
   outline: none;
+  padding: 0 10px;
 }
 
 .ietm-editor-surface .tiptap .s1000d-procedure-equip-descr {
@@ -99,12 +122,6 @@
 
 .ietm-editor-surface .tiptap .s1000d-procedural-step {
   position: relative;
-  margin: 10px 0;
-  padding: 10px 12px 10px 16px;
-  border: 1px solid #e5e7eb;
-  border-left: 3px solid #93c5fd;
-  border-radius: 6px;
-  background: #ffffff;
 }
 
 .ietm-editor-surface .tiptap .s1000d-procedural-step .s1000d-procedural-step {
@@ -268,17 +285,60 @@
 }
 
 .ietm-editor-surface .tiptap .s1000d-support-equip__add-btn {
-  font-size: 0.8125rem;
+  padding: 0 4px;
+  height: auto;
+  font-size: 14px;
+  font-weight: 400;
+  color: #f77234;
+  border: none;
+  background: transparent;
 }
 
-.ietm-editor-surface .tiptap .s1000d-support-equip__add-btn:hover {
-  color: #1e293b;
+.ietm-editor-surface .tiptap .s1000d-support-equip__add-btn:hover,
+.ietm-editor-surface .tiptap .s1000d-support-equip__add-btn:focus-visible {
+  color: #e65f1f;
+  background: transparent;
+}
+
+.ietm-editor-surface .tiptap .s1000d-support-equip__add-btn .ietm-arco-btn-icon,
+.ietm-editor-surface .tiptap .s1000d-support-equip__add-btn .ietm-arco-icon {
+  color: inherit;
+}
+
+.ietm-editor-surface .tiptap .s1000d-procedure-empty-placeholder,
+.ietm-editor-surface .tiptap .s1000d-no-conds {
+  display: block;
+  min-height: 1.25em;
+  line-height: 1.5;
+  color: inherit;
+  user-select: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-req-cond-no-ref {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.35em;
+  margin: 0.2em 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-req-cond-no-ref__number {
+  flex: 0 0 auto;
+  color: inherit;
+  font-weight: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-req-cond-no-ref__content {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ietm-editor-surface .tiptap name,
 .ietm-editor-surface .tiptap trade,
 .ietm-editor-surface .tiptap reqCond,
-.ietm-editor-surface .tiptap noConds,
 .ietm-editor-surface .tiptap remarks,
 .ietm-editor-surface .tiptap reqQuantity,
 .ietm-editor-surface .tiptap natoStockNumber {

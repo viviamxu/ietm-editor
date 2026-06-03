@@ -367,7 +367,7 @@ export function FormatToolbar({
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isDescriptionDm ? (
+        {isRichTextDm ? (
           <>
             <button
               type="button"

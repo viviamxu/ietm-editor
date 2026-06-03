@@ -2,8 +2,17 @@ import type { ResolvedPos } from "@tiptap/pm/model";
 
 export const LIST_ITEM = "listItem";
 export const LEVELLED_PARA = "levelledPara";
+export const PROCEDURAL_STEP = "proceduralStep";
 export const LIST_TYPES = new Set(["bulletList", "orderedList"]);
 export const WRAP_BLOCK_TYPES = new Set(["title", "para", "paragraph"]);
+
+const STEP_NESTING_BLOCK_TYPES = new Set([
+  "figure",
+  "table",
+  "note",
+  "warning",
+  "caution",
+]);
 
 /** 与 `S1000DNodes` 中标题展示层级上限一致 */
 export const TITLE_LEVEL_CAP = 6;
@@ -23,6 +32,14 @@ export function getInnermostLevelledParaDepth($from: ResolvedPos): number {
   let depth = -1;
   for (let d = 0; d <= $from.depth; d++) {
     if ($from.node(d).type.name === LEVELLED_PARA) depth = d;
+  }
+  return depth;
+}
+
+export function getInnermostProceduralStepDepth($from: ResolvedPos): number {
+  let depth = -1;
+  for (let d = 0; d <= $from.depth; d++) {
+    if ($from.node(d).type.name === PROCEDURAL_STEP) depth = d;
   }
   return depth;
 }
@@ -121,21 +138,40 @@ export function isInListNestingContext($from: ResolvedPos): boolean {
   return false;
 }
 
-/** 光标是否位于 levelledPara 的 title/para（或其中段落）内。 */
-export function isInLevelledParaTitleOrPara($from: ResolvedPos): boolean {
-  const lpDepth = getInnermostLevelledParaDepth($from);
-  if (lpDepth < 0 || $from.depth <= lpDepth) return false;
+function isInHostBlockTitleOrPara(
+  $from: ResolvedPos,
+  hostDepth: number,
+  excludedBlocks: ReadonlySet<string>,
+): boolean {
+  if (hostDepth < 0 || $from.depth <= hostDepth) return false;
 
-  for (let d = lpDepth + 1; d <= $from.depth; d++) {
+  for (let d = hostDepth + 1; d <= $from.depth; d++) {
     const name = $from.node(d).type.name;
     if (LIST_TYPES.has(name) || name === LIST_ITEM) return false;
-    if (name === "figure" || name === "table" || name === "note") return false;
-    if (name === "warning" || name === "caution") return false;
+    if (excludedBlocks.has(name)) return false;
   }
 
-  for (let d = $from.depth; d > lpDepth; d--) {
+  for (let d = $from.depth; d > hostDepth; d--) {
     if (WRAP_BLOCK_TYPES.has($from.node(d).type.name)) return true;
   }
 
   return false;
+}
+
+/** 光标是否位于 levelledPara 的 title/para（或其中段落）内。 */
+export function isInLevelledParaTitleOrPara($from: ResolvedPos): boolean {
+  return isInHostBlockTitleOrPara(
+    $from,
+    getInnermostLevelledParaDepth($from),
+    STEP_NESTING_BLOCK_TYPES,
+  );
+}
+
+/** 光标是否位于 proceduralStep 的 title/para（或其中段落）内。 */
+export function isInProceduralStepTitleOrPara($from: ResolvedPos): boolean {
+  return isInHostBlockTitleOrPara(
+    $from,
+    getInnermostProceduralStepDepth($from),
+    STEP_NESTING_BLOCK_TYPES,
+  );
 }

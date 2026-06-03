@@ -13,9 +13,9 @@ import {
 function NoteInfoIcon() {
   return (
     <svg
-      className="s1000d-note-lead__icon-svg"
-      width="20"
-      height="20"
+      className="s1000d-attention-lead__icon-svg"
+      width="36"
+      height="36"
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -62,24 +62,21 @@ function selectionOnNoteBlock(props: NodeViewProps): {
   return { nodeSelected: false, caretInside: false };
 }
 
-/** `noteLead`：信息图标 + 前导「注文本」行。 */
+/** `noteLead`：仅可编辑引导文；图标在父级 `note` 左侧固定列展示。 */
 export function NoteLeadNodeView(props: NodeViewProps) {
   void props;
   return (
-    <NodeViewWrapper as="div" className="s1000d-note-lead">
-      <span
-        className="s1000d-note-lead__icon"
-        contentEditable={false}
-        aria-hidden
-      >
-        <NoteInfoIcon />
-      </span>
-      <NodeViewContent className="s1000d-note-lead__text" />
+    <NodeViewWrapper
+      as="div"
+      className="s1000d-attention-lead"
+      data-s1000d-lead-kind="note"
+    >
+      <NodeViewContent className="s1000d-attention-lead__text" />
     </NodeViewWrapper>
   );
 }
 
-/** `note` 块级外壳（深灰主题，与 warning/caution 布局对称）。 */
+/** `note` 块级外壳：与 warning/caution 共用左右布局与 attention 样式类。 */
 export function NoteNodeView(props: NodeViewProps) {
   const { editor, getPos } = props;
   const [hovered, setHovered] = useState(false);
@@ -112,8 +109,8 @@ export function NoteNodeView(props: NodeViewProps) {
       as="aside"
       className={
         showChrome
-          ? "s1000d-note-block s1000d-note-block--chrome"
-          : "s1000d-note-block"
+          ? "s1000d-attention-block s1000d-attention-block--note s1000d-attention-block--chrome"
+          : "s1000d-attention-block s1000d-attention-block--note"
       }
       data-s1000d-node="note"
       role="note"
@@ -122,7 +119,7 @@ export function NoteNodeView(props: NodeViewProps) {
     >
       <button
         type="button"
-        className="s1000d-note-block__block-handle"
+        className="s1000d-attention-block__block-handle"
         contentEditable={false}
         tabIndex={-1}
         aria-label="选中整块 note"
@@ -131,7 +128,18 @@ export function NoteNodeView(props: NodeViewProps) {
       >
         <Brackets size={14} strokeWidth={2} aria-hidden />
       </button>
-      <NodeViewContent className="s1000d-note-block__body" />
+      <div className="s1000d-attention-block__row">
+        <div
+          className="s1000d-attention-block__icon-col"
+          contentEditable={false}
+          aria-hidden
+        >
+          <span className="s1000d-attention-lead__icon">
+            <NoteInfoIcon />
+          </span>
+        </div>
+        <NodeViewContent className="s1000d-attention-block__content-col" />
+      </div>
     </NodeViewWrapper>
   );
 }
@@ -140,8 +148,8 @@ export function NoteNodeView(props: NodeViewProps) {
 export function NoteParaNodeView(props: NodeViewProps) {
   void props;
   return (
-    <NodeViewWrapper as="div" className="s1000d-note-block__body-item">
-      <NodeViewContent className="s1000d-note-block__body-item__content" />
+    <NodeViewWrapper as="div" className="s1000d-attention-block__body-item">
+      <NodeViewContent className="s1000d-attention-block__body-item__content" />
     </NodeViewWrapper>
   );
 }

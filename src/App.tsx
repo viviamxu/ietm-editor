@@ -9,7 +9,7 @@ import {
   type IETMEditorInstance,
 } from "./index";
 
-// import bikeDmSampleXml from "./data/bikeDmSample.xml?raw";
+// import bikeDmSampleXml from "./data/描述类.xml?raw";
 
 // import faultDmXml from "./data/故障类.XML?raw";
 import procedureDmXml from "./data/程序类.xml?raw";

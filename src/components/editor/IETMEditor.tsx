@@ -23,6 +23,7 @@ import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysEx
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
+import { S1000dAttentionParaKeymap } from "../../extensions/s1000d/s1000dAttentionParaKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
   dispatchSectionNumbersSync,
@@ -331,6 +332,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         S1000DParagraph,
         S1000DListExitKeymap,
+        S1000dAttentionParaKeymap,
         S1000DNestingKeymap,
         S1000dSectionNumbersExtension,
         MigrateParagraphToParaExtension,

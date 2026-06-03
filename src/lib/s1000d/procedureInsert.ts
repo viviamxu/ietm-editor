@@ -183,4 +183,32 @@ export function buildEmptyProcedureDocJson(): JSONContent {
   };
 }
 
+/** 将 `noSafety` 替换为含一条空 `warning` 的 `safetyRqmts`。 */
+export function insertSafetyRqmtsFromNoPlaceholder(
+  editor: Editor,
+  reqSafetyPos: number,
+): void {
+  const req = editor.state.doc.nodeAt(reqSafetyPos);
+  if (!req || req.type.name !== "reqSafety") return;
+
+  const safetyRqmtsType = editor.schema.nodes.safetyRqmts;
+  if (!safetyRqmtsType) return;
+
+  const safetyRqmts = PMNode.fromJSON(editor.schema, {
+    type: "safetyRqmts",
+    content: [
+      {
+        type: "warning",
+        content: [buildMinimalWarningAndCautionParaJson()],
+      },
+    ],
+  });
+
+  if (req.childCount === 1 && req.firstChild?.type.name === "noSafety") {
+    const from = reqSafetyPos + 1;
+    const to = from + req.firstChild.nodeSize;
+    editor.view.dispatch(editor.state.tr.replaceWith(from, to, safetyRqmts));
+  }
+}
+
 export { buildMinimalWarningAndCautionParaJson };

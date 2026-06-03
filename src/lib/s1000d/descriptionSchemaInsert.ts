@@ -701,11 +701,27 @@ function escapeXml(unsafe: string): string {
   });
 }
 
+/** 工具栏插入的 warning/caution/note 最小骨架（空列表项）也应导出。 */
+function hasAttentionBlockExportableStructure(node: JSONContent): boolean {
+  const type = node.type || "";
+  if (type === "warning" || type === "caution") {
+    return (node.content || []).some((c) => c.type === "warningAndCautionPara");
+  }
+  if (type === "note") {
+    return (node.content || []).some((c) => c.type === "notePara");
+  }
+  if (type === "warningAndCautionPara" || type === "notePara") {
+    return true;
+  }
+  return false;
+}
+
 /**
  * 💡 辅助函数：深度探测节点是否包含“实质性内容”
  * 彻底拦截并销毁 Tiptap 产生的无意义空壳节点（如多敲的回车、空列表项）
  */
 function hasEffectiveContent(node: JSONContent): boolean {
+  if (hasAttentionBlockExportableStructure(node)) return true;
   if (node.type === "text" && node.text?.trim() !== "") return true;
   if (
     node.type === "image" ||

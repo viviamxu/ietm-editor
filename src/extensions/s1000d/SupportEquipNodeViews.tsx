@@ -1,7 +1,13 @@
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Plus, Trash2 } from "lucide-react";
-import { Button, Input, Select, Table } from "@arco-design/web-react";
+import {
+  Button,
+  Input,
+  InputNumber,
+  Select,
+  Table,
+} from "@arco-design/web-react";
 import {
   useCallback,
   useEffect,
@@ -15,16 +21,28 @@ import {
   applySupportEquipRowUpdate,
   deleteSupportEquipRow,
   insertSupportEquipRowAtEnd,
+  QUANTITY_UNIT_OPTIONS,
   readSupportEquipRowData,
+  normalizeUnitOfMeasure,
   type SupportEquipRowData,
 } from "../../lib/s1000d/supportEquipRow";
 
-const SUPPORT_EQUIP_COLUMNS = ["名称", "物料号", "数量", "备注", "操作"] as const;
-const QUANTITY_UNIT_OPTIONS = [
-  { code: "set", label: "套(套)" },
-  { code: "ea", label: "个(个)" },
-  { code: "pcs", label: "件(件)" },
+const SUPPORT_EQUIP_COLUMNS = [
+  "名称",
+  "物料号",
+  "数量",
+  "备注",
+  "操作",
 ] as const;
+
+function quantityUnitSelectOptions(current: string) {
+  const normalized = normalizeUnitOfMeasure(current);
+  const orphan =
+    normalized && !QUANTITY_UNIT_OPTIONS.some((o) => o.code === normalized)
+      ? [{ code: normalized, label: normalized }]
+      : [];
+  return [...orphan, ...QUANTITY_UNIT_OPTIONS];
+}
 type EquipRowNodeType = "supportEquipDescr" | "supplyDescr" | "spareDescr";
 type EquipGroupNodeType =
   | "supportEquipDescrGroup"
@@ -189,7 +207,12 @@ function EquipDescrGroupNodeView({
       const current = editor.state.doc.nodeAt(rowPos);
       if (!current || current.type.name !== rowNodeType) return;
       const row = readSupportEquipRowData(current);
-      applySupportEquipRowUpdate(editor, rowPos, { ...row, ...patch }, rowNodeType);
+      applySupportEquipRowUpdate(
+        editor,
+        rowPos,
+        { ...row, ...patch },
+        rowNodeType,
+      );
     },
     [editor, resolveRowPos, rowNodeType],
   );
@@ -238,16 +261,23 @@ function EquipDescrGroupNodeView({
         title: SUPPORT_EQUIP_COLUMNS[2],
         width: "24%",
         render: (_: unknown, row: EquipTableRow) => {
-          const unitValue = row.data.unitOfMeasure || QUANTITY_UNIT_OPTIONS[0].code;
+          const unitValue = normalizeUnitOfMeasure(
+            row.data.unitOfMeasure || QUANTITY_UNIT_OPTIONS[0].code,
+          );
           return (
             <div className="s1000d-support-equip__qty-cell">
-              <Input
-                value={row.data.reqQuantity}
-                placeholder="0"
+              <InputNumber
+                min={0}
+                value={
+                  row.data.reqQuantity.trim() === ""
+                    ? undefined
+                    : Number(row.data.reqQuantity)
+                }
                 onMouseDown={stopEditorPropagation}
-                onKeyDown={stopEditorKeydown}
                 onChange={(value) =>
-                  commitRow(row.rowIndex, { reqQuantity: value })
+                  commitRow(row.rowIndex, {
+                    reqQuantity: value == null ? "" : String(value),
+                  })
                 }
               />
               <div onMouseDown={stopEditorPointer}>
@@ -255,13 +285,13 @@ function EquipDescrGroupNodeView({
                   value={unitValue}
                   onChange={(value) =>
                     commitRow(row.rowIndex, {
-                      unitOfMeasure: String(
+                      unitOfMeasure: normalizeUnitOfMeasure(
                         value ?? QUANTITY_UNIT_OPTIONS[0].code,
                       ),
                     })
                   }
                 >
-                  {QUANTITY_UNIT_OPTIONS.map((opt) => (
+                  {quantityUnitSelectOptions(unitValue).map((opt) => (
                     <Select.Option key={opt.code} value={opt.code}>
                       {opt.label}
                     </Select.Option>
@@ -323,7 +353,8 @@ function EquipDescrGroupNodeView({
       />
       <div className="s1000d-support-equip__toolbar" contentEditable={false}>
         <Button
-          type="outline"
+          type="text"
+          size="small"
           className="s1000d-support-equip__add-btn"
           icon={<Plus size={14} aria-hidden />}
           onMouseDown={(e) => e.preventDefault()}

@@ -2,7 +2,13 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Plus, Trash2 } from "lucide-react";
-import { Button, Input, Select, Table } from "@arco-design/web-react";
+import {
+  Button,
+  Input,
+  InputNumber,
+  Select,
+  Table,
+} from "@arco-design/web-react";
 import {
   useCallback,
   useEffect,
@@ -220,7 +226,6 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
       },
       {
         title: PERSONNEL_COLUMNS[2],
-        width: "16%",
         render: (_: unknown, row: PersonnelTableRow) => (
           <Input
             value={row.data.trade}
@@ -274,12 +279,18 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         title: PERSONNEL_COLUMNS[4],
         width: "10%",
         render: (_: unknown, row: PersonnelTableRow) => (
-          <Input
-            value={row.data.numRequired}
+          <InputNumber
+            min={0}
+            value={
+              row.data.numRequired.trim() === ""
+                ? undefined
+                : Number(row.data.numRequired)
+            }
             onMouseDown={stopEditorPropagation}
-            onKeyDown={stopEditorKeydown}
             onChange={(value) =>
-              commitRow(row.rowIndex, { numRequired: value })
+              commitRow(row.rowIndex, {
+                numRequired: value == null ? "" : String(value),
+              })
             }
           />
         ),
@@ -328,7 +339,8 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
       />
       <div className="s1000d-support-equip__toolbar" contentEditable={false}>
         <Button
-          type="outline"
+          type="text"
+          size="small"
           className="s1000d-support-equip__add-btn"
           icon={<Plus size={14} aria-hidden />}
           onMouseDown={(e) => e.preventDefault()}

@@ -7,11 +7,14 @@ import {
   LEVELLED_PARA,
   LIST_ITEM,
   LIST_TYPES,
+  PROCEDURAL_STEP,
   collectAncestorDepths,
   getInnermostLevelledParaDepth,
+  getInnermostProceduralStepDepth,
   getListItemDepth,
   isInLevelledParaTitleOrPara,
   isInListNestingContext,
+  isInProceduralStepTitleOrPara,
   listItemIndexInParentList,
 } from "./nestingLevelShared";
 
@@ -212,16 +215,17 @@ function resolveListLiftTarget($from: ResolvedPos): ListLiftTarget | null {
   return null;
 }
 
-function selectionInLevelledParaTitle(
+function selectionInHostBlockTitle(
   doc: PMNode,
-  levelledParaPos: number,
+  hostPos: number,
+  hostTypeName: string,
 ): TextSelection | null {
-  if (levelledParaPos < 0 || levelledParaPos > doc.content.size) return null;
+  if (hostPos < 0 || hostPos > doc.content.size) return null;
 
-  const node = doc.nodeAt(levelledParaPos);
-  if (!node || node.type.name !== LEVELLED_PARA) return null;
+  const node = doc.nodeAt(hostPos);
+  if (!node || node.type.name !== hostTypeName) return null;
 
-  let offset = levelledParaPos + 1;
+  let offset = hostPos + 1;
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
     if (child.type.name === "title") {
@@ -231,20 +235,54 @@ function selectionInLevelledParaTitle(
     }
     offset += child.nodeSize;
   }
-  const fallback = Math.min(levelledParaPos + 2, doc.content.size);
+  const fallback = Math.min(hostPos + 2, doc.content.size);
   if (fallback < 0 || fallback > doc.content.size) return null;
   return TextSelection.create(doc, fallback);
 }
 
-function canLiftLevelledParaToParentSibling($from: ResolvedPos): boolean {
+function selectionInLevelledParaTitle(
+  doc: PMNode,
+  levelledParaPos: number,
+): TextSelection | null {
+  return selectionInHostBlockTitle(doc, levelledParaPos, LEVELLED_PARA);
+}
+
+function selectionInProceduralStepTitle(
+  doc: PMNode,
+  proceduralStepPos: number,
+): TextSelection | null {
+  return selectionInHostBlockTitle(doc, proceduralStepPos, PROCEDURAL_STEP);
+}
+
+function canLiftHostBlockToParentSibling(
+  $from: ResolvedPos,
+  hostTypeName: string,
+  hostDepth: number,
+  isInHostTitleOrPara: (pos: ResolvedPos) => boolean,
+): boolean {
   if (isInListNestingContext($from)) return false;
+  if (hostDepth < 1) return false;
+  if ($from.node(hostDepth - 1).type.name !== hostTypeName) return false;
+  if (collectAncestorDepths($from, hostTypeName).length < 2) return false;
+  return isInHostTitleOrPara($from);
+}
 
-  const childDepth = getInnermostLevelledParaDepth($from);
-  if (childDepth < 1) return false;
-  if ($from.node(childDepth - 1).type.name !== LEVELLED_PARA) return false;
-  if (collectAncestorDepths($from, LEVELLED_PARA).length < 2) return false;
+function canLiftLevelledParaToParentSibling($from: ResolvedPos): boolean {
+  return canLiftHostBlockToParentSibling(
+    $from,
+    LEVELLED_PARA,
+    getInnermostLevelledParaDepth($from),
+    isInLevelledParaTitleOrPara,
+  );
+}
 
-  return isInLevelledParaTitleOrPara($from);
+function canLiftProceduralStepToParentSibling($from: ResolvedPos): boolean {
+  return canLiftHostBlockToParentSibling(
+    $from,
+    PROCEDURAL_STEP,
+    getInnermostProceduralStepDepth($from),
+    isInProceduralStepTitleOrPara,
+  );
 }
 
 function liftListItemAtTarget(editor: Editor, target: ListLiftTarget): boolean {
@@ -352,42 +390,47 @@ function liftListItemAtTarget(editor: Editor, target: ListLiftTarget): boolean {
 }
 
 /**
- * 将光标所在的最内层 `levelledPara` 从父段中抽出，与父段并列（仍为完整 levelledPara）。
- * 若父段在移除后无子节点，则去掉空父段，仅保留抬升后的节。
+ * 将光标所在的最内层宿主块从父块中抽出，与父块并列。
+ * 若父块在移除后无子节点，则去掉空父块，仅保留抬升后的节。
  */
-function liftLevelledParaToParentSibling(editor: Editor): boolean {
+function liftHostBlockToParentSibling(
+  editor: Editor,
+  getHostDepth: (pos: ResolvedPos) => number,
+  canLift: (pos: ResolvedPos) => boolean,
+  selectionInTitle: (doc: PMNode, hostPos: number) => TextSelection | null,
+): boolean {
   return editor
     .chain()
     .focus()
     .command(({ state, tr, dispatch }) => {
       const $from = state.selection.$from;
-      if (!canLiftLevelledParaToParentSibling($from)) return false;
+      if (!canLift($from)) return false;
 
-      const childDepth = getInnermostLevelledParaDepth($from);
+      const childDepth = getHostDepth($from);
       const parentDepth = childDepth - 1;
       const grandDepth = parentDepth - 1;
       if (grandDepth < 0) return false;
 
-      const childLp = $from.node(childDepth);
-      const parentLp = $from.node(parentDepth);
+      const childHost = $from.node(childDepth);
+      const parentHost = $from.node(parentDepth);
       const grandparent = $from.node(grandDepth);
       const parentIndex = $from.index(grandDepth);
       const childIndexInParent = $from.index(parentDepth);
 
       const parentChildren: PMNode[] = [];
-      for (let i = 0; i < parentLp.childCount; i++) {
-        if (i !== childIndexInParent) parentChildren.push(parentLp.child(i));
+      for (let i = 0; i < parentHost.childCount; i++) {
+        if (i !== childIndexInParent) parentChildren.push(parentHost.child(i));
       }
 
-      const lpType = parentLp.type;
+      const hostType = parentHost.type;
       let newParent: PMNode | null = null;
       if (parentChildren.length > 0) {
         try {
-          newParent = lpType.create(parentLp.attrs, parentChildren);
+          newParent = hostType.create(parentHost.attrs, parentChildren);
         } catch {
           return false;
         }
-        if (!lpType.validContent(newParent.content)) return false;
+        if (!hostType.validContent(newParent.content)) return false;
       }
 
       const gpType = grandparent.type;
@@ -397,7 +440,7 @@ function liftLevelledParaToParentSibling(editor: Editor): boolean {
           gpChildren.push(grandparent.child(i));
         } else if (i === parentIndex) {
           if (newParent) gpChildren.push(newParent);
-          gpChildren.push(childLp);
+          gpChildren.push(childHost);
         } else {
           gpChildren.push(grandparent.child(i));
         }
@@ -425,7 +468,7 @@ function liftLevelledParaToParentSibling(editor: Editor): boolean {
 
       const mappedChildStart = tr.mapping.map(childStart);
       const sel =
-        selectionInLevelledParaTitle(tr.doc, mappedChildStart) ??
+        selectionInTitle(tr.doc, mappedChildStart) ??
         TextSelection.near(
           tr.doc.resolve(Math.min(mappedChildStart + 1, tr.doc.content.size)),
           1,
@@ -438,10 +481,29 @@ function liftLevelledParaToParentSibling(editor: Editor): boolean {
     .run();
 }
 
+function liftLevelledParaToParentSibling(editor: Editor): boolean {
+  return liftHostBlockToParentSibling(
+    editor,
+    getInnermostLevelledParaDepth,
+    canLiftLevelledParaToParentSibling,
+    selectionInLevelledParaTitle,
+  );
+}
+
+function liftProceduralStepToParentSibling(editor: Editor): boolean {
+  return liftHostBlockToParentSibling(
+    editor,
+    getInnermostProceduralStepDepth,
+    canLiftProceduralStepToParentSibling,
+    selectionInProceduralStepTitle,
+  );
+}
+
 export function canPromoteNesting(editor: Editor): boolean {
   if (!editor.isEditable) return false;
   const $from = editor.state.selection.$from;
   if (resolveListLiftTarget($from)) return true;
+  if (canLiftProceduralStepToParentSibling($from)) return true;
   return canLiftLevelledParaToParentSibling($from);
 }
 
@@ -453,6 +515,10 @@ export function promoteNesting(editor: Editor): boolean {
 
   if (listTarget) {
     return liftListItemAtTarget(editor, listTarget);
+  }
+
+  if (canLiftProceduralStepToParentSibling($from)) {
+    return liftProceduralStepToParentSibling(editor);
   }
 
   if (canLiftLevelledParaToParentSibling($from)) {
