@@ -1,6 +1,6 @@
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Settings2, Trash2 } from "lucide-react";
 import {
   Button,
   Input,
@@ -26,6 +26,11 @@ import {
   normalizeUnitOfMeasure,
   type SupportEquipRowData,
 } from "../../lib/s1000d/supportEquipRow";
+import {
+  procedureTableRowDomProps,
+  readPmNodeElementId,
+} from "../../lib/s1000d/procedureTableRowDom";
+import { usePropertyPanelStore } from "../../store/propertyPanelStore";
 
 const SUPPORT_EQUIP_COLUMNS = [
   "名称",
@@ -52,6 +57,7 @@ type EquipTableRow = {
   key: string;
   rowIndex: number;
   pos: number;
+  elementId: string | null;
   data: SupportEquipRowData;
 };
 
@@ -113,6 +119,7 @@ function buildEquipTableRows(
       key: `${groupNodeType}-${rowIndex}`,
       rowIndex,
       pos: basePos + 1 + offset,
+      elementId: readPmNodeElementId(child),
       data: readSupportEquipRowData(child),
     });
     rowIndex++;
@@ -227,6 +234,25 @@ function EquipDescrGroupNodeView({
     [editor, resolveRowPos, rowNodeType],
   );
 
+  const openRowProperties = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, rowIndex: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rowPos = resolveRowPos(rowIndex);
+      if (rowPos == null) return;
+      const node = editor.state.doc.nodeAt(rowPos);
+      if (!node || node.type.name !== rowNodeType) return;
+      editor.chain().focus().setNodeSelection(rowPos).run();
+      usePropertyPanelStore.getState().pinInspect({
+        nodeType: rowNodeType,
+        pos: rowPos,
+        attrs: { ...node.attrs },
+      });
+      usePropertyPanelStore.getState().requestOpenPropertyPanel();
+    },
+    [editor, resolveRowPos, rowNodeType],
+  );
+
   const columns = useMemo(
     () => [
       {
@@ -316,24 +342,37 @@ function EquipDescrGroupNodeView({
       },
       {
         title: SUPPORT_EQUIP_COLUMNS[4],
-        width: 64,
+        width: 88,
         align: "center" as const,
         render: (_: unknown, row: EquipTableRow) => (
-          <button
-            type="button"
-            className="s1000d-support-equip__delete-btn"
-            contentEditable={false}
-            title="删除"
-            aria-label={deleteRowLabel}
-            onMouseDown={stopEditorPointer}
-            onClick={(e) => deleteRow(e, row.rowIndex)}
-          >
-            <Trash2 size={16} aria-hidden />
-          </button>
+          <div className="s1000d-support-equip__row-actions">
+            <button
+              type="button"
+              className="s1000d-support-equip__props-btn"
+              contentEditable={false}
+              title="属性"
+              aria-label={`${addText}行属性`}
+              onMouseDown={stopEditorPointer}
+              onClick={(e) => openRowProperties(e, row.rowIndex)}
+            >
+              <Settings2 size={16} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="s1000d-support-equip__delete-btn"
+              contentEditable={false}
+              title="删除"
+              aria-label={deleteRowLabel}
+              onMouseDown={stopEditorPointer}
+              onClick={(e) => deleteRow(e, row.rowIndex)}
+            >
+              <Trash2 size={16} aria-hidden />
+            </button>
+          </div>
         ),
       },
     ],
-    [commitRow, deleteRow, deleteRowLabel],
+    [addText, commitRow, deleteRow, deleteRowLabel, openRowProperties],
   );
 
   return (
@@ -350,6 +389,7 @@ function EquipDescrGroupNodeView({
         rowKey="key"
         pagination={false}
         borderCell
+        onRow={(record) => procedureTableRowDomProps(record)}
       />
       <div className="s1000d-support-equip__toolbar" contentEditable={false}>
         <Button
@@ -368,12 +408,16 @@ function EquipDescrGroupNodeView({
 }
 
 function HiddenDescrRowNodeView(props: NodeViewProps) {
+  const elementId = readPmNodeElementId(props.node);
   return (
     <NodeViewWrapper
       as="div"
       className="s1000d-descr-row-host"
       contentEditable={false}
       data-s1000d-node={props.node.type.name}
+      {...(elementId
+        ? { id: elementId, "data-s1000d-element-id": elementId }
+        : {})}
     >
       <NodeViewContent className="s1000d-descr-row-host__content" />
     </NodeViewWrapper>

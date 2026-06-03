@@ -264,6 +264,14 @@
   min-width: 4.75rem;
 }
 
+.ietm-editor-surface .tiptap .s1000d-support-equip__row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-support-equip__props-btn,
 .ietm-editor-surface .tiptap .s1000d-support-equip__delete-btn {
   display: inline-flex;
   align-items: center;
@@ -272,8 +280,20 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #ef4444;
   cursor: pointer;
+}
+
+.ietm-editor-surface .tiptap .s1000d-support-equip__props-btn {
+  color: #64748b;
+}
+
+.ietm-editor-surface .tiptap .s1000d-support-equip__props-btn:hover {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.ietm-editor-surface .tiptap .s1000d-support-equip__delete-btn {
+  color: #ef4444;
 }
 
 .ietm-editor-surface .tiptap .s1000d-support-equip__delete-btn:hover {

@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   type MouseEvent as ReactMouseEvent,
   useReducer,
   useRef,
@@ -20,6 +21,7 @@ import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
+import { ProcedureBlockIdExtension } from "../../extensions/s1000d/procedureBlockIdExtension";
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
@@ -73,6 +75,7 @@ import {
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
+import { usePropertyPanelStore } from "../../store/propertyPanelStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
 import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
 import {
@@ -310,7 +313,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const pdfPreviewUrlRef = useRef<string | null>(null);
     const pdfPreviewRevokeRef = useRef(false);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
-    const [, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
+    const [selectionBump, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
     const editor = useEditor({
       immediatelyRender: false,
@@ -350,6 +353,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         Highlight.configure({ multicolor: true }),
         SourceXmlAttrKeysExtension,
+        ProcedureBlockIdExtension,
         IETMImage.configure({
           resize: false,
         }),
@@ -591,11 +595,33 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       [editor, runOpenPdfPreview],
     );
 
-    const resolvedTarget: InspectTarget | null = editor
-      ? resolveInspectable(editor)
-      : null;
+    const pinnedInspect = usePropertyPanelStore((s) => s.pinnedInspect);
+    const openPanelNonce = usePropertyPanelStore((s) => s.openPanelNonce);
+    const pinInspect = usePropertyPanelStore((s) => s.pinInspect);
+
+    useEffect(() => {
+      if (openPanelNonce > 0) {
+        setPropertySettingsOpen(true);
+      }
+    }, [openPanelNonce]);
+
+    const resolvedTarget: InspectTarget | null = useMemo(() => {
+      if (!editor) return null;
+      if (pinnedInspect) {
+        const live = editor.state.doc.nodeAt(pinnedInspect.pos);
+        if (live && live.type.name === pinnedInspect.nodeType) {
+          return {
+            nodeType: pinnedInspect.nodeType,
+            pos: pinnedInspect.pos,
+            attrs: { ...live.attrs } as Record<string, unknown>,
+          };
+        }
+      }
+      return resolveInspectable(editor);
+    }, [editor, pinnedInspect, selectionBump]);
 
     const dismissPropertyPanel = () => {
+      pinInspect(null);
       setPropertySettingsOpen(false);
     };
 
@@ -628,6 +654,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         return;
       }
 
+      pinInspect(null);
       setPropertySettingsOpen(true);
       editor?.commands.focus();
     };

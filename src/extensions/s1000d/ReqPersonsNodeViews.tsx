@@ -1,7 +1,7 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Settings2, Trash2 } from "lucide-react";
 import {
   Button,
   Input,
@@ -26,7 +26,12 @@ import {
   readPersonnelRowData,
   type PersonnelRowData,
 } from "../../lib/s1000d/personnelRow";
+import {
+  procedureTableRowDomProps,
+  readPmNodeElementId,
+} from "../../lib/s1000d/procedureTableRowDom";
 import { useProcedureDictionaryStore } from "../../store/procedureDictionaryStore";
+import { usePropertyPanelStore } from "../../store/propertyPanelStore";
 import type { ProcedureDictionaryOption } from "../../types/procedureDictionaries";
 
 const PERSONNEL_COLUMNS = [
@@ -41,6 +46,8 @@ const PERSONNEL_COLUMNS = [
 type PersonnelTableRow = {
   key: string;
   rowIndex: number;
+  pos: number;
+  elementId: string | null;
   data: PersonnelRowData;
 };
 
@@ -87,14 +94,19 @@ function resolveRowPosInParent(
   return found;
 }
 
-function buildPersonnelTableRows(parentNode: PMNode): PersonnelTableRow[] {
+function buildPersonnelTableRows(
+  parentNode: PMNode,
+  basePos: number,
+): PersonnelTableRow[] {
   const list: PersonnelTableRow[] = [];
   let rowIndex = 0;
-  parentNode.forEach((child) => {
+  parentNode.forEach((child, offset) => {
     if (child.type.name !== "personnel") return;
     list.push({
       key: `reqPersons-${rowIndex}`,
       rowIndex,
+      pos: basePos + 1 + offset,
+      elementId: readPmNodeElementId(child),
       data: readPersonnelRowData(child),
     });
     rowIndex++;
@@ -122,7 +134,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
   const rows = useMemo<PersonnelTableRow[]>(() => {
     const basePos = getPos?.();
     if (basePos == null) return [];
-    return buildPersonnelTableRows(props.node);
+    return buildPersonnelTableRows(props.node, basePos);
   }, [getPos, props.node]);
 
   const resolveRowPos = useCallback(
@@ -165,6 +177,25 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
       const rowPos = resolveRowPos(rowIndex);
       if (rowPos == null) return;
       deletePersonnelRow(editor, rowPos);
+    },
+    [editor, resolveRowPos],
+  );
+
+  const openRowProperties = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, rowIndex: number) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rowPos = resolveRowPos(rowIndex);
+      if (rowPos == null) return;
+      const node = editor.state.doc.nodeAt(rowPos);
+      if (!node || node.type.name !== "personnel") return;
+      editor.chain().focus().setNodeSelection(rowPos).run();
+      usePropertyPanelStore.getState().pinInspect({
+        nodeType: "personnel",
+        pos: rowPos,
+        attrs: { ...node.attrs },
+      });
+      usePropertyPanelStore.getState().requestOpenPropertyPanel();
     },
     [editor, resolveRowPos],
   );
@@ -297,24 +328,44 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
       },
       {
         title: PERSONNEL_COLUMNS[5],
-        width: 64,
+        width: 88,
         align: "center" as const,
         render: (_: unknown, row: PersonnelTableRow) => (
-          <button
-            type="button"
-            className="s1000d-support-equip__delete-btn"
-            contentEditable={false}
-            title="删除"
-            aria-label="删除人员行"
-            onMouseDown={stopEditorPointer}
-            onClick={(e) => deleteRow(e, row.rowIndex)}
-          >
-            <Trash2 size={16} aria-hidden />
-          </button>
+          <div className="s1000d-support-equip__row-actions">
+            <button
+              type="button"
+              className="s1000d-support-equip__props-btn"
+              contentEditable={false}
+              title="属性"
+              aria-label="人员行属性"
+              onMouseDown={stopEditorPointer}
+              onClick={(e) => openRowProperties(e, row.rowIndex)}
+            >
+              <Settings2 size={16} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="s1000d-support-equip__delete-btn"
+              contentEditable={false}
+              title="删除"
+              aria-label="删除人员行"
+              onMouseDown={stopEditorPointer}
+              onClick={(e) => deleteRow(e, row.rowIndex)}
+            >
+              <Trash2 size={16} aria-hidden />
+            </button>
+          </div>
         ),
       },
     ],
-    [categoryOptions, commitRow, deleteRow, skillOptions, unitOptions],
+    [
+      categoryOptions,
+      commitRow,
+      deleteRow,
+      openRowProperties,
+      skillOptions,
+      unitOptions,
+    ],
   );
 
   return (
@@ -336,6 +387,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         rowKey="key"
         pagination={false}
         borderCell
+        onRow={(record) => procedureTableRowDomProps(record)}
       />
       <div className="s1000d-support-equip__toolbar" contentEditable={false}>
         <Button
@@ -354,12 +406,16 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
 }
 
 function HiddenPersonnelRowNodeView(props: NodeViewProps) {
+  const elementId = readPmNodeElementId(props.node);
   return (
     <NodeViewWrapper
       as="div"
       className="s1000d-descr-row-host"
       contentEditable={false}
       data-s1000d-node={props.node.type.name}
+      {...(elementId
+        ? { id: elementId, "data-s1000d-element-id": elementId }
+        : {})}
     >
       <NodeViewContent className="s1000d-descr-row-host__content" />
     </NodeViewWrapper>

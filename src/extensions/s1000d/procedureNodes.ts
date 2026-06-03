@@ -22,6 +22,10 @@ import {
   SupplyDescrGroupNodeView,
   SupplyDescrNodeView,
 } from "./SupportEquipNodeViews";
+import {
+  SOURCE_XML_ATTR_KEYS,
+  xmlAttrsPresentOnElement,
+} from "../../lib/s1000d/sourceXmlAttrKeys";
 
 function readAttr(el: Element, name: string): string | null {
   return el.getAttribute(name) ?? el.getAttribute(name.toLowerCase());
@@ -50,6 +54,27 @@ function tagRules(tag: string) {
   return [{ tag: lower }, { tag }];
 }
 
+/** 块节点：导入时读取 `id` 与 `sourceXmlAttrKeys`。 */
+function blockTagParseRules(tag: string) {
+  const lower = tag.toLowerCase();
+  const readId = (el: Element) =>
+    el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id");
+
+  return [
+    {
+      tag: lower,
+      getAttrs: (el: unknown) => {
+        if (!(el instanceof Element)) return false;
+        return {
+          id: readId(el),
+          [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, ["id"]),
+        };
+      },
+    },
+    { tag },
+  ];
+}
+
 function createInlineTextNode(
   name: string,
   group: string = PROCEDURE_TEXT_GROUP,
@@ -72,7 +97,7 @@ function createProcedureEmptyPlaceholderNode(name: string) {
     group: PROCEDURE_ITEM_GROUP,
     atom: true,
     selectable: false,
-    parseHTML: () => tagRules(name),
+    parseHTML: () => blockTagParseRules(name),
     renderHTML({ HTMLAttributes }) {
       return [name, mergeAttributes(HTMLAttributes)];
     },
@@ -88,7 +113,7 @@ export const S1000DPreliminaryRqmts = Node.create({
   group: PROCEDURE_SECTION_GROUP,
   content:
     "reqCondGroup reqPersons reqSupportEquips reqSupplies reqSpares reqSafety",
-  parseHTML: () => tagRules("preliminaryRqmts"),
+  parseHTML: () => blockTagParseRules("preliminaryRqmts"),
   renderHTML({ HTMLAttributes }) {
     return ["preliminaryRqmts", mergeAttributes(HTMLAttributes), 0];
   },
@@ -101,7 +126,7 @@ export const S1000DMainProcedure = Node.create({
   name: "mainProcedure",
   group: PROCEDURE_SECTION_GROUP,
   content: "proceduralStep+",
-  parseHTML: () => tagRules("mainProcedure"),
+  parseHTML: () => blockTagParseRules("mainProcedure"),
   renderHTML({ HTMLAttributes }) {
     return ["mainProcedure", mergeAttributes(HTMLAttributes), 0];
   },
@@ -114,7 +139,7 @@ export const S1000DCloseRqmts = Node.create({
   name: "closeRqmts",
   group: PROCEDURE_SECTION_GROUP,
   content: "reqCondGroup",
-  parseHTML: () => tagRules("closeRqmts"),
+  parseHTML: () => blockTagParseRules("closeRqmts"),
   renderHTML({ HTMLAttributes }) {
     return ["closeRqmts", mergeAttributes(HTMLAttributes), 0];
   },
@@ -130,7 +155,7 @@ export const S1000DProceduralStep = Node.create({
     "(title?) (para | warning | caution | note | figure | table | bulletList | orderedList)* proceduralStep*",
   defining: true,
   isolating: true,
-  parseHTML: () => tagRules("proceduralStep"),
+  parseHTML: () => blockTagParseRules("proceduralStep"),
   renderHTML({ HTMLAttributes }) {
     return ["proceduralStep", mergeAttributes(HTMLAttributes), 0];
   },
@@ -143,7 +168,7 @@ export const S1000DReqCondGroup = Node.create({
   name: "reqCondGroup",
   group: PROCEDURE_INNER_GROUP,
   content: "noConds | reqCondNoRef+",
-  parseHTML: () => tagRules("reqCondGroup"),
+  parseHTML: () => blockTagParseRules("reqCondGroup"),
   renderHTML({ HTMLAttributes }) {
     return ["reqCondGroup", mergeAttributes(HTMLAttributes), 0];
   },
@@ -156,7 +181,7 @@ export const S1000DReqCondNoRef = Node.create({
   name: "reqCondNoRef",
   group: PROCEDURE_ITEM_GROUP,
   content: "reqCond",
-  parseHTML: () => tagRules("reqCondNoRef"),
+  parseHTML: () => blockTagParseRules("reqCondNoRef"),
   renderHTML({ HTMLAttributes }) {
     return ["reqCondNoRef", mergeAttributes(HTMLAttributes), 0];
   },
@@ -173,7 +198,7 @@ export const S1000DReqPersons = Node.create({
   name: "reqPersons",
   group: PROCEDURE_INNER_GROUP,
   content: "personnel*",
-  parseHTML: () => tagRules("reqPersons"),
+  parseHTML: () => blockTagParseRules("reqPersons"),
   renderHTML({ HTMLAttributes }) {
     return ["reqPersons", mergeAttributes(HTMLAttributes), 0];
   },
@@ -189,7 +214,7 @@ export const S1000DPersonnel = Node.create({
   addAttributes() {
     return { numRequired: attrSpec("numRequired") };
   },
-  parseHTML: () => tagRules("personnel"),
+  parseHTML: () => blockTagParseRules("personnel"),
   renderHTML({ HTMLAttributes }) {
     return ["personnel", mergeAttributes(HTMLAttributes), 0];
   },
@@ -242,7 +267,7 @@ export const S1000DReqSupportEquips = Node.create({
   name: "reqSupportEquips",
   group: PROCEDURE_INNER_GROUP,
   content: "noSupportEquips | supportEquipDescrGroup",
-  parseHTML: () => tagRules("reqSupportEquips"),
+  parseHTML: () => blockTagParseRules("reqSupportEquips"),
   renderHTML({ HTMLAttributes }) {
     return ["reqSupportEquips", mergeAttributes(HTMLAttributes), 0];
   },
@@ -257,7 +282,7 @@ export const S1000DSupportEquipDescrGroup = Node.create({
   name: "supportEquipDescrGroup",
   group: PROCEDURE_ITEM_GROUP,
   content: "supportEquipDescr+",
-  parseHTML: () => tagRules("supportEquipDescrGroup"),
+  parseHTML: () => blockTagParseRules("supportEquipDescrGroup"),
   renderHTML({ HTMLAttributes }) {
     return ["supportEquipDescrGroup", mergeAttributes(HTMLAttributes), 0];
   },
@@ -270,7 +295,7 @@ export const S1000DSupportEquipDescr = Node.create({
   name: "supportEquipDescr",
   group: PROCEDURE_ITEM_GROUP,
   content: "name natoStockNumber identNumber? reqQuantity? remarks?",
-  parseHTML: () => tagRules("supportEquipDescr"),
+  parseHTML: () => blockTagParseRules("supportEquipDescr"),
   renderHTML({ HTMLAttributes }) {
     return ["supportEquipDescr", mergeAttributes(HTMLAttributes), 0];
   },
@@ -283,7 +308,7 @@ export const S1000DReqSupplies = Node.create({
   name: "reqSupplies",
   group: PROCEDURE_INNER_GROUP,
   content: "noSupplies | supplyDescrGroup",
-  parseHTML: () => tagRules("reqSupplies"),
+  parseHTML: () => blockTagParseRules("reqSupplies"),
   renderHTML({ HTMLAttributes }) {
     return ["reqSupplies", mergeAttributes(HTMLAttributes), 0];
   },
@@ -297,7 +322,7 @@ export const S1000DSupplyDescrGroup = Node.create({
   name: "supplyDescrGroup",
   group: PROCEDURE_ITEM_GROUP,
   content: "supplyDescr+",
-  parseHTML: () => tagRules("supplyDescrGroup"),
+  parseHTML: () => blockTagParseRules("supplyDescrGroup"),
   renderHTML({ HTMLAttributes }) {
     return ["supplyDescrGroup", mergeAttributes(HTMLAttributes), 0];
   },
@@ -310,10 +335,7 @@ export const S1000DSupplyDescr = Node.create({
   name: "supplyDescr",
   group: PROCEDURE_ITEM_GROUP,
   content: "name natoStockNumber identNumber? reqQuantity? remarks?",
-  addAttributes() {
-    return { id: attrSpec("id") };
-  },
-  parseHTML: () => tagRules("supplyDescr"),
+  parseHTML: () => blockTagParseRules("supplyDescr"),
   renderHTML({ HTMLAttributes }) {
     return ["supplyDescr", mergeAttributes(HTMLAttributes), 0];
   },
@@ -326,7 +348,7 @@ export const S1000DReqSpares = Node.create({
   name: "reqSpares",
   group: PROCEDURE_INNER_GROUP,
   content: "noSpares | spareDescrGroup",
-  parseHTML: () => tagRules("reqSpares"),
+  parseHTML: () => blockTagParseRules("reqSpares"),
   renderHTML({ HTMLAttributes }) {
     return ["reqSpares", mergeAttributes(HTMLAttributes), 0];
   },
@@ -340,7 +362,7 @@ export const S1000DSpareDescrGroup = Node.create({
   name: "spareDescrGroup",
   group: PROCEDURE_ITEM_GROUP,
   content: "spareDescr+",
-  parseHTML: () => tagRules("spareDescrGroup"),
+  parseHTML: () => blockTagParseRules("spareDescrGroup"),
   renderHTML({ HTMLAttributes }) {
     return ["spareDescrGroup", mergeAttributes(HTMLAttributes), 0];
   },
@@ -353,7 +375,7 @@ export const S1000DSpareDescr = Node.create({
   name: "spareDescr",
   group: PROCEDURE_ITEM_GROUP,
   content: "name natoStockNumber identNumber? reqQuantity? remarks?",
-  parseHTML: () => tagRules("spareDescr"),
+  parseHTML: () => blockTagParseRules("spareDescr"),
   renderHTML({ HTMLAttributes }) {
     return ["spareDescr", mergeAttributes(HTMLAttributes), 0];
   },
@@ -366,7 +388,7 @@ export const S1000DReqSafety = Node.create({
   name: "reqSafety",
   group: PROCEDURE_INNER_GROUP,
   content: "noSafety | safetyRqmts",
-  parseHTML: () => tagRules("reqSafety"),
+  parseHTML: () => blockTagParseRules("reqSafety"),
   renderHTML({ HTMLAttributes }) {
     return ["reqSafety", mergeAttributes(HTMLAttributes), 0];
   },
@@ -380,7 +402,7 @@ export const S1000DSafetyRqmts = Node.create({
   name: "safetyRqmts",
   group: PROCEDURE_ITEM_GROUP,
   content: "(warning | caution | note)+",
-  parseHTML: () => tagRules("safetyRqmts"),
+  parseHTML: () => blockTagParseRules("safetyRqmts"),
   renderHTML({ HTMLAttributes }) {
     return ["safetyRqmts", mergeAttributes(HTMLAttributes), 0];
   },

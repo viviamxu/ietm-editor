@@ -58,6 +58,11 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   fault: ["faultCode"],
   yesAnswer: ["nextActionRefId"],
   noAnswer: ["nextActionRefId"],
+  personnel: ["numRequired"],
+  personCategory: ["personCategoryCode"],
+  personSkill: ["skillLevelCode"],
+  estimatedTime: ["unitOfMeasure"],
+  reqQuantity: ["unitOfMeasure"],
 };
 
 /** 属性面板展示名（schema 字段名 → 源 XML 语义） */
@@ -67,9 +72,30 @@ const ATTR_LABEL: Partial<Record<string, Partial<Record<string, string>>>> = {
   yesAnswer: { nextActionRefId: "下一步 (nextActionRefId)" },
   noAnswer: { nextActionRefId: "下一步 (nextActionRefId)" },
   fault: { faultCode: "故障代码 (faultCode)" },
+  personnel: { numRequired: "人数 (numRequired)" },
+  personCategory: { personCategoryCode: "人员类别 (personCategoryCode)" },
+  personSkill: { skillLevelCode: "技能等级 (skillLevelCode)" },
+  estimatedTime: { unitOfMeasure: "工时单位 (unitOfMeasure)" },
+  reqQuantity: { unitOfMeasure: "数量单位 (unitOfMeasure)" },
 };
 
 const NODE_TYPE_LABEL: Partial<Record<string, string>> = {
+  preliminaryRqmts: "准备要求 (preliminaryRqmts)",
+  mainProcedure: "主程序 (mainProcedure)",
+  closeRqmts: "结束要求 (closeRqmts)",
+  reqCondGroup: "作业条件组 (reqCondGroup)",
+  reqCondNoRef: "作业条件 (reqCondNoRef)",
+  reqPersons: "人员要求 (reqPersons)",
+  personnel: "人员 (personnel)",
+  reqSupportEquips: "工装要求 (reqSupportEquips)",
+  reqSupplies: "辅料要求 (reqSupplies)",
+  reqSpares: "备件要求 (reqSpares)",
+  reqSafety: "安全要求 (reqSafety)",
+  proceduralStep: "程序步骤 (proceduralStep)",
+  supportEquipDescr: "工装 (supportEquipDescr)",
+  supplyDescr: "辅料 (supplyDescr)",
+  spareDescr: "备件 (spareDescr)",
+  safetyRqmts: "安全要求内容 (safetyRqmts)",
   isolationStep: "隔离步骤 (isolationStep)",
   isolationProcedureEnd: "隔离结束 (isolationProcedureEnd)",
   choice: "选项 (choice)",
