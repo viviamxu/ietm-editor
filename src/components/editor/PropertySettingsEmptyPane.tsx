@@ -21,7 +21,7 @@ export function PropertySettingsEmptyPane(props: PropertySettingsEmptyPaneProps)
       </div>
       <div className="ietm-property-panel__body">
         <p className="ietm-prop-hint">
-          请在编辑区选中段落、表格、图片等节点后查看属性。
+          请在编辑区选中段落、表格、图片、隔离步骤、选项等节点后查看属性。
         </p>
       </div>
     </div>

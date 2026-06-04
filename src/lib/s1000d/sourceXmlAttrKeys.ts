@@ -91,6 +91,7 @@ export function mergeSourceXmlAttrKeysAfterPatch(input: {
       if (skip.has(k)) continue
       if (k === primaryKey) continue
       if (k === "displayLevel") continue
+      if (k === "sectionNumber") continue
       if (attrValueNonEmpty(liveAttrs[k])) next.add(k)
     }
   }
@@ -110,6 +111,16 @@ export function mergeSourceXmlAttrKeysAfterPatch(input: {
 
 const figurePanelAttrSet = new Set<string>(FIGURE_PANEL_ATTR_NAMES)
 
+/** 故障隔离等：无源 XML 键列表时仍应在属性面板展示的属性 */
+const ALWAYS_SHOW_SECONDARY_ATTRS: Partial<
+  Record<string, readonly string[]>
+> = {
+  choice: ['nextActionRefId'],
+  yesAnswer: ['nextActionRefId'],
+  noAnswer: ['nextActionRefId'],
+  fault: ['faultCode'],
+}
+
 export function shouldShowSecondaryPanelAttr(input: {
   nodeType: string
   attrKey: string
@@ -121,6 +132,11 @@ export function shouldShowSecondaryPanelAttr(input: {
   if (primaryKey && attrKey === primaryKey) return false
 
   if (input.nodeType === 'figure' && figurePanelAttrSet.has(attrKey)) {
+    return true
+  }
+
+  const alwaysShow = ALWAYS_SHOW_SECONDARY_ATTRS[input.nodeType]
+  if (alwaysShow?.includes(attrKey)) {
     return true
   }
 
@@ -138,6 +154,7 @@ export function shouldShowSecondaryPanelAttr(input: {
 
   /** 编辑器内部级数，默认恒为数值；不得用「非空」兜底显示，否则会冒充源 XML 属性 */
   if (attrKey === "displayLevel") return false
+  if (attrKey === "sectionNumber") return false
   /** 对齐由格式工具栏控制，非 S1000D 源 XML 属性 */
   if (attrKey === "textAlign") return false
 

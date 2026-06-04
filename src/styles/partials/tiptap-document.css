@@ -3,7 +3,7 @@
   padding: 24px 40px 48px;
   outline: none;
   color: #1f2330;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.7;
   word-break: break-word;
 }
@@ -35,8 +35,7 @@
 }
 
 .ietm-editor-surface .tiptap strong {
-  color: #b42318;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .ietm-editor-surface .tiptap em {

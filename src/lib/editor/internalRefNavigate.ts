@@ -1,5 +1,7 @@
 import type { Editor } from "@tiptap/core";
 
+import { PROCEDURE_TABLE_ROW_NODE_TYPES } from "../s1000d/procedureTableRowDom";
+
 const FLASH_MS = 1000;
 const OVERLAY_CLASS = "s1000d-internal-ref-target-flash-overlay";
 
@@ -175,19 +177,57 @@ function queryTargetByRefId(
   return null;
 }
 
+/** 程序类表格：按文档位置定位可见 `<tr>`（优先于隐藏 PM 宿主）。 */
+function queryProcedureTableRowByDocPos(
+  root: HTMLElement,
+  docPos: number,
+): HTMLElement | null {
+  try {
+    const row = root.querySelector(
+      `tr[data-s1000d-doc-pos="${CSS.escape(String(docPos))}"]`,
+    );
+    if (row instanceof HTMLElement) return row;
+  } catch {
+    for (const row of Array.from(
+      root.querySelectorAll("tr[data-s1000d-doc-pos]"),
+    )) {
+      if (
+        row instanceof HTMLElement &&
+        row.getAttribute("data-s1000d-doc-pos") === String(docPos)
+      ) {
+        return row;
+      }
+    }
+  }
+  return null;
+}
+
 function resolveRefTargetElement(
   editor: Editor,
   trimmed: string,
   meta: InternalRefTargetMeta,
 ): HTMLElement | null {
   const root = editor.view.dom as HTMLElement;
+  const domPos = resolveDomPosForMeta(editor, meta);
+
+  if (PROCEDURE_TABLE_ROW_NODE_TYPES.has(meta.typeName)) {
+    const tableRow = queryProcedureTableRowByDocPos(root, domPos);
+    if (tableRow) return tableRow;
+  }
 
   const byAttr = queryTargetByRefId(root, trimmed);
-  if (byAttr) return pickFlashHost(byAttr);
+  if (byAttr) {
+    const visibleRow = byAttr.closest("tr.s1000d-procedure-table-row");
+    if (visibleRow instanceof HTMLElement) return visibleRow;
+    return pickFlashHost(byAttr);
+  }
 
-  const domPos = resolveDomPosForMeta(editor, meta);
   const fromPos = domElementAtNodePos(editor, domPos);
-  if (fromPos) return pickFlashHost(fromPos);
+  if (fromPos) {
+    const visibleRow = fromPos.closest("tr[data-s1000d-doc-pos]");
+    if (visibleRow instanceof HTMLElement) return visibleRow;
+    return pickFlashHost(fromPos);
+  }
 
   return null;
 }

@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   type MouseEvent as ReactMouseEvent,
   useReducer,
   useRef,
@@ -20,16 +21,23 @@ import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
+import { ProcedureBlockIdExtension } from "../../extensions/s1000d/procedureBlockIdExtension";
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
+import { S1000dAttentionParaKeymap } from "../../extensions/s1000d/s1000dAttentionParaKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
+import {
+  dispatchSectionNumbersSync,
+  S1000dSectionNumbersExtension,
+} from "../../extensions/s1000d/s1000dSectionNumbers";
 import {
   getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
+import { s1000dProcedureNodes, PROCEDURE_TEXT_ALIGN_NODE_TYPES } from "../../extensions/s1000d/procedureNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
@@ -53,7 +61,10 @@ import {
   insertImageFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
-import { getDmContentKind } from "../../lib/s1000d/dmContentKind";
+import {
+  applyIsolationFlowToEditor,
+  type IsolationFlowPayload,
+} from "../../lib/s1000d/isolationFlowBridge";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
 import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
@@ -64,6 +75,7 @@ import {
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
+import { usePropertyPanelStore } from "../../store/propertyPanelStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
 import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
 import {
@@ -130,6 +142,8 @@ export interface IETMEditorRefValue {
    * 若预览窗格当前关闭，则会自动打开并加载。
    */
   refreshDmPdfPreview: () => void;
+  /** 将隔离流程编排器保存结果写回当前 DM 中对应的 `faultIsolationProcedure`。 */
+  applyIsolationFlow: (payload: IsolationFlowPayload) => boolean;
 }
 
 interface IETMEditorProps {
@@ -299,7 +313,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const pdfPreviewUrlRef = useRef<string | null>(null);
     const pdfPreviewRevokeRef = useRef(false);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
-    const [, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
+    const [selectionBump, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
     const editor = useEditor({
       immediatelyRender: false,
@@ -321,7 +335,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         S1000DParagraph,
         S1000DListExitKeymap,
+        S1000dAttentionParaKeymap,
         S1000DNestingKeymap,
+        S1000dSectionNumbersExtension,
         MigrateParagraphToParaExtension,
         PasteWordTableExtension,
         TextStyleKit.configure({
@@ -331,17 +347,19 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         Overline,
         Strikethrough,
         TextAlign.configure({
-          types: ["para", "paragraph"],
+          types: ["para", "paragraph", ...PROCEDURE_TEXT_ALIGN_NODE_TYPES],
           alignments: ["left", "center", "right", "justify"],
           defaultAlignment: "left",
         }),
         Highlight.configure({ multicolor: true }),
         SourceXmlAttrKeysExtension,
+        ProcedureBlockIdExtension,
         IETMImage.configure({
           resize: false,
         }),
         ...s1000dPhase1Nodes,
         ...s1000dFaultIsolationNodes,
+        ...s1000dProcedureNodes,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??
@@ -480,15 +498,13 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               .setDocumentDisplayTitle(normalizeDmDocumentName(documentName));
           }
           const schema = getDescriptionSchema();
-          const inner = getDmInnerXmlFromDmXml(
-            dmXml,
-            getDmContentKind(schema) === "faultIsolation",
-          );
+          const inner = getDmInnerXmlFromDmXml(dmXml, getDescriptionSchema());
           if (inner == null) {
             return applyFillEmptyContentFromSchema(editor, schema);
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           void hydrateMultimediaObjectsInEditor(editor);
+          queueMicrotask(() => dispatchSectionNumbersSync(editor));
           return true;
         },
         setDmDocumentName: (name) => {
@@ -571,15 +587,41 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         refreshDmPdfPreview: () => {
           runOpenPdfPreview();
         },
+        applyIsolationFlow: (payload) => {
+          if (!editor) return false;
+          return applyIsolationFlowToEditor(editor, payload);
+        },
       }),
       [editor, runOpenPdfPreview],
     );
 
-    const resolvedTarget: InspectTarget | null = editor
-      ? resolveInspectable(editor)
-      : null;
+    const pinnedInspect = usePropertyPanelStore((s) => s.pinnedInspect);
+    const openPanelNonce = usePropertyPanelStore((s) => s.openPanelNonce);
+    const pinInspect = usePropertyPanelStore((s) => s.pinInspect);
+
+    useEffect(() => {
+      if (openPanelNonce > 0) {
+        setPropertySettingsOpen(true);
+      }
+    }, [openPanelNonce]);
+
+    const resolvedTarget: InspectTarget | null = useMemo(() => {
+      if (!editor) return null;
+      if (pinnedInspect) {
+        const live = editor.state.doc.nodeAt(pinnedInspect.pos);
+        if (live && live.type.name === pinnedInspect.nodeType) {
+          return {
+            nodeType: pinnedInspect.nodeType,
+            pos: pinnedInspect.pos,
+            attrs: { ...live.attrs } as Record<string, unknown>,
+          };
+        }
+      }
+      return resolveInspectable(editor);
+    }, [editor, pinnedInspect, selectionBump]);
 
     const dismissPropertyPanel = () => {
+      pinInspect(null);
       setPropertySettingsOpen(false);
     };
 
@@ -612,6 +654,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         return;
       }
 
+      pinInspect(null);
       setPropertySettingsOpen(true);
       editor?.commands.focus();
     };

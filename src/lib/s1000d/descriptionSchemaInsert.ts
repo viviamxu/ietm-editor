@@ -1,8 +1,13 @@
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Fragment, Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
+import { Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
-import { getInnermostLevelledParaDepth } from "../editor/nestingLevelShared";
+import {
+  LEVELLED_PARA,
+  TITLE_LEVEL_CAP,
+  collectAncestorDepths,
+  getInnermostLevelledParaDepth,
+} from "../editor/nestingLevelShared";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
@@ -93,39 +98,6 @@ export function buildInsertLevelledParaJson(
   return { type: "levelledPara", content: children };
 }
 
-/**
- * 光标落在 `levelledPara` 的哪一个直接子节点上（含块边界缝：标题行尾等）。
- */
-function getLevelledParaDirectChildIndex(
-  $from: ResolvedPos,
-  lpDepth: number,
-): number {
-  const lp = $from.node(lpDepth);
-  const lpStart = $from.before(lpDepth);
-  const pos = $from.pos;
-  if (lp.childCount === 0) return -1;
-
-  const ranges: { start: number; end: number }[] = [];
-  let offset = lpStart + 1;
-  for (let i = 0; i < lp.childCount; i++) {
-    const child = lp.child(i);
-    ranges.push({ start: offset, end: offset + child.nodeSize });
-    offset += child.nodeSize;
-  }
-
-  for (let i = 0; i < ranges.length; i++) {
-    const { start, end } = ranges[i]!;
-    if (pos > start && pos < end) return i;
-  }
-  for (let i = 0; i < ranges.length; i++) {
-    if (pos === ranges[i]!.end) return i;
-  }
-  for (let i = 0; i < ranges.length; i++) {
-    if (pos === ranges[i]!.start) return i;
-  }
-  return ranges.length - 1;
-}
-
 function selectionInLevelledParaTitle(
   doc: PMNode,
   levelledParaPos: number,
@@ -148,43 +120,33 @@ function selectionInLevelledParaTitle(
   return TextSelection.create(doc, fallback);
 }
 
+/** 在 host `levelledPara` 内、直接子节点 `childIndex` 处的文档插入位置。 */
+function insertPosInLevelledParaHost(
+  hostPos: number,
+  host: PMNode,
+  childIndex: number,
+): number {
+  let pos = hostPos + 1;
+  for (let i = 0; i < childIndex; i++) {
+    pos += host.child(i)!.nodeSize;
+  }
+  return pos;
+}
+
 /**
- * 拆分光标所在的最内层 `levelledPara` 并插入同级块：
- * 原块保留「光标所在直接子节点及之前」；新块以空 title 开头并承接之后的直接子节点。
+ * 在当前最内层 `levelledPara` 末尾插入空子节（S1000D `levelledPara*` 区）。
  */
-function splitLevelledParaAndInsertSibling(
-  $from: ResolvedPos,
-  lpDepth: number,
+function buildChildLevelledParaNode(
+  pmSchema: PMNode["type"]["schema"],
+  schema: DescriptionSchema,
   lpType: PMNode["type"],
-  titleType: PMNode["type"],
-): { left: PMNode; right: PMNode } | null {
-  const lp = $from.node(lpDepth);
-  const splitIndex = getLevelledParaDirectChildIndex($from, lpDepth);
-  if (splitIndex < 0) return null;
-
-  const leftChildren: PMNode[] = [];
-  for (let i = 0; i <= splitIndex; i++) {
-    leftChildren.push(lp.child(i));
-  }
-
-  const movedChildren: PMNode[] = [];
-  for (let i = splitIndex + 1; i < lp.childCount; i++) {
-    movedChildren.push(lp.child(i));
-  }
-
-  const emptyTitle = titleType.create(null, []);
-  const rightChildren = [emptyTitle, ...movedChildren];
-
+): PMNode | null {
+  const json = buildInsertLevelledParaJson(schema);
+  if (!json) return null;
   try {
-    const left = lpType.create(lp.attrs, Fragment.from(leftChildren));
-    const right = lpType.create(lp.attrs, Fragment.from(rightChildren));
-    if (
-      !left.type.validContent(left.content) ||
-      !right.type.validContent(right.content)
-    ) {
-      return null;
-    }
-    return { left, right };
+    const child = PMNode.fromJSON(pmSchema, json);
+    if (child.type !== lpType) return null;
+    return child;
   } catch {
     return null;
   }
@@ -197,8 +159,7 @@ export function insertLevelledParaFromSchema(
   if (!requireSchemaNode(schema, "levelledPara")) return false;
 
   const lpType = editor.state.schema.nodes.levelledPara;
-  const titleType = editor.state.schema.nodes.title;
-  if (!lpType || !titleType) return false;
+  if (!lpType) return false;
 
   if (getInnermostLevelledParaDepth(editor.state.selection.$from) < 0) {
     const json = buildInsertLevelledParaJson(schema);
@@ -214,22 +175,30 @@ export function insertLevelledParaFromSchema(
       const lpDepth = getInnermostLevelledParaDepth($from);
       if (lpDepth < 0) return false;
 
-      const split = splitLevelledParaAndInsertSibling(
-        $from,
-        lpDepth,
-        lpType,
-        titleType,
+      if (
+        collectAncestorDepths($from, LEVELLED_PARA).length >= TITLE_LEVEL_CAP
+      ) {
+        return false;
+      }
+
+      const host = $from.node(lpDepth);
+      const hostPos = $from.before(lpDepth);
+      const child = buildChildLevelledParaNode(state.schema, schema, lpType);
+      if (!child) return false;
+
+      const nextContent = host.content.addToEnd(child);
+      if (!lpType.validContent(nextContent)) return false;
+
+      const insertPos = insertPosInLevelledParaHost(
+        hostPos,
+        host,
+        host.childCount,
       );
-      if (!split) return false;
 
       if (!dispatch) return true;
 
-      const from = $from.before(lpDepth);
-      const to = $from.after(lpDepth);
-      tr.replaceWith(from, to, [split.left, split.right]);
-
-      const newSiblingPos = from + split.left.nodeSize;
-      const sel = selectionInLevelledParaTitle(tr.doc, newSiblingPos);
+      tr.insert(insertPos, child);
+      const sel = selectionInLevelledParaTitle(tr.doc, insertPos);
       if (sel) tr.setSelection(sel);
 
       dispatch(tr);
@@ -460,12 +429,85 @@ export function insertExternalRefFromSchema(
   useExternalRefModalStore.getState().openExternalRef(editor);
 }
 
-/** 可编辑前导正文（对应 schema `warningAndCautionPara` 的 `text*`，导出时剥壳） */
+const attentionListItemParaEmpty: JSONContent = {
+  type: "attentionListItemPara",
+  content: [],
+};
+
+/** 与样例 DM / `notePara` 一致：空 `attentionRandomList` + 一条可编辑列表项。 */
+const minimalAttentionRandomListJson: JSONContent = {
+  type: "attentionRandomList",
+  content: [
+    {
+      type: "attentionRandomListItem",
+      content: [attentionListItemParaEmpty],
+    },
+  ],
+};
+
+/** 可编辑前导 + 列表（对应 schema `warningAndCautionPara` 的 `text*` + 样例并排结构）。 */
 function buildMinimalWarningAndCautionParaJson(): JSONContent {
   return {
     type: "warningAndCautionPara",
-    content: [{ type: "warningAndCautionLead", content: [] }],
+    content: [
+      { type: "warningAndCautionLead", content: [] },
+      minimalAttentionRandomListJson,
+    ],
   };
+}
+
+/** 插入 warning/caution 后把光标放进 `warningAndCautionLead`。 */
+function selectionInWarningAndCautionLeadFromResolved(
+  doc: PMNode,
+  $from: ResolvedPos,
+): TextSelection | null {
+  let paraDepth = -1;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "warningAndCautionPara") {
+      paraDepth = d;
+      break;
+    }
+  }
+  if (paraDepth < 0) return null;
+
+  const para = $from.node(paraDepth);
+  const paraStart = $from.before(paraDepth);
+  let childPos = paraStart + 1;
+  for (let i = 0; i < para.childCount; i++) {
+    const child = para.child(i);
+    if (child.type.name === "warningAndCautionLead") {
+      const caret = childPos + 1;
+      if (caret < 0 || caret > doc.content.size) return null;
+      return TextSelection.create(doc, caret);
+    }
+    childPos += child.nodeSize;
+  }
+  return null;
+}
+
+function insertAttentionBlockFromSchema(
+  editor: Editor,
+  buildNode: (schema: DescriptionSchema) => JSONContent | null,
+  schema: DescriptionSchema,
+): boolean {
+  const node = buildNode(schema);
+  if (!node) return false;
+  return editor
+    .chain()
+    .focus()
+    .insertContent(node)
+    .command(({ state, tr, dispatch }) => {
+      const sel = selectionInWarningAndCautionLeadFromResolved(
+        state.doc,
+        state.selection.$from,
+      );
+      if (!sel) return true;
+      if (!dispatch) return true;
+      tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
 }
 
 /** `warning`：`warningAndCautionPara+`（schema 描述类规则） */
@@ -498,39 +540,22 @@ export function insertWarningFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const node = buildInsertWarningJson(schema);
-  if (!node) return false;
-  return editor.chain().focus().insertContent(node).run();
+  return insertAttentionBlockFromSchema(editor, buildInsertWarningJson, schema);
 }
 
 export function insertCautionFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const node = buildInsertCautionJson(schema);
-  if (!node) return false;
-  return editor.chain().focus().insertContent(node).run();
+  return insertAttentionBlockFromSchema(editor, buildInsertCautionJson, schema);
 }
-
-const attentionListItemParaEmpty: JSONContent = {
-  type: "attentionListItemPara",
-  content: [],
-};
 
 function buildMinimalNoteParaJson(): JSONContent {
   return {
     type: "notePara",
     content: [
       { type: "noteLead", content: [] },
-      {
-        type: "attentionRandomList",
-        content: [
-          {
-            type: "attentionRandomListItem",
-            content: [attentionListItemParaEmpty],
-          },
-        ],
-      },
+      minimalAttentionRandomListJson,
     ],
   };
 }
@@ -676,11 +701,27 @@ function escapeXml(unsafe: string): string {
   });
 }
 
+/** 工具栏插入的 warning/caution/note 最小骨架（空列表项）也应导出。 */
+function hasAttentionBlockExportableStructure(node: JSONContent): boolean {
+  const type = node.type || "";
+  if (type === "warning" || type === "caution") {
+    return (node.content || []).some((c) => c.type === "warningAndCautionPara");
+  }
+  if (type === "note") {
+    return (node.content || []).some((c) => c.type === "notePara");
+  }
+  if (type === "warningAndCautionPara" || type === "notePara") {
+    return true;
+  }
+  return false;
+}
+
 /**
  * 💡 辅助函数：深度探测节点是否包含“实质性内容”
  * 彻底拦截并销毁 Tiptap 产生的无意义空壳节点（如多敲的回车、空列表项）
  */
 function hasEffectiveContent(node: JSONContent): boolean {
+  if (hasAttentionBlockExportableStructure(node)) return true;
   if (node.type === "text" && node.text?.trim() !== "") return true;
   if (
     node.type === "image" ||
@@ -701,6 +742,7 @@ const ignoredExportAttrs = [
   "class",
   "rawXml",
   "displayLevel",
+  "sectionNumber",
   "start",
   "sourceXmlAttrKeys",
   "src",
@@ -787,7 +829,7 @@ function serializeChildrenToXml(node: JSONContent): string {
       .join("");
   }
 
-  if (node.type === "levelledPara" || node.type === "doc") {
+  if (node.type === "levelledPara" || node.type === "proceduralStep" || node.type === "doc") {
     return serializeChildrenWithListsWrappedInPara(node);
   }
 
@@ -1047,6 +1089,9 @@ function serializeNodeToXml(node: JSONContent): string {
     if (kind === "faultIsolation") {
       return `<content>\n  <faultIsolation>\n${children}\n  </faultIsolation>\n</content>`;
     }
+    if (kind === "procedure") {
+      return `<content>\n  <procedure>\n${children}\n  </procedure>\n</content>`;
+    }
     return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
   }
 
@@ -1077,13 +1122,22 @@ export function exportEditorToDmXmlString(editor: Editor): string {
   const finalIdentXml =
     identAndStatusXml || `<identAndStatusSection>\n  </identAndStatusSection>`;
 
+  const schema = getDescriptionSchema();
+  const kind = getDmContentKind(schema);
+  const xsd =
+    kind === "procedure"
+      ? "proced.xsd"
+      : kind === "faultIsolation"
+        ? "fault.xsd"
+        : "descript.xsd";
+
   return `<?xml version="1.0" encoding="utf-8"?>
 ${doctypeXml}
 <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xmlns:dc="http://www.purl.org/dc/elements/1.1/"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:xlink="http://www.w3.org/1999/xlink"
-   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/descript.xsd">
+   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/${xsd}">
 
    ${finalIdentXml}
    ${contentXml}

@@ -6,11 +6,14 @@ import { TextSelection } from "@tiptap/pm/state";
 import {
   LEVELLED_PARA,
   LIST_TYPES,
+  PROCEDURAL_STEP,
   TITLE_LEVEL_CAP,
   collectAncestorDepths,
   getInnermostLevelledParaDepth,
+  getInnermostProceduralStepDepth,
   isInLevelledParaTitleOrPara,
   isInListNestingContext,
+  isInProceduralStepTitleOrPara,
   resolveListItemInList,
 } from "./nestingLevelShared";
 
@@ -181,26 +184,26 @@ function sinkListItemAtTarget(editor: Editor, target: ListSinkTarget): boolean {
     .run();
 }
 
-function wrapLevelledParaDeeper(editor: Editor): boolean {
+function wrapHostBlockDeeper(
+  editor: Editor,
+  hostDepth: number,
+  hostTypeName: string,
+): boolean {
   return editor
     .chain()
     .focus()
     .command(({ state, tr, dispatch }) => {
       const $from = state.selection.$from;
-      const lpDepth = getInnermostLevelledParaDepth($from);
-      if (lpDepth < 0) return false;
-      if (collectAncestorDepths($from, LEVELLED_PARA).length >= TITLE_LEVEL_CAP) {
-        return false;
-      }
+      if ($from.depth < hostDepth || hostDepth < 0) return false;
 
-      const pos = $from.before(lpDepth);
-      const end = $from.after(lpDepth);
-      const lpType = state.schema.nodes.levelledPara;
-      if (!lpType) return false;
+      const pos = $from.before(hostDepth);
+      const end = $from.after(hostDepth);
+      const hostType = state.schema.nodes[hostTypeName];
+      if (!hostType) return false;
 
       if (!dispatch) return true;
 
-      tr.replaceWith(pos, end, lpType.create(null, $from.node(lpDepth)));
+      tr.replaceWith(pos, end, hostType.create(null, $from.node(hostDepth)));
       tr.setSelection(
         TextSelection.near(tr.doc.resolve(Math.min(pos + 2, tr.doc.content.size)), 1),
       );
@@ -210,10 +213,37 @@ function wrapLevelledParaDeeper(editor: Editor): boolean {
     .run();
 }
 
+function wrapLevelledParaDeeper(editor: Editor): boolean {
+  const $from = editor.state.selection.$from;
+  const lpDepth = getInnermostLevelledParaDepth($from);
+  if (lpDepth < 0) return false;
+  return wrapHostBlockDeeper(editor, lpDepth, LEVELLED_PARA);
+}
+
+function canWrapProceduralStepDeeper($from: ResolvedPos): boolean {
+  if (isInListDemoteContext($from)) return false;
+
+  const stepDepth = getInnermostProceduralStepDepth($from);
+  if (stepDepth < 0) return false;
+  if (collectAncestorDepths($from, PROCEDURAL_STEP).length >= TITLE_LEVEL_CAP) {
+    return false;
+  }
+
+  return isInProceduralStepTitleOrPara($from);
+}
+
+function wrapProceduralStepDeeper(editor: Editor): boolean {
+  const $from = editor.state.selection.$from;
+  const stepDepth = getInnermostProceduralStepDepth($from);
+  if (stepDepth < 0) return false;
+  return wrapHostBlockDeeper(editor, stepDepth, PROCEDURAL_STEP);
+}
+
 export function canDemoteNesting(editor: Editor): boolean {
   if (!editor.isEditable) return false;
   const $from = editor.state.selection.$from;
   if (resolveListSinkTarget($from)) return true;
+  if (canWrapProceduralStepDeeper($from)) return true;
   return canWrapLevelledParaDeeper($from);
 }
 
@@ -225,6 +255,10 @@ export function demoteNesting(editor: Editor): boolean {
 
   if (listTarget) {
     return sinkListItemAtTarget(editor, listTarget);
+  }
+
+  if (canWrapProceduralStepDeeper($from)) {
+    return wrapProceduralStepDeeper(editor);
   }
 
   if (canWrapLevelledParaDeeper($from)) {

@@ -67,8 +67,8 @@ export function WarningTriangleIcon() {
   return (
     <svg
       className="s1000d-attention-lead__icon-svg"
-      width="20"
-      height="20"
+      width="36"
+      height="36"
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -97,8 +97,8 @@ function CautionInfoIcon() {
   return (
     <svg
       className="s1000d-attention-lead__icon-svg"
-      width="20"
-      height="20"
+      width="36"
+      height="36"
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -117,7 +117,7 @@ function CautionInfoIcon() {
 }
 
 /**
- * `warningAndCautionLead`：图标 + 可编辑引导文同一行，与示意稿一致。
+ * `warningAndCautionLead`：仅可编辑引导文；图标在父级 `warning`/`caution` 左侧固定列展示。
  */
 export function WarningAndCautionLeadNodeView(props: NodeViewProps) {
   const kind = attentionKindFromPos(props.getPos, props)
@@ -127,9 +127,6 @@ export function WarningAndCautionLeadNodeView(props: NodeViewProps) {
       className="s1000d-attention-lead"
       data-s1000d-lead-kind={kind}
     >
-      <span className="s1000d-attention-lead__icon" contentEditable={false} aria-hidden>
-        {kind === 'caution' ? <CautionInfoIcon /> : <WarningTriangleIcon />}
-      </span>
       <NodeViewContent className="s1000d-attention-lead__text" />
     </NodeViewWrapper>
   )
@@ -193,7 +190,18 @@ export function WarningNodeView(props: NodeViewProps) {
       >
         <Brackets size={14} strokeWidth={2} aria-hidden />
       </button>
-      <NodeViewContent className="s1000d-attention-block__body" />
+      <div className="s1000d-attention-block__row">
+        <div
+          className="s1000d-attention-block__icon-col"
+          contentEditable={false}
+          aria-hidden
+        >
+          <span className="s1000d-attention-lead__icon">
+            {kind === 'caution' ? <CautionInfoIcon /> : <WarningTriangleIcon />}
+          </span>
+        </div>
+        <NodeViewContent className="s1000d-attention-block__content-col" />
+      </div>
     </NodeViewWrapper>
   )
 }
