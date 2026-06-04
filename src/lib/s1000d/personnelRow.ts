@@ -13,23 +13,22 @@ export type PersonnelRowData = {
   unitOfMeasure: string;
 };
 
-function firstCode(
+function firstCodeOrEmpty(
   list: ProcedureDictionaries["personCategory"],
-  fallback: string,
 ): string {
-  return list[0]?.code ?? fallback;
+  return list[0]?.code ?? "";
 }
 
-/** 新建人员行时的默认值（取当前字典首项）。 */
+/** 新建人员行时的默认值（取当前字典首项；字典为空则留空，不用内置 code）。 */
 export function defaultPersonnelRowData(): PersonnelRowData {
   const dict = getProcedureDictionaries();
   return {
     numRequired: "1",
-    personCategoryCode: firstCode(dict.personCategory, "pcc01"),
-    skillLevelCode: firstCode(dict.personSkill, "sk01"),
+    personCategoryCode: firstCodeOrEmpty(dict.personCategory),
+    skillLevelCode: firstCodeOrEmpty(dict.personSkill),
     trade: "",
     estimatedTime: "",
-    unitOfMeasure: firstCode(dict.timeUnit, "h"),
+    unitOfMeasure: firstCodeOrEmpty(dict.timeUnit),
   };
 }
 
@@ -55,7 +54,7 @@ export function readPersonnelRowData(node: PMNode): PersonnelRowData {
     skillLevelCode: String(skill?.attrs.skillLevelCode ?? "").trim(),
     trade: trade?.textContent ?? "",
     estimatedTime: estimated?.textContent ?? "",
-    unitOfMeasure: String(estimated?.attrs.unitOfMeasure ?? "h").trim() || "h",
+    unitOfMeasure: String(estimated?.attrs.unitOfMeasure ?? "").trim(),
   };
 }
 
@@ -96,7 +95,7 @@ export function buildPersonnelRowNode(
     }),
     inlineTextNode(schema, "trade", data.trade),
     inlineTextNode(schema, "estimatedTime", data.estimatedTime, {
-      unitOfMeasure: data.unitOfMeasure || "h",
+      unitOfMeasure: data.unitOfMeasure.trim() || null,
     }),
   ]);
 }

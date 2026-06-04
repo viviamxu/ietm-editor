@@ -114,15 +114,14 @@ function buildPersonnelTableRows(
   return list;
 }
 
-function dictionarySelectOptions(
+/** 仅当 code 在字典中存在时才作为 Select value，否则 undefined（显示 placeholder）。 */
+function dictionarySelectValue(
+  code: string,
   options: ProcedureDictionaryOption[],
-  current: string,
-) {
-  const orphan =
-    current && !options.some((o) => o.code === current)
-      ? [{ code: current, label: current }]
-      : [];
-  return [...orphan, ...options];
+): string | undefined {
+  const trimmed = code.trim();
+  if (!trimmed || !options.some((o) => o.code === trimmed)) return undefined;
+  return trimmed;
 }
 
 export function ReqPersonsNodeView(props: NodeViewProps) {
@@ -210,11 +209,15 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         title: PERSONNEL_COLUMNS[0],
         width: "16%",
         render: (_: unknown, row: PersonnelTableRow) => {
-          const value =
-            row.data.personCategoryCode || categoryOptions[0]?.code || "";
+          const value = dictionarySelectValue(
+            row.data.personCategoryCode,
+            categoryOptions,
+          );
           return (
             <div onMouseDown={stopEditorPointer}>
               <Select
+                placeholder="请选择"
+                allowClear
                 value={value}
                 onChange={(v) =>
                   commitRow(row.rowIndex, {
@@ -222,7 +225,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
                   })
                 }
               >
-                {dictionarySelectOptions(categoryOptions, value).map((opt) => (
+                {categoryOptions.map((opt) => (
                   <Select.Option key={opt.code} value={opt.code}>
                     {opt.label}
                   </Select.Option>
@@ -236,16 +239,21 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         title: PERSONNEL_COLUMNS[1],
         width: "16%",
         render: (_: unknown, row: PersonnelTableRow) => {
-          const value = row.data.skillLevelCode || skillOptions[0]?.code || "";
+          const value = dictionarySelectValue(
+            row.data.skillLevelCode,
+            skillOptions,
+          );
           return (
             <div onMouseDown={stopEditorPointer}>
               <Select
+                placeholder="请选择"
+                allowClear
                 value={value}
                 onChange={(v) =>
                   commitRow(row.rowIndex, { skillLevelCode: String(v ?? "") })
                 }
               >
-                {dictionarySelectOptions(skillOptions, value).map((opt) => (
+                {skillOptions.map((opt) => (
                   <Select.Option key={opt.code} value={opt.code}>
                     {opt.label}
                   </Select.Option>
@@ -271,8 +279,10 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         title: PERSONNEL_COLUMNS[3],
         width: "22%",
         render: (_: unknown, row: PersonnelTableRow) => {
-          const unitValue =
-            row.data.unitOfMeasure || unitOptions[0]?.code || "h";
+          const unitValue = dictionarySelectValue(
+            row.data.unitOfMeasure,
+            unitOptions,
+          );
           return (
             <div className="s1000d-support-equip__qty-cell">
               <Input
@@ -286,20 +296,20 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
               />
               <div onMouseDown={stopEditorPointer}>
                 <Select
+                  placeholder="单位"
+                  allowClear
                   value={unitValue}
                   onChange={(v) =>
                     commitRow(row.rowIndex, {
-                      unitOfMeasure: String(v ?? unitOptions[0]?.code ?? "h"),
+                      unitOfMeasure: String(v ?? ""),
                     })
                   }
                 >
-                  {dictionarySelectOptions(unitOptions, unitValue).map(
-                    (opt) => (
-                      <Select.Option key={opt.code} value={opt.code}>
-                        {opt.label}
-                      </Select.Option>
-                    ),
-                  )}
+                  {unitOptions.map((opt) => (
+                    <Select.Option key={opt.code} value={opt.code}>
+                      {opt.label}
+                    </Select.Option>
+                  ))}
                 </Select>
               </div>
             </div>

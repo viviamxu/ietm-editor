@@ -21,16 +21,16 @@ import {
   applySupportEquipRowUpdate,
   deleteSupportEquipRow,
   insertSupportEquipRowAtEnd,
-  QUANTITY_UNIT_OPTIONS,
   readSupportEquipRowData,
-  normalizeUnitOfMeasure,
   type SupportEquipRowData,
 } from "../../lib/s1000d/supportEquipRow";
 import {
   procedureTableRowDomProps,
   readPmNodeElementId,
 } from "../../lib/s1000d/procedureTableRowDom";
+import { useProcedureDictionaryStore } from "../../store/procedureDictionaryStore";
 import { usePropertyPanelStore } from "../../store/propertyPanelStore";
+import type { ProcedureDictionaryOption } from "../../types/procedureDictionaries";
 
 const SUPPORT_EQUIP_COLUMNS = [
   "名称",
@@ -40,13 +40,14 @@ const SUPPORT_EQUIP_COLUMNS = [
   "操作",
 ] as const;
 
-function quantityUnitSelectOptions(current: string) {
-  const normalized = normalizeUnitOfMeasure(current);
-  const orphan =
-    normalized && !QUANTITY_UNIT_OPTIONS.some((o) => o.code === normalized)
-      ? [{ code: normalized, label: normalized }]
-      : [];
-  return [...orphan, ...QUANTITY_UNIT_OPTIONS];
+/** 仅当 code 在 `timeUnit` 字典中存在时才作为 Select value，否则 undefined。 */
+function dictionarySelectValue(
+  code: string,
+  options: ProcedureDictionaryOption[],
+): string | undefined {
+  const trimmed = code.trim();
+  if (!trimmed || !options.some((o) => o.code === trimmed)) return undefined;
+  return trimmed;
 }
 type EquipRowNodeType = "supportEquipDescr" | "supplyDescr" | "spareDescr";
 type EquipGroupNodeType =
@@ -177,6 +178,7 @@ function EquipDescrGroupNodeView({
   deleteRowLabel: string;
 }) {
   const { editor, getPos } = props;
+  const unitOptions = useProcedureDictionaryStore((s) => s.dictionaries.timeUnit);
   useEditorRefresh(editor);
 
   const rows = useMemo<EquipTableRow[]>(() => {
@@ -287,8 +289,9 @@ function EquipDescrGroupNodeView({
         title: SUPPORT_EQUIP_COLUMNS[2],
         width: "24%",
         render: (_: unknown, row: EquipTableRow) => {
-          const unitValue = normalizeUnitOfMeasure(
-            row.data.unitOfMeasure || QUANTITY_UNIT_OPTIONS[0].code,
+          const unitValue = dictionarySelectValue(
+            row.data.unitOfMeasure,
+            unitOptions,
           );
           return (
             <div className="s1000d-support-equip__qty-cell">
@@ -308,16 +311,16 @@ function EquipDescrGroupNodeView({
               />
               <div onMouseDown={stopEditorPointer}>
                 <Select
+                  placeholder="单位"
+                  allowClear
                   value={unitValue}
                   onChange={(value) =>
                     commitRow(row.rowIndex, {
-                      unitOfMeasure: normalizeUnitOfMeasure(
-                        value ?? QUANTITY_UNIT_OPTIONS[0].code,
-                      ),
+                      unitOfMeasure: String(value ?? ""),
                     })
                   }
                 >
-                  {quantityUnitSelectOptions(unitValue).map((opt) => (
+                  {unitOptions.map((opt) => (
                     <Select.Option key={opt.code} value={opt.code}>
                       {opt.label}
                     </Select.Option>
@@ -372,7 +375,7 @@ function EquipDescrGroupNodeView({
         ),
       },
     ],
-    [addText, commitRow, deleteRow, deleteRowLabel, openRowProperties],
+    [addText, commitRow, deleteRow, deleteRowLabel, openRowProperties, unitOptions],
   );
 
   return (

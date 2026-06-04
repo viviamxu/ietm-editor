@@ -1,6 +1,8 @@
 import type { Editor } from "@tiptap/core";
 import type { Node as PMNode, Schema } from "@tiptap/pm/model";
 
+import { getProcedureDictionaries } from "../../store/procedureDictionaryStore";
+
 export type SupportEquipRowData = {
   name: string;
   natoStockNumber: string;
@@ -9,25 +11,8 @@ export type SupportEquipRowData = {
   remarks: string;
 };
 
-const DEFAULT_UNIT_OF_MEASURE = "套";
-
-/** 与样例 DM `unitOfMeasure="套"` 一致；兼容旧编辑器内部 code。 */
-const LEGACY_UNIT_OF_MEASURE: Record<string, string> = {
-  set: "套",
-  ea: "个",
-  pcs: "件",
-};
-
-export const QUANTITY_UNIT_OPTIONS = [
-  { code: "套", label: "套" },
-  { code: "个", label: "个" },
-  { code: "件", label: "件" },
-] as const;
-
-export function normalizeUnitOfMeasure(raw: unknown): string {
-  const trimmed = String(raw ?? "").trim();
-  if (!trimmed) return DEFAULT_UNIT_OF_MEASURE;
-  return LEGACY_UNIT_OF_MEASURE[trimmed] ?? trimmed;
+function firstTimeUnitCode(): string {
+  return getProcedureDictionaries().timeUnit[0]?.code ?? "";
 }
 type EquipRowNodeType = "supportEquipDescr" | "supplyDescr" | "spareDescr";
 type EquipGroupNodeType =
@@ -78,12 +63,13 @@ function inlineTextNode(
   return type.create(attrs ?? {}, content);
 }
 
+/** 新建工装/辅料/备品行时的默认值（数量单位取 `timeUnit` 首项；字典为空则留空）。 */
 export function defaultSupportEquipRowData(): SupportEquipRowData {
   return {
     name: "",
     natoStockNumber: "",
     reqQuantity: "",
-    unitOfMeasure: DEFAULT_UNIT_OF_MEASURE,
+    unitOfMeasure: firstTimeUnitCode(),
     remarks: "",
   };
 }
@@ -98,7 +84,7 @@ export function readSupportEquipRowData(node: PMNode): SupportEquipRowData {
     name: name?.textContent ?? "",
     natoStockNumber: natoStockNumber?.textContent ?? "",
     reqQuantity: reqQuantity?.textContent ?? "",
-    unitOfMeasure: normalizeUnitOfMeasure(reqQuantity?.attrs.unitOfMeasure),
+    unitOfMeasure: String(reqQuantity?.attrs.unitOfMeasure ?? "").trim(),
     remarks: remarks?.textContent ?? "",
   };
 }
@@ -119,11 +105,11 @@ export function buildSupportEquipRowNode(
     inlineTextNode(schema, "natoStockNumber", data.natoStockNumber),
   ];
   if (identNumberNode) children.push(identNumberNode);
-  const unit = normalizeUnitOfMeasure(data.unitOfMeasure);
-  if (data.reqQuantity.trim() || unit !== DEFAULT_UNIT_OF_MEASURE) {
+  const unit = data.unitOfMeasure.trim();
+  if (data.reqQuantity.trim() || unit) {
     children.push(
       inlineTextNode(schema, "reqQuantity", data.reqQuantity, {
-        unitOfMeasure: unit,
+        unitOfMeasure: unit || null,
       }),
     );
   }
