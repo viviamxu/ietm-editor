@@ -71,6 +71,62 @@
   tab-size: 2;
 }
 
+.ietm-source-xml-view__line {
+  display: flex;
+  align-items: flex-start;
+  min-width: 100%;
+  width: max-content;
+}
+
+.ietm-source-xml-view__fold-btn,
+.ietm-source-xml-view__fold-spacer {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0 4px 0 0;
+}
+
+.ietm-source-xml-view__fold-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+}
+
+.ietm-source-xml-view__fold-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.ietm-source-xml-view__line-code {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.ietm-source-xml-view__line-code > span {
+  width: 100%;
+}
+
+.ietm-source-xml-view__fold-summary {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #eef2ff;
+  color: #4b5563;
+  font-size: 11px;
+  user-select: none;
+}
+
 /* 仅预览：左编辑 70% + 中预览 30% */
 .ietm-app-main--with-preview-pane .ietm-editor-pane {
   flex: 0 0 70%;

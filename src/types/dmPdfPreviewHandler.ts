@@ -5,7 +5,7 @@ export interface OpenDmPdfPreviewContext {
 }
 
 /**
- * 底栏「预览」一站式回调：保存、请求预览接口、鉴权等均由宿主完成。
+ * 底栏「预览」一站式回调：由宿主用当前编辑器内容请求预览，不强制先保存。
  * 返回可在 iframe 中使用的 PDF URL，或 PDF Blob。
  */
 export type OpenDmPdfPreviewHandler = (

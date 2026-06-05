@@ -161,15 +161,15 @@ interface IETMEditorProps {
   /** `null` 表示按 `editable` 使用内置默认底栏状态 */
   footerStatusOverride: IETMEditorFooterStatus | null;
   /**
-   * 底栏「预览」一站式回调（保存 + 预览接口均由宿主处理）。
-   * 配置后不再要求 {@link onSaveDmXml}，且忽略内置预览请求。
+   * 底栏「预览」一站式回调（预览接口由宿主处理，不强制先保存）。
+   * 配置后忽略内置预览请求。
    */
   onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
   /** API 根路径，与默认 `/czy-ietm-admin/ietm/preview/dm/pdf` 拼接 */
   apiBaseUrl?: string;
   /** 覆盖 DM PDF 预览接口路径 */
   dmPdfPreviewPath?: string;
-  /** 自定义预览请求（仍会先执行 {@link onSaveDmXml}） */
+  /** 自定义预览请求（不强制先保存） */
   fetchDmPdfPreview?: () => Promise<string | Blob>;
 }
 
@@ -300,18 +300,19 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       "file" | "edit" | "insert"
     >("file");
 
-    const [propertySettingsOpen, setPropertySettingsOpen] = useState(false);
+    const [propertySettingsOpen, setPropertySettingsOpen] = useState(true);
     const documentDisplayTitle = useDmMetadataStore(
       (s) => s.documentDisplayTitle,
     );
     const [viewMode, setViewMode] = useState<EditorViewMode>("editor");
     const [sourceXml, setSourceXml] = useState("");
-    const [padPreviewOpen, setPadPreviewOpen] = useState(false);
+    const [padPreviewOpen, setPadPreviewOpen] = useState(true);
     const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
     const [pdfPreviewError, setPdfPreviewError] = useState<string | null>(null);
     const pdfPreviewUrlRef = useRef<string | null>(null);
     const pdfPreviewRevokeRef = useRef(false);
+    const initialPreviewLoadRef = useRef(true);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
     const [selectionBump, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
 
@@ -482,6 +483,18 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       props.onSaveDmXml,
     ]);
 
+    const handleSaveComplete = useCallback(() => {
+      if (padPreviewOpen) {
+        runOpenPdfPreview();
+      }
+    }, [padPreviewOpen, runOpenPdfPreview]);
+
+    useEffect(() => {
+      if (!editor || !initialPreviewLoadRef.current) return;
+      initialPreviewLoadRef.current = false;
+      runOpenPdfPreview();
+    }, [editor, runOpenPdfPreview]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -640,6 +653,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       if (viewMode === "editor") {
         setSourceXml(exportEditorToDmXmlString(editor));
         setViewMode("source");
+        dismissPadPreview();
         setPropertySettingsOpen(false);
         return;
       }
@@ -947,6 +961,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             editable={props.editable}
             onEditableChange={props.onEditableChange}
             onSaveDmXml={props.onSaveDmXml}
+            onAfterSave={handleSaveComplete}
             lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
             editModeButtonTitle={props.editModeButtonTitle}
           />
