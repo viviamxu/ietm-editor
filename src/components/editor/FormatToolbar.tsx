@@ -87,6 +87,8 @@ interface FormatToolbarProps {
   editable: boolean;
   onEditableChange: (editable: boolean) => void;
   onSaveDmXml?: SaveDmXmlHandler;
+  /** 保存成功（宿主回调或本地下载）后触发，用于刷新已打开的预览等 */
+  onAfterSave?: () => void;
   /** 可编辑状态下「锁定」按钮的 `title`；默认「锁定（只读）」 */
   lockReadonlyButtonTitle?: string;
   /** 只读状态下「编辑」按钮的 `title`；默认「编辑」 */
@@ -102,6 +104,7 @@ export function FormatToolbar({
   editable,
   onEditableChange,
   onSaveDmXml,
+  onAfterSave,
   lockReadonlyButtonTitle = DEFAULT_LOCK_READONLY_TITLE,
   editModeButtonTitle = DEFAULT_EDIT_MODE_TITLE,
 }: FormatToolbarProps) {
@@ -183,6 +186,7 @@ export function FormatToolbar({
         setSaveInFlight(true);
         try {
           await Promise.resolve(onSaveDmXml(exportEditorToDmXmlString(editor)));
+          onAfterSave?.();
         } finally {
           setSaveInFlight(false);
         }
@@ -190,6 +194,7 @@ export function FormatToolbar({
       return;
     }
     save(editor);
+    onAfterSave?.();
   };
 
   /** 只读时除「切换为可编辑」外，工具栏其余控件均不可点 */

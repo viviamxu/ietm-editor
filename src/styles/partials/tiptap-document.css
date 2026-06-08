@@ -108,6 +108,71 @@
   border-bottom: 2px solid #2563eb;
 }
 
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-dragging,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-selecting {
+  user-select: none !important;
+  caret-color: transparent !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-dragging td,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-dragging th,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-selecting td,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-selecting th {
+  caret-color: transparent !important;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table.is-cell-dragging
+  .ProseMirror-cursor,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table.is-cell-dragging
+  .ProseMirror-cursor::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table.is-cell-selecting
+  .ProseMirror-cursor,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table.is-cell-selecting
+  .ProseMirror-cursor::before {
+  display: none !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table.is-cell-dragging ::selection {
+  background: transparent;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  .s1000d-entry.is-cell-selected,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table td.is-cell-selected,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table th.is-cell-selected {
+  background: #d9d9d9;
+  color: #1f2937 !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table td.is-cell-selected *,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table th.is-cell-selected * {
+  color: inherit !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table td.is-cell-selected *::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  th.is-cell-selected
+  *::before {
+  color: inherit !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-tgroup-table thead td.is-cell-selected,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table thead th.is-cell-selected {
+  background: #d0d0d0;
+}
+
 .ietm-editor-surface .tiptap code {
   font-family: ui-monospace, Consolas, "Courier New", monospace;
   font-size: 0.92em;

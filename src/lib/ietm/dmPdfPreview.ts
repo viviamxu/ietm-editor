@@ -11,24 +11,44 @@ export const DEFAULT_DM_PDF_PREVIEW_PATH =
 export interface DmPdfPreviewOptions {
   editor: Editor;
   /**
-   * 优先：宿主一站式处理保存 + 预览；配置后忽略 {@link apiBaseUrl}、{@link fetchDmPdfPreview} 等内置请求。
+   * 优先：宿主一站式预览；配置后忽略 {@link apiBaseUrl}、{@link fetchDmPdfPreview} 等内置请求。
    */
   onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
   onSaveDmXml?: SaveDmXmlHandler;
   /** 如 `https://api.example.com` 或空字符串表示与页面同源 */
   apiBaseUrl?: string;
   dmPdfPreviewPath?: string;
-  /** 自定义预览请求（仍会在其前执行 {@link onSaveDmXml}） */
+  /** 自定义预览请求（不强制先保存） */
   fetchDmPdfPreview?: () => Promise<string | Blob>;
   fetchInit?: RequestInit;
 }
 
-export function pdfPreviewResultToUrl(
+async function assertPdfBlob(blob: Blob): Promise<void> {
+  const head = await blob.slice(0, 5).text();
+  if (head.startsWith("%PDF") || blob.type.toLowerCase().includes("pdf")) {
+    return;
+  }
+  const sniff = await blob.slice(0, 256).text();
+  if (
+    sniff.trimStart().startsWith("<!") ||
+    /<html[\s>]/i.test(sniff) ||
+    sniff.includes("/@react-refresh") ||
+    sniff.includes("/@vite/")
+  ) {
+    throw new Error(
+      "预览接口返回了 HTML 页面而非 PDF。请配置 onOpenDmPdfPreview、fetchDmPdfPreview，或检查 apiBaseUrl 是否指向后端服务。",
+    );
+  }
+  throw new Error("预览接口返回的不是 PDF 文件");
+}
+
+export async function pdfPreviewResultToUrl(
   result: string | Blob,
-): { url: string; revokeOnClose: boolean } {
+): Promise<{ url: string; revokeOnClose: boolean }> {
   if (typeof result === "string") {
     return { url: result, revokeOnClose: false };
   }
+  await assertPdfBlob(result);
   return { url: URL.createObjectURL(result), revokeOnClose: true };
 }
 
@@ -85,6 +105,15 @@ export async function fetchDmPdfPreviewUrl(options: {
 
   const contentType = response.headers.get("content-type") ?? "";
 
+  if (
+    contentType.includes("text/html") ||
+    contentType.includes("text/javascript")
+  ) {
+    throw new Error(
+      "预览接口返回了 HTML 页面而非 PDF（开发环境下常为 Vite 首页）。请配置 onOpenDmPdfPreview、fetchDmPdfPreview，或设置正确的 apiBaseUrl。",
+    );
+  }
+
   if (contentType.includes("application/json")) {
     const json: unknown = await response.json();
     const pdfUrl = pickPdfUrlFromJson(json);
@@ -95,12 +124,14 @@ export async function fetchDmPdfPreviewUrl(options: {
   }
 
   const blob = await response.blob();
+  await assertPdfBlob(blob);
   return { url: URL.createObjectURL(blob), revokeOnClose: true };
 }
 
 /**
- * 打开 PDF 预览：若传入 {@link onOpenDmPdfPreview} 则完全由宿主处理；
- * 否则先保存 DM，再请求预览（内置或 {@link fetchDmPdfPreview}）。
+ * 加载 PDF 预览：不强制先保存。
+ * 若传入 {@link onOpenDmPdfPreview} 则由宿主用 {@link exportDmXml} 处理；
+ * 否则走 {@link fetchDmPdfPreview} 或内置 GET 预览接口。
  */
 export async function openDmPdfPreview(
   options: DmPdfPreviewOptions,
@@ -112,10 +143,14 @@ export async function openDmPdfPreview(
     return pdfPreviewResultToUrl(result);
   }
 
-  await saveDmXmlFromEditor(options.editor, options.onSaveDmXml);
-
   if (options.fetchDmPdfPreview) {
     return pdfPreviewResultToUrl(await options.fetchDmPdfPreview());
+  }
+
+  if (!options.apiBaseUrl?.trim()) {
+    throw new Error(
+      "未配置 PDF 预览：请在 createIETMEditor 中传入 onOpenDmPdfPreview、fetchDmPdfPreview 或 apiBaseUrl（后端 API 根路径）。",
+    );
   }
 
   return fetchDmPdfPreviewUrl({

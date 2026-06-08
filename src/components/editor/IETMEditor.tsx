@@ -37,7 +37,10 @@ import {
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
-import { s1000dProcedureNodes, PROCEDURE_TEXT_ALIGN_NODE_TYPES } from "../../extensions/s1000d/procedureNodes";
+import {
+  s1000dProcedureNodes,
+  PROCEDURE_TEXT_ALIGN_NODE_TYPES,
+} from "../../extensions/s1000d/procedureNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
@@ -66,6 +69,9 @@ import {
   type IsolationFlowPayload,
 } from "../../lib/s1000d/isolationFlowBridge";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
+import { S1000dTableCellSelectionExtension } from "../../extensions/s1000d/s1000dTableCellSelectionExtension";
+import { tableSelectionPluginKey } from "../../lib/editor/tableSelection";
+
 import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import {
@@ -77,7 +83,10 @@ import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { usePropertyPanelStore } from "../../store/propertyPanelStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
-import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
+import type {
+  InsertDmRefPayload,
+  InsertImagePayload,
+} from "../../types/toolbar";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -161,15 +170,15 @@ interface IETMEditorProps {
   /** `null` 表示按 `editable` 使用内置默认底栏状态 */
   footerStatusOverride: IETMEditorFooterStatus | null;
   /**
-   * 底栏「预览」一站式回调（保存 + 预览接口均由宿主处理）。
-   * 配置后不再要求 {@link onSaveDmXml}，且忽略内置预览请求。
+   * 底栏「预览」一站式回调（预览接口由宿主处理，不强制先保存）。
+   * 配置后忽略内置预览请求。
    */
   onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
   /** API 根路径，与默认 `/czy-ietm-admin/ietm/preview/dm/pdf` 拼接 */
   apiBaseUrl?: string;
   /** 覆盖 DM PDF 预览接口路径 */
   dmPdfPreviewPath?: string;
-  /** 自定义预览请求（仍会先执行 {@link onSaveDmXml}） */
+  /** 自定义预览请求（不强制先保存） */
   fetchDmPdfPreview?: () => Promise<string | Blob>;
 }
 
@@ -300,20 +309,24 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       "file" | "edit" | "insert"
     >("file");
 
-    const [propertySettingsOpen, setPropertySettingsOpen] = useState(false);
+    const [propertySettingsOpen, setPropertySettingsOpen] = useState(true);
     const documentDisplayTitle = useDmMetadataStore(
       (s) => s.documentDisplayTitle,
     );
     const [viewMode, setViewMode] = useState<EditorViewMode>("editor");
     const [sourceXml, setSourceXml] = useState("");
-    const [padPreviewOpen, setPadPreviewOpen] = useState(false);
+    const [padPreviewOpen, setPadPreviewOpen] = useState(true);
     const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
     const [pdfPreviewError, setPdfPreviewError] = useState<string | null>(null);
     const pdfPreviewUrlRef = useRef<string | null>(null);
     const pdfPreviewRevokeRef = useRef(false);
+    const initialPreviewLoadRef = useRef(true);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
-    const [selectionBump, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
+    const [selectionBump, bumpSelectionUi] = useReducer(
+      (n: number) => n + 1,
+      0,
+    );
 
     const editor = useEditor({
       immediatelyRender: false,
@@ -358,6 +371,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           resize: false,
         }),
         ...s1000dPhase1Nodes,
+        S1000dTableCellSelectionExtension,
         ...s1000dFaultIsolationNodes,
         ...s1000dProcedureNodes,
       ],
@@ -394,6 +408,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           }
         }
         bumpSelectionUi();
+      },
+      onTransaction: ({ transaction }) => {
+        if (transaction.getMeta(tableSelectionPluginKey) !== undefined) {
+          bumpSelectionUi();
+        }
       },
     });
 
@@ -481,6 +500,18 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       props.onOpenDmPdfPreview,
       props.onSaveDmXml,
     ]);
+
+    const handleSaveComplete = useCallback(() => {
+      if (padPreviewOpen) {
+        runOpenPdfPreview();
+      }
+    }, [padPreviewOpen, runOpenPdfPreview]);
+
+    useEffect(() => {
+      if (!editor || !initialPreviewLoadRef.current) return;
+      initialPreviewLoadRef.current = false;
+      runOpenPdfPreview();
+    }, [editor, runOpenPdfPreview]);
 
     useImperativeHandle(
       ref,
@@ -640,6 +671,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       if (viewMode === "editor") {
         setSourceXml(exportEditorToDmXmlString(editor));
         setViewMode("source");
+        dismissPadPreview();
         setPropertySettingsOpen(false);
         return;
       }
@@ -947,6 +979,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             editable={props.editable}
             onEditableChange={props.onEditableChange}
             onSaveDmXml={props.onSaveDmXml}
+            onAfterSave={handleSaveComplete}
             lockReadonlyButtonTitle={props.lockReadonlyButtonTitle}
             editModeButtonTitle={props.editModeButtonTitle}
           />

@@ -214,18 +214,18 @@ export interface IETMEditorOptions {
    */
   onSaveDmXml?: SaveDmXmlHandler;
   /**
-   * 底栏「预览」一站式回调：保存、调预览接口、鉴权等均由宿主完成。
-   * 传入后不再要求 `onSaveDmXml`，且忽略 `apiBaseUrl` / `fetchDmPdfPreview` 等内置预览请求。
+   * 底栏「预览」一站式回调：由宿主用 `exportDmXml` 调预览接口，不强制先保存。
+   * 传入后忽略 `apiBaseUrl` / `fetchDmPdfPreview` 等内置预览请求。
    */
   onOpenDmPdfPreview?: OpenDmPdfPreviewHandler;
   /**
    * API 根路径（如 `https://api.example.com` 或 `''` 表示与页面同源）。
-   * 底栏「预览」保存成功后会请求 `{apiBaseUrl}/czy-ietm-admin/ietm/preview/dm/pdf`（可用 `dmPdfPreviewPath` 覆盖路径）。
+   * 底栏「预览」会直接请求 `{apiBaseUrl}/czy-ietm-admin/ietm/preview/dm/pdf`（可用 `dmPdfPreviewPath` 覆盖路径）。
    */
   apiBaseUrl?: string;
   /** 覆盖 DM PDF 预览接口路径，默认 `/czy-ietm-admin/ietm/preview/dm/pdf` */
   dmPdfPreviewPath?: string;
-  /** 自定义预览请求；仍会先调用 `onSaveDmXml`（`onOpenDmPdfPreview` 未传时生效） */
+  /** 自定义预览请求（不强制先保存；`onOpenDmPdfPreview` 未传时生效） */
   fetchDmPdfPreview?: () => Promise<string | Blob>;
   /**
    * ICN 信息接口路径，默认 `/czy-ietm-admin/ietm/icn/icnInfo`。

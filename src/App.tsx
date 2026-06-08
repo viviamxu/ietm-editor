@@ -21,6 +21,9 @@ import procedureSchema from "./data/程序类.json";
 
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 
+/** 本地 Demo：在 .env 中设置 VITE_API_BASE_URL 后走内置 PDF 预览 GET；未设置则在预览面板提示配置方式 */
+const demoApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
+
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +46,15 @@ function App() {
       // dmDocumentName: "故障类.XML",
 
       descriptionSchema: procedureSchema as DescriptionSchema,
+      ...(demoApiBaseUrl
+        ? { apiBaseUrl: demoApiBaseUrl }
+        : {
+            onOpenDmPdfPreview: async () => {
+              throw new Error(
+                "本地 Demo 未配置预览后端：复制 .env.example 为 .env，设置 VITE_API_BASE_URL=你的后端地址，重启 pnpm dev。生产环境由宿主传入 apiBaseUrl 或 onOpenDmPdfPreview。",
+              );
+            },
+          }),
     });
 
     instanceRef.current = instance;
