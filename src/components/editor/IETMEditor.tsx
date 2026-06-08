@@ -37,7 +37,10 @@ import {
   s1000dPhase1Nodes,
 } from "../../extensions/S1000DNodes";
 import { s1000dFaultIsolationNodes } from "../../extensions/s1000d/faultIsolationNodes";
-import { s1000dProcedureNodes, PROCEDURE_TEXT_ALIGN_NODE_TYPES } from "../../extensions/s1000d/procedureNodes";
+import {
+  s1000dProcedureNodes,
+  PROCEDURE_TEXT_ALIGN_NODE_TYPES,
+} from "../../extensions/s1000d/procedureNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
@@ -66,6 +69,9 @@ import {
   type IsolationFlowPayload,
 } from "../../lib/s1000d/isolationFlowBridge";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
+import { S1000dTableCellSelectionExtension } from "../../extensions/s1000d/s1000dTableCellSelectionExtension";
+import { tableSelectionPluginKey } from "../../lib/editor/tableSelection";
+
 import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import {
@@ -77,7 +83,10 @@ import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { usePropertyPanelStore } from "../../store/propertyPanelStore";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
-import type { InsertDmRefPayload, InsertImagePayload } from "../../types/toolbar";
+import type {
+  InsertDmRefPayload,
+  InsertImagePayload,
+} from "../../types/toolbar";
 import {
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -314,7 +323,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const pdfPreviewRevokeRef = useRef(false);
     const initialPreviewLoadRef = useRef(true);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
-    const [selectionBump, bumpSelectionUi] = useReducer((n: number) => n + 1, 0);
+    const [selectionBump, bumpSelectionUi] = useReducer(
+      (n: number) => n + 1,
+      0,
+    );
 
     const editor = useEditor({
       immediatelyRender: false,
@@ -359,6 +371,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           resize: false,
         }),
         ...s1000dPhase1Nodes,
+        S1000dTableCellSelectionExtension,
         ...s1000dFaultIsolationNodes,
         ...s1000dProcedureNodes,
       ],
@@ -395,6 +408,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           }
         }
         bumpSelectionUi();
+      },
+      onTransaction: ({ transaction }) => {
+        if (transaction.getMeta(tableSelectionPluginKey) !== undefined) {
+          bumpSelectionUi();
+        }
       },
     });
 

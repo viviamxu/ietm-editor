@@ -6,6 +6,7 @@ import markup from "react-syntax-highlighter/dist/esm/languages/prism/markup";
 import formatXml from "xml-formatter";
 import type { ReactNode } from "react";
 import type { SyntaxHighlighterProps } from "react-syntax-highlighter";
+import { IconRight, IconDown } from "@arco-design/web-react/icon";
 
 SyntaxHighlighter.registerLanguage("xml", markup);
 
@@ -123,7 +124,9 @@ export const SourceXmlView = memo(function SourceXmlView({
     return hidden;
   }, [collapsedRanges, foldRanges]);
 
-  const renderedLines = useMemo<NonNullable<SyntaxHighlighterProps["renderer"]>>(
+  const renderedLines = useMemo<
+    NonNullable<SyntaxHighlighterProps["renderer"]>
+  >(
     () =>
       ({ rows, stylesheet, useInlineStyles }): ReactNode =>
         rows.map((row, index) => {
@@ -159,7 +162,7 @@ export const SourceXmlView = memo(function SourceXmlView({
                     }));
                   }}
                 >
-                  {isCollapsed ? ">" : "v"}
+                  {isCollapsed ? <IconRight /> : <IconDown />}
                 </button>
               ) : (
                 <span
