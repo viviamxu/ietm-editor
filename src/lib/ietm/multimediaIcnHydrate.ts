@@ -37,6 +37,7 @@ export type MultimediaObjectHydrateAttrs = {
   mediaSrc?: string | null;
   sceneSrc?: string | null;
   previewImgSrc?: string | null;
+  cnfPath?: string | null;
   multimediaType?: string;
 };
 
@@ -52,6 +53,7 @@ export function icnInfoRowToMultimediaAttrs(
       fileType: fileType ?? "zip",
       sceneSrc: row.filePath,
       previewImgSrc: row.thPath,
+      cnfPath: row.cnfPath,
       multimediaType: "3D",
     };
   }

@@ -60,6 +60,11 @@ export type InsertMultimediaPayload = {
    * 存储于节点 attr，**不写入 S1000D XML**。
    */
   previewImgSrc?: string;
+  /**
+   * cc3d 场景配置文件路径。
+   * 存储于节点 attr，**不写入 S1000D XML**。
+   */
+  cnfPath?: string | null;
   /** 文件后缀（如 `mp4`），对应后端 `fileType`。 */
   fileType?: string | null;
   /**
@@ -103,6 +108,7 @@ export function insertMultimediaIntoEditor(
         fileType: item.fileType ?? null,
         sceneSrc: item.sceneSrc ?? null,
         previewImgSrc: item.previewImgSrc ?? null,
+        cnfPath: item.cnfPath ?? null,
         mediaSrc: item.mediaSrc ?? null,
       },
     });
