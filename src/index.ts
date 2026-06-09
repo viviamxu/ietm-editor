@@ -56,7 +56,10 @@ import type {
 } from "./types/descriptionSchema";
 import type { ProcedureDictionaries } from "./types/procedureDictionaries";
 import type { ProcedureUiConfig } from "./types/procedureUiConfig";
-import type { InsertMultimediaPayload } from "./lib/editor/insertMultimedia";
+import type {
+  InsertMultimediaPayload,
+  InsertMultimediaParameterPayload,
+} from "./lib/editor/insertMultimedia";
 import {
   buildEmptyDescriptionBodyFromSchema,
   buildEmptyDescriptionDocJson,
@@ -183,6 +186,7 @@ export type {
   OpenExternalRefContext,
   InsertImagePayload,
   InsertMultimediaPayload,
+  InsertMultimediaParameterPayload,
   ToolbarConfig,
   ToolbarItemContext,
   ToolbarItemPlacement,

@@ -911,7 +911,29 @@ function buildColspecXml(cols: number): string {
   }).join("");
 }
 
-function serializeMultimediaObjectToXml(attrs: JSONContent["attrs"]): string {
+function serializeParameterToXml(attrs: JSONContent["attrs"]): string {
+  if (!attrs) return "<parameter />";
+  const id =
+    attrs.id != null && String(attrs.id).trim() !== ""
+      ? ` id="${escapeXml(String(attrs.id))}"`
+      : "";
+  const parameterIdent =
+    attrs.parameterIdent != null && String(attrs.parameterIdent).trim() !== ""
+      ? ` parameterIdent="${escapeXml(String(attrs.parameterIdent))}"`
+      : "";
+  const parameterValue =
+    attrs.parameterValue != null && String(attrs.parameterValue).trim() !== ""
+      ? ` parameterValue="${escapeXml(String(attrs.parameterValue))}"`
+      : "";
+  const parameterName =
+    attrs.parameterName != null && String(attrs.parameterName).trim() !== ""
+      ? ` parameterName="${escapeXml(String(attrs.parameterName))}"`
+      : "";
+  return `<parameter${id}${parameterIdent}${parameterValue}${parameterName} />`;
+}
+
+function serializeMultimediaObjectToXml(node: JSONContent): string {
+  const attrs = node.attrs;
   if (!attrs) return '<multimediaObject multimediaType="other" />';
   const iei =
     attrs.infoEntityIdent != null &&
@@ -930,6 +952,13 @@ function serializeMultimediaObjectToXml(attrs: JSONContent["attrs"]): string {
         ? String(attrs.sceneSrc).trim()
         : "";
   const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
+  const parameters = (node.content ?? [])
+    .filter((child) => child.type === "parameter")
+    .map((child) => `  ${serializeParameterToXml(child.attrs)}`)
+    .join("\n");
+  if (parameters) {
+    return `<multimediaObject${iei} multimediaType="${escapeXml(multimediaType)}"${xlink}>\n${parameters}\n</multimediaObject>`;
+  }
   return `<multimediaObject${iei} multimediaType="${escapeXml(multimediaType)}"${xlink} />`;
 }
 
@@ -1017,7 +1046,11 @@ function serializeNodeToXml(node: JSONContent): string {
   }
 
   if (node.type === "multimediaObject") {
-    return serializeMultimediaObjectToXml(node.attrs);
+    return serializeMultimediaObjectToXml(node);
+  }
+
+  if (node.type === "parameter") {
+    return serializeParameterToXml(node.attrs);
   }
 
   // 3. 出版物 / IETMImage：转为 figure + graphic（路径写入 xlink:href）

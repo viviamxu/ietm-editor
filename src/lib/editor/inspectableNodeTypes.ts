@@ -15,6 +15,7 @@ const BASE_INSPECTABLE_NODE_TYPE_LIST = [
   'levelledPara',
   'multimedia',
   'multimediaObject',
+  'parameter',
   'note',
   'noteLead',
   'notePara',

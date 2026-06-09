@@ -1,5 +1,5 @@
 import type { NodeViewProps } from "@tiptap/react";
-import { NodeViewWrapper } from "@tiptap/react";
+import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Film } from "lucide-react";
 import Cc3dSceneElement from "../../components/3d/Cc3dSceneElement";
 
@@ -51,6 +51,7 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
           imgSrc={previewImgSrc || undefined}
           className="s1000d-cc3d-scene"
         />
+        <NodeViewContent className="s1000d-multimedia-object-node__parameters" />
       </NodeViewWrapper>
     );
   }
@@ -71,6 +72,7 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
           preload="metadata"
           playsInline
         />
+        <NodeViewContent className="s1000d-multimedia-object-node__parameters" />
       </NodeViewWrapper>
     );
   }
@@ -88,6 +90,7 @@ export function MultimediaObjectNodeView(props: NodeViewProps) {
         className="s1000d-multimedia-object-node__icon"
       />
       <span className="s1000d-multimedia-object-node__label">多媒体</span>
+      <NodeViewContent className="s1000d-multimedia-object-node__parameters" />
     </NodeViewWrapper>
   );
 }

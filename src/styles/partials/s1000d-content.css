@@ -483,6 +483,10 @@
   font-family: inherit;
 }
 
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node__parameters {
+  display: none;
+}
+
 .ietm-editor-surface .tiptap .s1000d-multimedia-object-node__video {
   display: block;
   width: 100%;

@@ -1090,12 +1090,48 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
   };
 }
 
+function multimediaObjectParameterAttr(name: string) {
+  return {
+    default: null as string | null,
+    parseHTML: (el: HTMLElement) => el.getAttribute(name),
+    renderHTML: (attrs: Record<string, string | null | undefined>) => {
+      const v = attrs[name];
+      if (v == null || String(v).trim() === "") return {};
+      return { [name]: String(v).trim() };
+    },
+  };
+}
+
+/** S1000D `parameter`：`multimediaObject` 下的三维场景参数（写入 XML）。 */
+export const S1000DParameter = Node.create({
+  name: "parameter",
+  atom: true,
+  selectable: false,
+
+  addAttributes() {
+    return {
+      id: s1000dIdAttributeConfig(),
+      parameterIdent: multimediaObjectParameterAttr("parameterIdent"),
+      parameterValue: multimediaObjectParameterAttr("parameterValue"),
+      parameterName: multimediaObjectParameterAttr("parameterName"),
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "parameter" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["parameter", mergeAttributes(HTMLAttributes)];
+  },
+});
+
 /**
- * S1000D `multimediaObject`：`multimedia` 下的媒体实体引用（无文本子节点）。
+ * S1000D `multimediaObject`：`multimedia` 下的媒体实体引用，可含 `parameter*` 子节点。
  */
 export const S1000DMultimediaObject = Node.create({
   name: "multimediaObject",
-  atom: true,
+  content: "parameter*",
   selectable: true,
 
   addAttributes() {
@@ -1240,6 +1276,7 @@ export const S1000DMultimediaObject = Node.create({
         ...(ident ? { infoEntityIdent: ident } : {}),
         multimediaType,
       }),
+      0,
     ];
   },
 
@@ -1439,6 +1476,7 @@ export const s1000dPhase1Nodes = [
   S1000DDmRef,
   S1000DInternalRef,
   S1000DGraphic,
+  S1000DParameter,
   S1000DMultimediaObject,
   S1000DMultimedia,
   S1000DFigure,
