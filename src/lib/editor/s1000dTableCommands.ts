@@ -469,7 +469,8 @@ function toggleHeader(editor: Editor): boolean {
     const firstTbodyIndex = tgroupChildren.findIndex(
       (section) => section.type.name === "tbody",
     );
-    const insertAt = firstTbodyIndex >= 0 ? firstTbodyIndex : tgroupChildren.length;
+    const insertAt =
+      firstTbodyIndex >= 0 ? firstTbodyIndex : tgroupChildren.length;
     tgroupChildren.splice(insertAt, 0, theadNode);
   }
 
@@ -481,11 +482,7 @@ function toggleHeader(editor: Editor): boolean {
   const moved = replaceTgroup(
     editor,
     ctx,
-    updateTgroupCols(
-      ctx.tgroup,
-      tgroupColumnCount(ctx.tgroup),
-      tgroupChildren,
-    ),
+    updateTgroupCols(ctx.tgroup, tgroupColumnCount(ctx.tgroup), tgroupChildren),
   );
   if (moved) {
     clearTableCellSelection(editor);
