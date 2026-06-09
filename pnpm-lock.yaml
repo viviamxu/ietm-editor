@@ -15,8 +15,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       '@ietm-manual/preview':
-        specifier: ^0.0.1
-        version: 0.0.1(three@0.184.0)
+        specifier: ^0.0.3
+        version: 0.0.3(three@0.184.0)
       '@tiptap/core':
         specifier: ^3.22.5
         version: 3.22.5(@tiptap/pm@3.22.5)
@@ -296,8 +296,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@ietm-manual/preview@0.0.1':
-    resolution: {integrity: sha512-73becYt805hb5FO63xWcxweIKCA5uJtawFSvbEeXC1ak1IxZGa/pqgk+jRzwDsRlwipBdO6e2HjkA9qOJXoOow==}
+  '@ietm-manual/preview@0.0.3':
+    resolution: {integrity: sha512-+KioxGz9L7BPyLtv0BsC+6X9trNI1qF1nYhbh4e8i+eIlQHae/lozG0nCiFh7+vq18ZeNPNHdOlPrDHttph0SQ==}
     peerDependencies:
       three: ^0.184.0
       vue: ^3.5.0
@@ -2290,7 +2290,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@ietm-manual/preview@0.0.1(three@0.184.0)':
+  '@ietm-manual/preview@0.0.3(three@0.184.0)':
     dependencies:
       howler: 2.2.4
       jszip: 3.10.1

@@ -11,13 +11,12 @@ import {
 } from "@arco-design/web-react";
 import {
   useCallback,
-  useEffect,
   useMemo,
-  useReducer,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
 import { useProcedureSectionHeading } from "../../hooks/useProcedureSectionHeading";
 import {
   applyPersonnelRowUpdate,
@@ -50,17 +49,6 @@ type PersonnelTableRow = {
   elementId: string | null;
   data: PersonnelRowData;
 };
-
-function useEditorRefresh(editor: NodeViewProps["editor"]) {
-  const [, bump] = useReducer((n: number) => n + 1, 0);
-  useEffect(() => {
-    const on = () => bump();
-    editor.on("transaction", on);
-    return () => {
-      editor.off("transaction", on);
-    };
-  }, [editor]);
-}
 
 function stopEditorPropagation(e: ReactMouseEvent) {
   e.stopPropagation();
@@ -128,7 +116,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
   const { editor, getPos } = props;
   const { full: sectionLabel } = useProcedureSectionHeading(props);
   const dictionaries = useProcedureDictionaryStore((s) => s.dictionaries);
-  useEditorRefresh(editor);
+  const { readOnly } = useNodeViewEditorState(editor);
 
   const rows = useMemo<PersonnelTableRow[]>(() => {
     const basePos = getPos?.();
@@ -150,6 +138,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
   const addRow = useCallback(
     (e?: { preventDefault?: () => void }) => {
       e?.preventDefault?.();
+      if (!editor.isEditable) return;
       const pos = getPos?.();
       if (pos == null) return;
       insertPersonnelRowAtEnd(editor, pos);
@@ -160,6 +149,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
 
   const commitRow = useCallback(
     (rowIndex: number, patch: Partial<PersonnelRowData>) => {
+      if (!editor.isEditable) return;
       const rowPos = resolveRowPos(rowIndex);
       if (rowPos == null) return;
       const current = editor.state.doc.nodeAt(rowPos);
@@ -173,6 +163,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
   const deleteRow = useCallback(
     (e: ReactMouseEvent<HTMLButtonElement>, rowIndex: number) => {
       e.preventDefault();
+      if (!editor.isEditable) return;
       const rowPos = resolveRowPos(rowIndex);
       if (rowPos == null) return;
       deletePersonnelRow(editor, rowPos);
@@ -218,6 +209,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
               <Select
                 placeholder="请选择"
                 allowClear
+                disabled={readOnly}
                 value={value}
                 onChange={(v) =>
                   commitRow(row.rowIndex, {
@@ -248,6 +240,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
               <Select
                 placeholder="请选择"
                 allowClear
+                disabled={readOnly}
                 value={value}
                 onChange={(v) =>
                   commitRow(row.rowIndex, { skillLevelCode: String(v ?? "") })
@@ -269,6 +262,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
           <Input
             value={row.data.trade}
             placeholder="行业"
+            disabled={readOnly}
             onMouseDown={stopEditorPropagation}
             onKeyDown={stopEditorKeydown}
             onChange={(value) => commitRow(row.rowIndex, { trade: value })}
@@ -288,6 +282,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
               <Input
                 value={row.data.estimatedTime}
                 placeholder="0"
+                disabled={readOnly}
                 onMouseDown={stopEditorPropagation}
                 onKeyDown={stopEditorKeydown}
                 onChange={(value) =>
@@ -298,6 +293,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
                 <Select
                   placeholder="单位"
                   allowClear
+                  disabled={readOnly}
                   value={unitValue}
                   onChange={(v) =>
                     commitRow(row.rowIndex, {
@@ -322,6 +318,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         render: (_: unknown, row: PersonnelTableRow) => (
           <InputNumber
             min={0}
+            disabled={readOnly}
             value={
               row.data.numRequired.trim() === ""
                 ? undefined
@@ -357,6 +354,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
               type="button"
               className="s1000d-support-equip__delete-btn"
               contentEditable={false}
+              disabled={readOnly}
               title="删除"
               aria-label="删除人员行"
               onMouseDown={stopEditorPointer}
@@ -373,6 +371,7 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
       commitRow,
       deleteRow,
       openRowProperties,
+      readOnly,
       skillOptions,
       unitOptions,
     ],
@@ -399,18 +398,20 @@ export function ReqPersonsNodeView(props: NodeViewProps) {
         borderCell
         onRow={(record) => procedureTableRowDomProps(record)}
       />
-      <div className="s1000d-support-equip__toolbar" contentEditable={false}>
-        <Button
-          type="text"
-          size="small"
-          className="s1000d-support-equip__add-btn"
-          icon={<Plus size={14} aria-hidden />}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={addRow}
-        >
-          添加人员
-        </Button>
-      </div>
+      {!readOnly ? (
+        <div className="s1000d-support-equip__toolbar" contentEditable={false}>
+          <Button
+            type="text"
+            size="small"
+            className="s1000d-support-equip__add-btn"
+            icon={<Plus size={14} aria-hidden />}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={addRow}
+          >
+            添加人员
+          </Button>
+        </div>
+      ) : null}
     </NodeViewWrapper>
   );
 }

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "media-1",
+    "label": "媒体1",
+    "type": "media",
+    "children": [
+      {
+        "id": "anim-1-1",
+        "label": "动画1",
+        "type": "animation",
+        "children": [
+          { "id": "slice-1-1-1", "label": "切面1", "type": "slice" },
+          { "id": "slice-1-1-2", "label": "切面2", "type": "slice" }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "media-2",
+    "label": "媒体2",
+    "type": "media",
+    "children": [
+      { "id": "anim-2-1", "label": "动画1", "type": "animation" },
+      { "id": "anim-2-2", "label": "动画2", "type": "animation" }
+    ]
+  }
+]

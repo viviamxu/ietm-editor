@@ -63,6 +63,7 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   personSkill: ["skillLevelCode"],
   estimatedTime: ["unitOfMeasure"],
   reqQuantity: ["unitOfMeasure"],
+  proceduralStep: ["derivativeClassificationRefId"],
 };
 
 /** 属性面板展示名（schema 字段名 → 源 XML 语义） */

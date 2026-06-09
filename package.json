@@ -49,7 +49,7 @@
   "dependencies": {
     "@arco-design/web-react": "^2.66.15",
     "@dagrejs/dagre": "^3.0.0",
-    "@ietm-manual/preview": "^0.0.1",
+    "@ietm-manual/preview": "^0.0.3",
     "@tiptap/core": "^3.22.5",
     "@tiptap/extension-highlight": "3.22.5",
     "@tiptap/extension-image": "^3.22.5",

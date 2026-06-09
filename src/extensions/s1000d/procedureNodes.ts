@@ -10,10 +10,7 @@ import {
   ReqCondNoRefNodeView,
   ReqGroupNodeView,
 } from "./ProcedureNodeViews";
-import {
-  PersonnelNodeView,
-  ReqPersonsNodeView,
-} from "./ReqPersonsNodeViews";
+import { PersonnelNodeView, ReqPersonsNodeView } from "./ReqPersonsNodeViews";
 import {
   SupportEquipDescrGroupNodeView,
   SupportEquipDescrNodeView,
@@ -155,7 +152,36 @@ export const S1000DProceduralStep = Node.create({
     "(title?) (para | warning | caution | note | figure | table | bulletList | orderedList)* proceduralStep*",
   defining: true,
   isolating: true,
-  parseHTML: () => blockTagParseRules("proceduralStep"),
+  addAttributes() {
+    return {
+      derivativeClassificationRefId: attrSpec("derivativeClassificationRefId"),
+    };
+  },
+  parseHTML: () => {
+    const lower = "proceduralstep";
+    const readId = (el: Element) =>
+      el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id");
+    return [
+      {
+        tag: lower,
+        getAttrs: (el: unknown) => {
+          if (!(el instanceof Element)) return false;
+          return {
+            id: readId(el),
+            derivativeClassificationRefId: readAttr(
+              el,
+              "derivativeClassificationRefId",
+            ),
+            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(el, [
+              "id",
+              "derivativeClassificationRefId",
+            ]),
+          };
+        },
+      },
+      { tag: "proceduralStep" },
+    ];
+  },
   renderHTML({ HTMLAttributes }) {
     return ["proceduralStep", mergeAttributes(HTMLAttributes), 0];
   },
@@ -317,7 +343,8 @@ export const S1000DReqSupplies = Node.create({
   },
 });
 
-export const S1000DNoSupplies = createProcedureEmptyPlaceholderNode("noSupplies");
+export const S1000DNoSupplies =
+  createProcedureEmptyPlaceholderNode("noSupplies");
 export const S1000DSupplyDescrGroup = Node.create({
   name: "supplyDescrGroup",
   group: PROCEDURE_ITEM_GROUP,

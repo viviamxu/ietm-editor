@@ -34,6 +34,11 @@ import {
   setProcedureUiConfig,
 } from "./store/procedureUiConfigStore";
 import { useToolbarConfigStore } from "./store/toolbarConfigStore";
+import { useProcedureBindingStore } from "./store/procedureBindingStore";
+import type {
+  FetchDerivativeBindingTreeHandler,
+  ProcedureBindingConfig,
+} from "./types/procedureAnimationBinding";
 import type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
@@ -169,6 +174,8 @@ export {
 } from "./extensions/s1000d/dmRefDisplay";
 export type { DmRefDisplayMeta } from "./extensions/s1000d/dmRefDisplay";
 export { useToolbarConfigStore };
+export { useProcedureBindingStore };
+export { bindProceduralStepDerivativeRef } from "./lib/s1000d/bindProceduralStepAnimation";
 export type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
@@ -181,6 +188,13 @@ export type {
   ToolbarItemPlacement,
   ToolbarTab,
 };
+export type {
+  DerivativeBindingNodeType,
+  DerivativeBindingTreeNode,
+  FetchDerivativeBindingTreeContext,
+  FetchDerivativeBindingTreeHandler,
+  ProcedureBindingConfig,
+} from "./types/procedureAnimationBinding";
 
 export type { SaveDmXmlHandler };
 export type { OpenDmPdfPreviewContext, OpenDmPdfPreviewHandler };
@@ -255,6 +269,11 @@ export interface IETMEditorOptions {
    * 亦可通过 `instance.setToolbarConfig()` 在运行时更新。
    */
   toolbar?: ToolbarConfig;
+  /**
+   * 宿主提供媒体-动画-切面层级数据，供 `proceduralStep`「绑定动画」菜单使用。
+   * 亦可通过 `instance.setProcedureBindingConfig()` 在运行时更新。
+   */
+  onFetchDerivativeBindingTree?: FetchDerivativeBindingTreeHandler;
 }
 
 export interface IETMEditorEvents {
@@ -304,6 +323,8 @@ export interface IETMEditorInstance {
   setFooterStatus(status: IETMEditorFooterStatus | null): void;
   /** 更新工具栏配置；传 `null` 恢复默认 */
   setToolbarConfig(config: ToolbarConfig | null): void;
+  /** 更新程序步骤「绑定动画」宿主配置；传 `null` 恢复默认 */
+  setProcedureBindingConfig(config: ProcedureBindingConfig | null): void;
   /** 在光标处插入一张或多张 S1000D `image` 节点（宿主选图后调用） */
   insertImages(images: InsertImagePayload[]): boolean;
   /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用（宿主选 DM 后调用） */
@@ -397,6 +418,12 @@ export function createIETMEditor(
 
   if (options.toolbar) {
     useToolbarConfigStore.getState().setToolbarConfig(options.toolbar);
+  }
+
+  if (options.onFetchDerivativeBindingTree) {
+    useProcedureBindingStore.getState().setProcedureBindingConfig({
+      onFetchDerivativeBindingTree: options.onFetchDerivativeBindingTree,
+    });
   }
 
   if (options.dmDocumentName) {
@@ -495,6 +522,9 @@ export function createIETMEditor(
     setToolbarConfig: (config) => {
       useToolbarConfigStore.getState().setToolbarConfig(config);
     },
+    setProcedureBindingConfig: (config) => {
+      useProcedureBindingStore.getState().setProcedureBindingConfig(config);
+    },
     insertImages: (images) => {
       if (disposed || !handleRef.current) return false;
       return handleRef.current.insertImages(images);
@@ -521,6 +551,7 @@ export function createIETMEditor(
       pending.length = 0;
       emitter.clear();
       useToolbarConfigStore.getState().resetToolbarConfig();
+      useProcedureBindingStore.getState().resetProcedureBindingConfig();
       if (options.procedureDictionaries) {
         resetProcedureDictionaries();
       }
