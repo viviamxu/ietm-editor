@@ -3,6 +3,10 @@ import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Button } from "@arco-design/web-react";
 import { Brackets, Plus } from "lucide-react";
+import { ProceduralStepBindingMenu } from "./ProceduralStepBindingMenu";
+import { bindProceduralStepDerivativeRef } from "../../lib/s1000d/bindProceduralStepAnimation";
+import { useProcedureBindingStore } from "../../store/procedureBindingStore";
+import type { DerivativeBindingTreeNode } from "../../types/procedureAnimationBinding";
 import {
   useCallback,
   useEffect,
@@ -12,6 +16,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
 import { useProcedureSectionHeading } from "../../hooks/useProcedureSectionHeading";
 import {
   getReqCondNoRefIndex,
@@ -24,14 +29,7 @@ import {
 } from "../../lib/s1000d/supportEquipRow";
 
 function useEditorRefresh(editor: NodeViewProps["editor"]) {
-  const [, bump] = useReducer((n: number) => n + 1, 0);
-  useEffect(() => {
-    const on = () => bump();
-    editor.on("transaction", on);
-    return () => {
-      editor.off("transaction", on);
-    };
-  }, [editor]);
+  useNodeViewEditorState(editor);
 }
 
 function selectionInsideBlock(
@@ -184,8 +182,12 @@ export function CloseRqmtsNodeView(props: NodeViewProps) {
 }
 
 export function ProceduralStepNodeView(props: NodeViewProps) {
-  const { editor, getPos, HTMLAttributes } = props;
+  const { editor, getPos, node, HTMLAttributes } = props;
+  const { readOnly } = useNodeViewEditorState(editor);
   const [hovered, setHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [tree, setTree] = useState<DerivativeBindingTreeNode[]>([]);
+  const [loading, setLoading] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
@@ -200,15 +202,47 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
     props,
     "proceduralStep",
   );
-  const showChrome = hovered || caretInside || nodeSelected;
+  const showChrome = hovered || caretInside || nodeSelected || menuOpen;
 
-  const selectWholeBlock = useCallback(
-    (e: ReactMouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const p = getPos?.();
-      if (p == null) return;
-      editor.chain().focus().setNodeSelection(p).run();
+  const boundId =
+    String(node.attrs.derivativeClassificationRefId ?? "").trim() || null;
+
+  const loadTree = useCallback(async () => {
+    const pos = typeof getPos === "function" ? getPos() : null;
+    if (pos == null) return;
+    const handler =
+      useProcedureBindingStore.getState().onFetchDerivativeBindingTree;
+    if (!handler) {
+      setTree([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await handler({
+        editor,
+        proceduralStepPos: pos,
+        proceduralStepId: (node.attrs.id as string | null) ?? null,
+      });
+      setTree(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [editor, getPos, node.attrs.id]);
+
+  const onMenuVisibleChange = useCallback(
+    (visible: boolean) => {
+      setMenuOpen(visible);
+      if (visible) void loadTree();
+    },
+    [loadTree],
+  );
+
+  const onBind = useCallback(
+    (refId: string) => {
+      const pos = typeof getPos === "function" ? getPos() : null;
+      if (pos == null || !editor.isEditable) return;
+      bindProceduralStepDerivativeRef(editor, pos, refId);
+      setMenuOpen(false);
     },
     [editor, getPos],
   );
@@ -226,17 +260,17 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <button
-        type="button"
-        className="s1000d-procedural-step__block-handle"
-        contentEditable={false}
-        tabIndex={-1}
-        aria-label="选中整块 proceduralStep"
-        title="选中整块"
-        onMouseDown={selectWholeBlock}
-      >
-        <Brackets size={14} strokeWidth={2} aria-hidden />
-      </button>
+      {showChrome ? (
+        <ProceduralStepBindingMenu
+          visible={menuOpen}
+          disabled={readOnly}
+          boundId={boundId}
+          tree={tree}
+          loading={loading}
+          onBind={onBind}
+          onVisibleChange={onMenuVisibleChange}
+        />
+      ) : null}
       <NodeViewContent className="s1000d-procedural-step__content" />
     </NodeViewWrapper>
   );
@@ -290,6 +324,7 @@ export function ReqCondNoRefNodeView(props: NodeViewProps) {
 
 export function ReqGroupNodeView(props: NodeViewProps) {
   const { editor, getPos } = props;
+  const { readOnly } = useNodeViewEditorState(editor);
   const { full: label } = useProcedureSectionHeading(props);
   const nodeName = props.node.type.name;
   const parentName = (() => {
@@ -327,6 +362,7 @@ export function ReqGroupNodeView(props: NodeViewProps) {
   const addReqCond = useCallback(
     (e?: { preventDefault?: () => void }) => {
       e?.preventDefault?.();
+      if (!editor.isEditable) return;
       const pos = typeof getPos === "function" ? getPos() : null;
       if (pos == null) return;
       insertReqCondNoRefAtEnd(editor, pos);
@@ -338,6 +374,7 @@ export function ReqGroupNodeView(props: NodeViewProps) {
   const addEmptyPlaceholderContent = useCallback(
     (e?: { preventDefault?: () => void }) => {
       e?.preventDefault?.();
+      if (!editor.isEditable) return;
       const pos = typeof getPos === "function" ? getPos() : null;
       if (pos == null) return;
       if (nodeName === "reqSafety") {
@@ -381,7 +418,7 @@ export function ReqGroupNodeView(props: NodeViewProps) {
         </div>
       ) : null}
       <NodeViewContent className="s1000d-procedure-req-group__content" />
-      {showReqCondAddBtn || emptyPlaceholderAddLabel ? (
+      {!readOnly && (showReqCondAddBtn || emptyPlaceholderAddLabel) ? (
         <div className="s1000d-support-equip__toolbar" contentEditable={false}>
           {showReqCondAddBtn ? (
             <Button

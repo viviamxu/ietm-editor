@@ -140,7 +140,7 @@ export const IETMEditorRoot = forwardRef<
   // 初始化 @ietm-manual/preview（注册 cc-3d-scene Web Component）
   useEffect(() => {
     const libPath = props.previewLibPath ?? "/";
-    void import("@ietm-manual/preview").then((mod) => {
+    void import("@ietm-manual/preview/index").then((mod) => {
       if (typeof mod.setLibPath === "function") {
         mod.setLibPath(libPath);
       }

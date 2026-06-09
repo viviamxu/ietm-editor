@@ -25,6 +25,7 @@ import { ProcedureBlockIdExtension } from "../../extensions/s1000d/procedureBloc
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
+import { S1000DFmftBlockEnterKeymap } from "../../extensions/s1000d/s1000dFmftBlockEnterKeymap";
 import { S1000dAttentionParaKeymap } from "../../extensions/s1000d/s1000dAttentionParaKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
@@ -95,6 +96,7 @@ import {
   Columns3,
   Combine,
   Eraser,
+  PanelTop,
   Rows3,
   Split,
   Trash2,
@@ -348,6 +350,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         S1000DParagraph,
         S1000DListExitKeymap,
+        S1000DFmftBlockEnterKeymap,
         S1000dAttentionParaKeymap,
         S1000DNestingKeymap,
         S1000dSectionNumbersExtension,
@@ -419,6 +422,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     useEffect(() => {
       if (!editor) return;
       editor.setEditable(props.editable);
+      // 触发 transaction，让 NodeView 内 React 控件同步只读态（setEditable 本身不派发事务）
+      editor.view.dispatch(editor.state.tr);
     }, [editor, props.editable]);
 
     useEffect(() => {
@@ -835,6 +840,19 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                         aria-label="删除行"
                       >
                         <Rows3 size={16} aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className="ietm-menu-icon-btn"
+                        disabled={
+                          headerMenuLocked ||
+                          tableActionDisabled("toggleHeader")
+                        }
+                        onClick={() => runTableAction("toggleHeader")}
+                        title="切换表头"
+                        aria-label="切换表头"
+                      >
+                        <PanelTop size={16} aria-hidden />
                       </button>
                     </div>
                   </div>

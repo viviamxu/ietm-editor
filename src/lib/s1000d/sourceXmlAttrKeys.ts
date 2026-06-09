@@ -119,6 +119,7 @@ const ALWAYS_SHOW_SECONDARY_ATTRS: Partial<
   yesAnswer: ['nextActionRefId'],
   noAnswer: ['nextActionRefId'],
   fault: ['faultCode'],
+  proceduralStep: ['derivativeClassificationRefId'],
 }
 
 export function shouldShowSecondaryPanelAttr(input: {

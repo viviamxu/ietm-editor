@@ -14,6 +14,7 @@ type TableAction =
   | "insertRowAbove"
   | "insertRowBelow"
   | "deleteRow"
+  | "toggleHeader"
   | "insertColLeft"
   | "insertColRight"
   | "deleteCol"
@@ -441,6 +442,54 @@ function deleteTable(editor: Editor): boolean {
   return true;
 }
 
+/** 将光标所在 tbody 行移至 thead 末尾，原样保留行内所有 entry */
+function toggleHeader(editor: Editor): boolean {
+  const ctx = resolvePrimaryCellContext(editor);
+  if (!ctx || ctx.section.type.name !== "tbody") return false;
+
+  const tbodyRows = contentArray(ctx.section);
+  if (tbodyRows.length <= 1) return false;
+
+  const rowToMove = tbodyRows[ctx.rowIndex];
+  const nextTbodyRows = [...tbodyRows];
+  nextTbodyRows.splice(ctx.rowIndex, 1);
+
+  const tgroupChildren = contentArray(ctx.tgroup);
+  let theadIndex = -1;
+  tgroupChildren.forEach((section, index) => {
+    if (section.type.name === "thead") theadIndex = index;
+  });
+
+  if (theadIndex >= 0) {
+    const thead = tgroupChildren[theadIndex];
+    const theadRows = [...contentArray(thead), rowToMove];
+    tgroupChildren[theadIndex] = thead.type.create(thead.attrs, theadRows);
+  } else {
+    const theadNode = editor.schema.nodes.thead.create(null, [rowToMove]);
+    const firstTbodyIndex = tgroupChildren.findIndex(
+      (section) => section.type.name === "tbody",
+    );
+    const insertAt =
+      firstTbodyIndex >= 0 ? firstTbodyIndex : tgroupChildren.length;
+    tgroupChildren.splice(insertAt, 0, theadNode);
+  }
+
+  tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
+    ctx.section.attrs,
+    nextTbodyRows,
+  );
+
+  const moved = replaceTgroup(
+    editor,
+    ctx,
+    updateTgroupCols(ctx.tgroup, tgroupColumnCount(ctx.tgroup), tgroupChildren),
+  );
+  if (moved) {
+    clearTableCellSelection(editor);
+  }
+  return moved;
+}
+
 export function canRunS1000dTableAction(
   editor: Editor,
   action: TableAction,
@@ -454,6 +503,10 @@ export function canRunS1000dTableAction(
   }
   if (action === "splitCell") {
     return entryColSpan(ctx.entry) > 1 || entryRowSpan(ctx.entry) > 1;
+  }
+  if (action === "toggleHeader") {
+    if (ctx.section.type.name !== "tbody") return false;
+    return contentArray(ctx.section).length > 1;
   }
   return true;
 }
@@ -469,6 +522,8 @@ export function runS1000dTableAction(
       return insertRow(editor, true);
     case "deleteRow":
       return deleteRow(editor);
+    case "toggleHeader":
+      return toggleHeader(editor);
     case "insertColLeft":
       return insertColumn(editor, false);
     case "insertColRight":

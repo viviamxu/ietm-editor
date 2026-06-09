@@ -1076,6 +1076,7 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
     dataType,
     sceneSrc: legacyScene ?? (is3dByXml && xlinkHref ? xlinkHref : null),
     previewImgSrc: el.getAttribute("data-preview-img-src"),
+    cnfPath: el.getAttribute("data-cnf-path"),
     fileType: el.getAttribute("data-file-type"),
     mediaSrc:
       legacyMedia ?? (!is3dByXml && xlinkHref ? xlinkHref : null),
@@ -1154,6 +1155,16 @@ export const S1000DMultimediaObject = Node.create({
         renderHTML: (attrs) => {
           const v = (attrs as { previewImgSrc?: string | null }).previewImgSrc;
           return v ? { "data-preview-img-src": v } : {};
+        },
+      },
+      /** cc3d 场景配置文件路径。仅存编辑器内存，不写入 S1000D XML。 */
+      cnfPath: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("data-cnf-path") : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { cnfPath?: string | null }).cnfPath;
+          return v ? { "data-cnf-path": v } : {};
         },
       },
       /** 文件后缀（如 mp4）。仅存编辑器内存，不写入 S1000D XML。 */

@@ -122,6 +122,7 @@
 
 .ietm-editor-surface .tiptap .s1000d-procedural-step {
   position: relative;
+  padding-left: 28px;
 }
 
 .ietm-editor-surface .tiptap .s1000d-procedural-step .s1000d-procedural-step {
@@ -139,11 +140,11 @@
   color: #64748b;
 }
 
-.ietm-editor-surface .tiptap .s1000d-procedural-step__block-handle {
+.ietm-editor-surface .tiptap .s1000d-procedural-step__action-handle {
   position: absolute;
   top: 8px;
-  right: 8px;
-  z-index: 1;
+  left: 0;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -154,21 +155,50 @@
   border-radius: 6px;
   background: #ffffff;
   color: #6b7280;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .ietm-editor-surface
   .tiptap
   .s1000d-procedural-step:hover
-  .s1000d-procedural-step__block-handle,
+  .s1000d-procedural-step__action-handle,
 .ietm-editor-surface
   .tiptap
   .s1000d-procedural-step--chrome
-  .s1000d-procedural-step__block-handle {
+  .s1000d-procedural-step__action-handle {
   opacity: 1;
   pointer-events: auto;
+}
+
+.ietm-editor-surface .tiptap .s1000d-procedural-step__action-handle:hover {
+  color: #111827;
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.ietm-editor-surface .tiptap .s1000d-procedural-step__action-handle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ietm-editor-surface .tiptap .s1000d-procedural-step-binding__check {
+  color: #165dff;
+  margin-right: 6px;
+  font-size: 14px;
+  vertical-align: -2px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-procedural-step-binding__bindable-title {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .ietm-editor-surface .tiptap estimatedTime {

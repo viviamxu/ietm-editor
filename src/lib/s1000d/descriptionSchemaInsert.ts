@@ -445,14 +445,41 @@ const minimalAttentionRandomListJson: JSONContent = {
   ],
 };
 
-/** 可编辑前导 + 列表（对应 schema `warningAndCautionPara` 的 `text*` + 样例并排结构）。 */
-function buildMinimalWarningAndCautionParaJson(): JSONContent {
+/** 按 schema `content` 规则组装 attention 段落子节点（`text*` → lead，含 token 才加列表）。 */
+function buildAttentionParaChildrenFromSchemaRule(
+  rule: string | undefined,
+  leadType: "warningAndCautionLead" | "noteLead",
+): JSONContent[] {
+  const contentRule = rule ?? "text*";
+  const children: JSONContent[] = [];
+
+  if (contentRuleMentions(contentRule, "text")) {
+    children.push({ type: leadType, content: [] });
+  } else if (!contentRuleMentions(contentRule, "attentionRandomList")) {
+    children.push({ type: leadType, content: [] });
+  }
+
+  if (contentRuleMentions(contentRule, "attentionRandomList")) {
+    children.push(minimalAttentionRandomListJson);
+  }
+
+  if (children.length === 0) {
+    children.push({ type: leadType, content: [] });
+  }
+
+  return children;
+}
+
+/** 按 schema `warningAndCautionPara.content` 组装最小 `warningAndCautionPara`。 */
+export function buildMinimalWarningAndCautionParaJson(
+  schema: DescriptionSchema,
+): JSONContent {
   return {
     type: "warningAndCautionPara",
-    content: [
-      { type: "warningAndCautionLead", content: [] },
-      minimalAttentionRandomListJson,
-    ],
+    content: buildAttentionParaChildrenFromSchemaRule(
+      schema.warningAndCautionPara?.content,
+      "warningAndCautionLead",
+    ),
   };
 }
 
@@ -519,7 +546,7 @@ export function buildInsertWarningJson(
     return null;
   return {
     type: "warning",
-    content: [buildMinimalWarningAndCautionParaJson()],
+    content: [buildMinimalWarningAndCautionParaJson(schema)],
   };
 }
 
@@ -532,7 +559,7 @@ export function buildInsertCautionJson(
     return null;
   return {
     type: "caution",
-    content: [buildMinimalWarningAndCautionParaJson()],
+    content: [buildMinimalWarningAndCautionParaJson(schema)],
   };
 }
 
@@ -550,13 +577,13 @@ export function insertCautionFromSchema(
   return insertAttentionBlockFromSchema(editor, buildInsertCautionJson, schema);
 }
 
-function buildMinimalNoteParaJson(): JSONContent {
+function buildMinimalNoteParaJson(schema: DescriptionSchema): JSONContent {
   return {
     type: "notePara",
-    content: [
-      { type: "noteLead", content: [] },
-      minimalAttentionRandomListJson,
-    ],
+    content: buildAttentionParaChildrenFromSchemaRule(
+      schema.notePara?.content,
+      "noteLead",
+    ),
   };
 }
 
@@ -568,7 +595,7 @@ export function buildInsertNoteJson(
   if (!contentRuleMentions(schema.note?.content, "notePara")) return null;
   return {
     type: "note",
-    content: [buildMinimalNoteParaJson()],
+    content: [buildMinimalNoteParaJson(schema)],
   };
 }
 
@@ -588,19 +615,19 @@ function buildMinimalAttentionElemChild(
   if (requireSchemaNode(schema, "warning")) {
     return {
       type: "warning",
-      content: [buildMinimalWarningAndCautionParaJson()],
+      content: [buildMinimalWarningAndCautionParaJson(schema)],
     };
   }
   if (requireSchemaNode(schema, "caution")) {
     return {
       type: "caution",
-      content: [buildMinimalWarningAndCautionParaJson()],
+      content: [buildMinimalWarningAndCautionParaJson(schema)],
     };
   }
   if (requireSchemaNode(schema, "note")) {
     return {
       type: "note",
-      content: [buildMinimalNoteParaJson()],
+      content: [buildMinimalNoteParaJson(schema)],
     };
   }
   return null;

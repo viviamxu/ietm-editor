@@ -18,8 +18,10 @@ import procedureDmXml from "./data/程序类.xml?raw";
 
 // import faultIsolationSchema from "./data/故障隔离.json";
 import procedureSchema from "./data/程序类.json";
+import demoDerivativeBindingTree from "./data/derivativeBindingTree.json";
 
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
+import type { DerivativeBindingTreeNode } from "./types/procedureAnimationBinding";
 
 /** 本地 Demo：在 .env 中设置 VITE_API_BASE_URL 后走内置 PDF 预览 GET；未设置则在预览面板提示配置方式 */
 const demoApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
@@ -46,6 +48,8 @@ function App() {
       // dmDocumentName: "故障类.XML",
 
       descriptionSchema: procedureSchema as DescriptionSchema,
+      onFetchDerivativeBindingTree: async () =>
+        demoDerivativeBindingTree as DerivativeBindingTreeNode[],
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {

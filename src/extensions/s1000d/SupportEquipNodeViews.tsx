@@ -10,13 +10,12 @@ import {
 } from "@arco-design/web-react";
 import {
   useCallback,
-  useEffect,
   useMemo,
-  useReducer,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
 import {
   applySupportEquipRowUpdate,
   deleteSupportEquipRow,
@@ -61,17 +60,6 @@ type EquipTableRow = {
   elementId: string | null;
   data: SupportEquipRowData;
 };
-
-function useEditorRefresh(editor: NodeViewProps["editor"]) {
-  const [, bump] = useReducer((n: number) => n + 1, 0);
-  useEffect(() => {
-    const on = () => bump();
-    editor.on("transaction", on);
-    return () => {
-      editor.off("transaction", on);
-    };
-  }, [editor]);
-}
 
 function stopEditorPropagation(e: ReactMouseEvent) {
   e.stopPropagation();
@@ -179,7 +167,7 @@ function EquipDescrGroupNodeView({
 }) {
   const { editor, getPos } = props;
   const unitOptions = useProcedureDictionaryStore((s) => s.dictionaries.timeUnit);
-  useEditorRefresh(editor);
+  const { readOnly } = useNodeViewEditorState(editor);
 
   const rows = useMemo<EquipTableRow[]>(() => {
     const basePos = getPos?.();
@@ -201,6 +189,7 @@ function EquipDescrGroupNodeView({
   const addRow = useCallback(
     (e?: { preventDefault?: () => void }) => {
       e?.preventDefault?.();
+      if (!editor.isEditable) return;
       const pos = getPos?.();
       if (pos == null) return;
       insertSupportEquipRowAtEnd(editor, pos, groupNodeType, rowNodeType);
@@ -211,6 +200,7 @@ function EquipDescrGroupNodeView({
 
   const commitRow = useCallback(
     (rowIndex: number, patch: Partial<SupportEquipRowData>) => {
+      if (!editor.isEditable) return;
       const rowPos = resolveRowPos(rowIndex);
       if (rowPos == null) return;
       const current = editor.state.doc.nodeAt(rowPos);
@@ -229,6 +219,7 @@ function EquipDescrGroupNodeView({
   const deleteRow = useCallback(
     (e: ReactMouseEvent<HTMLButtonElement>, rowIndex: number) => {
       e.preventDefault();
+      if (!editor.isEditable) return;
       const rowPos = resolveRowPos(rowIndex);
       if (rowPos == null) return;
       deleteSupportEquipRow(editor, rowPos, rowNodeType);
@@ -264,6 +255,7 @@ function EquipDescrGroupNodeView({
           <Input
             value={row.data.name}
             placeholder="名称"
+            disabled={readOnly}
             onMouseDown={stopEditorPropagation}
             onKeyDown={stopEditorKeydown}
             onChange={(value) => commitRow(row.rowIndex, { name: value })}
@@ -277,6 +269,7 @@ function EquipDescrGroupNodeView({
           <Input
             value={row.data.natoStockNumber}
             placeholder="物料号"
+            disabled={readOnly}
             onMouseDown={stopEditorPropagation}
             onKeyDown={stopEditorKeydown}
             onChange={(value) =>
@@ -297,6 +290,7 @@ function EquipDescrGroupNodeView({
             <div className="s1000d-support-equip__qty-cell">
               <InputNumber
                 min={0}
+                disabled={readOnly}
                 value={
                   row.data.reqQuantity.trim() === ""
                     ? undefined
@@ -313,6 +307,7 @@ function EquipDescrGroupNodeView({
                 <Select
                   placeholder="单位"
                   allowClear
+                  disabled={readOnly}
                   value={unitValue}
                   onChange={(value) =>
                     commitRow(row.rowIndex, {
@@ -337,6 +332,7 @@ function EquipDescrGroupNodeView({
           <Input
             value={row.data.remarks}
             placeholder="备注"
+            disabled={readOnly}
             onMouseDown={stopEditorPropagation}
             onKeyDown={stopEditorKeydown}
             onChange={(value) => commitRow(row.rowIndex, { remarks: value })}
@@ -364,6 +360,7 @@ function EquipDescrGroupNodeView({
               type="button"
               className="s1000d-support-equip__delete-btn"
               contentEditable={false}
+              disabled={readOnly}
               title="删除"
               aria-label={deleteRowLabel}
               onMouseDown={stopEditorPointer}
@@ -375,7 +372,7 @@ function EquipDescrGroupNodeView({
         ),
       },
     ],
-    [addText, commitRow, deleteRow, deleteRowLabel, openRowProperties, unitOptions],
+    [addText, commitRow, deleteRow, deleteRowLabel, openRowProperties, readOnly, unitOptions],
   );
 
   return (
@@ -394,18 +391,20 @@ function EquipDescrGroupNodeView({
         borderCell
         onRow={(record) => procedureTableRowDomProps(record)}
       />
-      <div className="s1000d-support-equip__toolbar" contentEditable={false}>
-        <Button
-          type="text"
-          size="small"
-          className="s1000d-support-equip__add-btn"
-          icon={<Plus size={14} aria-hidden />}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={addRow}
-        >
-          {addText}
-        </Button>
-      </div>
+      {!readOnly ? (
+        <div className="s1000d-support-equip__toolbar" contentEditable={false}>
+          <Button
+            type="text"
+            size="small"
+            className="s1000d-support-equip__add-btn"
+            icon={<Plus size={14} aria-hidden />}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={addRow}
+          >
+            {addText}
+          </Button>
+        </div>
+      ) : null}
     </NodeViewWrapper>
   );
 }

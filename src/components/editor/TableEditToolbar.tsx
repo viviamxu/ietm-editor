@@ -6,6 +6,7 @@ import {
   Columns3,
   Combine,
   Eraser,
+  PanelTop,
   Rows3,
   Split,
   Trash2,
@@ -58,6 +59,16 @@ export function TableEditToolbar(props: {
           aria-label="删除行"
         >
           <Rows3 size={16} aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="ietm-icon-btn"
+          disabled={locked || tableActionDisabled("toggleHeader")}
+          onClick={() => runTableAction("toggleHeader")}
+          title="切换表头"
+          aria-label="切换表头"
+        >
+          <PanelTop size={16} aria-hidden />
         </button>
       </div>
 

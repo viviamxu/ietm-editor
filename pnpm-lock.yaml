@@ -15,8 +15,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       '@ietm-manual/preview':
-        specifier: ^0.0.1
-        version: 0.0.1(three@0.184.0)
+        specifier: ^0.0.3
+        version: 0.0.3(three@0.184.0)
       '@tiptap/core':
         specifier: ^3.22.5
         version: 3.22.5(@tiptap/pm@3.22.5)
@@ -62,6 +62,9 @@ importers:
       reactflow:
         specifier: ^11.11.4
         version: 11.11.4(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      xml-formatter:
+        specifier: ^3.7.0
+        version: 3.7.0
       zustand:
         specifier: ^5.0.13
         version: 5.0.13(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
@@ -293,8 +296,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@ietm-manual/preview@0.0.1':
-    resolution: {integrity: sha512-73becYt805hb5FO63xWcxweIKCA5uJtawFSvbEeXC1ak1IxZGa/pqgk+jRzwDsRlwipBdO6e2HjkA9qOJXoOow==}
+  '@ietm-manual/preview@0.0.3':
+    resolution: {integrity: sha512-+KioxGz9L7BPyLtv0BsC+6X9trNI1qF1nYhbh4e8i+eIlQHae/lozG0nCiFh7+vq18ZeNPNHdOlPrDHttph0SQ==}
     peerDependencies:
       three: ^0.184.0
       vue: ^3.5.0
@@ -2002,6 +2005,14 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
+  xml-formatter@3.7.0:
+    resolution: {integrity: sha512-+8qTc3zv2UcJ1v9IsSIce37Dl4MQG14Cp7tWrwmy202UaI1wqRukw5QMX1JHsV+DX64yw77EgGsj2s5wGvuMbQ==}
+    engines: {node: '>= 16'}
+
+  xml-parser-xo@4.1.6:
+    resolution: {integrity: sha512-mXbSNSM+rIwndoxSwmFa83bOdeP8G/cOGr7XvxA67X7ebCzoAuVez9JYDCDub3zRDNBZxIbfjuXLSsamr7NfwQ==}
+    engines: {node: '>= 20'}
+
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
@@ -2279,7 +2290,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@ietm-manual/preview@0.0.1(three@0.184.0)':
+  '@ietm-manual/preview@0.0.3(three@0.184.0)':
     dependencies:
       howler: 2.2.4
       jszip: 3.10.1
@@ -4001,6 +4012,12 @@ snapshots:
       isexe: 2.0.0
 
   word-wrap@1.2.5: {}
+
+  xml-formatter@3.7.0:
+    dependencies:
+      xml-parser-xo: 4.1.6
+
+  xml-parser-xo@4.1.6: {}
 
   yallist@3.1.1: {}
 

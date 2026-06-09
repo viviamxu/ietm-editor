@@ -2,26 +2,8 @@ import type { Editor, JSONContent } from "@tiptap/core";
 import { Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
-/** 与样例 DM 一致：空 attention 列表 + 一条可编辑项。 */
-const minimalAttentionRandomListJson: JSONContent = {
-  type: "attentionRandomList",
-  content: [
-    {
-      type: "attentionRandomListItem",
-      content: [{ type: "attentionListItemPara", content: [] }],
-    },
-  ],
-};
-
-function buildMinimalWarningAndCautionParaJson(): JSONContent {
-  return {
-    type: "warningAndCautionPara",
-    content: [
-      { type: "warningAndCautionLead", content: [] },
-      minimalAttentionRandomListJson,
-    ],
-  };
-}
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { buildMinimalWarningAndCautionParaJson } from "./descriptionSchemaInsert";
 
 export function buildMinimalPreliminaryRqmtsJson(): JSONContent {
   return {
@@ -194,12 +176,13 @@ export function insertSafetyRqmtsFromNoPlaceholder(
   const safetyRqmtsType = editor.schema.nodes.safetyRqmts;
   if (!safetyRqmtsType) return;
 
+  const schema = getDescriptionSchema();
   const safetyRqmts = PMNode.fromJSON(editor.schema, {
     type: "safetyRqmts",
     content: [
       {
         type: "warning",
-        content: [buildMinimalWarningAndCautionParaJson()],
+        content: [buildMinimalWarningAndCautionParaJson(schema)],
       },
     ],
   });
@@ -210,5 +193,3 @@ export function insertSafetyRqmtsFromNoPlaceholder(
     editor.view.dispatch(editor.state.tr.replaceWith(from, to, safetyRqmts));
   }
 }
-
-export { buildMinimalWarningAndCautionParaJson };
