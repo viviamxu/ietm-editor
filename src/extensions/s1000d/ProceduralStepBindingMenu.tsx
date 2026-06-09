@@ -1,13 +1,29 @@
 import { Dropdown, Menu } from "@arco-design/web-react";
 import { IconCheck } from "@arco-design/web-react/icon";
 import { LayoutGrid } from "lucide-react";
-import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import type { DerivativeBindingTreeNode } from "../../types/procedureAnimationBinding";
 
-function stopBindableTitlePointer(e: ReactMouseEvent) {
-  e.preventDefault();
-  e.stopPropagation();
+function renderBindingMenuItem(
+  node: DerivativeBindingTreeNode,
+  boundId: string | null,
+  onBind: (id: string) => void,
+  className?: string,
+): ReactNode {
+  const selected = boundId === node.id;
+  return (
+    <Menu.Item
+      key={node.id}
+      className={className}
+      onClick={() => onBind(node.id)}
+    >
+      {selected ? (
+        <IconCheck className="s1000d-procedural-step-binding__check" />
+      ) : null}
+      {node.label}
+    </Menu.Item>
+  );
 }
 
 function renderBindingMenuNodes(
@@ -15,7 +31,7 @@ function renderBindingMenuNodes(
   boundId: string | null,
   onBind: (id: string) => void,
 ): ReactNode[] {
-  return nodes.map((node) => {
+  return nodes.flatMap((node) => {
     if (node.type === "media") {
       return (
         <Menu.SubMenu key={node.id} title={node.label}>
@@ -24,42 +40,24 @@ function renderBindingMenuNodes(
       );
     }
 
-    const selected = boundId === node.id;
     const children = node.children ?? [];
+
+    if (node.type === "animation" && children.length > 0) {
+      return [
+        renderBindingMenuItem(node, boundId, onBind),
+        ...renderBindingMenuNodes(children, boundId, onBind),
+      ];
+    }
 
     if (children.length > 0) {
       return (
-        <Menu.SubMenu
-          key={node.id}
-          title={
-            <span
-              className="s1000d-procedural-step-binding__bindable-title"
-              onMouseDown={stopBindableTitlePointer}
-              onClick={(e) => {
-                stopBindableTitlePointer(e);
-                onBind(node.id);
-              }}
-            >
-              {selected ? (
-                <IconCheck className="s1000d-procedural-step-binding__check" />
-              ) : null}
-              {node.label}
-            </span>
-          }
-        >
+        <Menu.SubMenu key={node.id} title={node.label}>
           {renderBindingMenuNodes(children, boundId, onBind)}
         </Menu.SubMenu>
       );
     }
 
-    return (
-      <Menu.Item key={node.id} onClick={() => onBind(node.id)}>
-        {selected ? (
-          <IconCheck className="s1000d-procedural-step-binding__check" />
-        ) : null}
-        {node.label}
-      </Menu.Item>
-    );
+    return renderBindingMenuItem(node, boundId, onBind);
   });
 }
 
