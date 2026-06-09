@@ -149,7 +149,7 @@ export const S1000DProceduralStep = Node.create({
   name: "proceduralStep",
   group: PROCEDURE_STEP_GROUP,
   content:
-    "(title?) (para | warning | caution | note | figure | table | bulletList | orderedList)* proceduralStep*",
+    "(title?) (para | warning | caution | note | fmftElemGroup | bulletList | orderedList)* proceduralStep*",
   defining: true,
   isolating: true,
   addAttributes() {
