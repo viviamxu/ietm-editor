@@ -1,8 +1,9 @@
+import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Button } from "@arco-design/web-react";
-import { Brackets, Plus } from "lucide-react";
+import { Brackets, Plus, Trash2 } from "lucide-react";
 import { ProceduralStepBindingMenu } from "./ProceduralStepBindingMenu";
 import { bindProceduralStepDerivativeRef } from "../../lib/s1000d/bindProceduralStepAnimation";
 import { useProcedureBindingStore } from "../../store/procedureBindingStore";
@@ -22,7 +23,11 @@ import {
   getReqCondNoRefIndex,
   insertReqCondNoRefAtEnd,
 } from "../../lib/s1000d/reqCondRow";
-import { insertSafetyRqmtsFromNoPlaceholder } from "../../lib/s1000d/procedureInsert";
+import {
+  canDeleteProceduralStep,
+  deleteProceduralStepAtPos,
+  insertSafetyRqmtsFromNoPlaceholder,
+} from "../../lib/s1000d/procedureInsert";
 import {
   insertFirstEquipDescrGroupAtReq,
   type EquipReqContainerType,
@@ -30,6 +35,25 @@ import {
 
 function useEditorRefresh(editor: NodeViewProps["editor"]) {
   useNodeViewEditorState(editor);
+}
+
+/** `程序类.json` 要求 `proceduralStep` 含 `title`；缺则补空标题。 */
+function ensureProceduralStepTitle(
+  editor: NodeViewProps["editor"],
+  getPos: NodeViewProps["getPos"],
+  node: PMNode,
+): void {
+  let hasTitle = false;
+  node.forEach((child) => {
+    if (child.type.name === "title") hasTitle = true;
+  });
+  if (hasTitle || !editor.isEditable) return;
+  const pos = typeof getPos === "function" ? getPos() : undefined;
+  if (pos == null) return;
+  editor
+    .chain()
+    .insertContentAt(pos + 1, { type: "title", content: [] })
+    .run();
 }
 
 function selectionInsideBlock(
@@ -193,16 +217,37 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
   useEffect(() => {
     const bump = () => bumpFromSelection();
     editor.on("selectionUpdate", bump);
+    editor.on("update", bump);
     return () => {
       editor.off("selectionUpdate", bump);
+      editor.off("update", bump);
     };
   }, [editor]);
+
+  useEffect(() => {
+    ensureProceduralStepTitle(editor, getPos, node);
+  }, [editor, getPos, node]);
 
   const { nodeSelected, caretInside } = selectionInsideBlock(
     props,
     "proceduralStep",
   );
   const showChrome = hovered || caretInside || nodeSelected || menuOpen;
+
+  const stepPos = typeof getPos === "function" ? getPos() : null;
+  const canDeleteStep =
+    stepPos != null && canDeleteProceduralStep(editor.state.doc, stepPos);
+  const deleteBlockedByMainProcedure =
+    stepPos != null &&
+    !canDeleteStep &&
+    (() => {
+      try {
+        const $pos = editor.state.doc.resolve(stepPos);
+        return $pos.parent.type.name === "mainProcedure";
+      } catch {
+        return false;
+      }
+    })();
 
   const boundId =
     String(node.attrs.derivativeClassificationRefId ?? "").trim() || null;
@@ -247,6 +292,15 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
     [editor, getPos],
   );
 
+  const deleteStep = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!editor.isEditable || stepPos == null) return;
+      deleteProceduralStepAtPos(editor, stepPos);
+    },
+    [editor, stepPos],
+  );
+
   return (
     <NodeViewWrapper
       as="div"
@@ -270,6 +324,26 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
           onBind={onBind}
           onVisibleChange={onMenuVisibleChange}
         />
+      ) : null}
+      {showChrome ? (
+        <button
+          type="button"
+          className="s1000d-procedural-step__delete"
+          contentEditable={false}
+          disabled={readOnly || !canDeleteStep}
+          title={
+            canDeleteStep
+              ? "删除此操作步骤"
+              : deleteBlockedByMainProcedure
+                ? "作业步骤中至少保留一个操作步骤"
+                : "无法删除此操作步骤"
+          }
+          aria-label="删除此操作步骤"
+          onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
+          onClick={deleteStep}
+        >
+          <Trash2 size={16} aria-hidden />
+        </button>
       ) : null}
       <NodeViewContent className="s1000d-procedural-step__content" />
     </NodeViewWrapper>

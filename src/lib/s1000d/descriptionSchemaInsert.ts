@@ -8,6 +8,7 @@ import {
   collectAncestorDepths,
   getInnermostLevelledParaDepth,
 } from "../editor/nestingLevelShared";
+import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
@@ -392,7 +393,7 @@ export function insertTableFromSchema(
     bodyRows,
     includeEmptyTitle,
   );
-  const inserted = editor.chain().focus().insertContent(json).run();
+  const inserted = insertFmftNodesIntoEditor(editor, json);
   if (inserted) {
     focusFirstCellByMouseLikeClick(editor);
   }

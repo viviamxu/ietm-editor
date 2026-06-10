@@ -1,5 +1,6 @@
 import type { Editor, JSONContent } from "@tiptap/core";
 
+import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 
 function isAlreadyS1000dTable(table: HTMLTableElement): boolean {
@@ -174,5 +175,5 @@ export function handleWordTablePaste(
   const tableJson = buildMergedTableJsonFromClipboard(html, plain);
   if (!tableJson) return false;
 
-  return editor.chain().focus().insertContent(tableJson).run();
+  return insertFmftNodesIntoEditor(editor, tableJson);
 }

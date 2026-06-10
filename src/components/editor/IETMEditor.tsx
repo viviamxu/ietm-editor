@@ -44,7 +44,6 @@ import {
 } from "../../extensions/s1000d/procedureNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
-import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { FormatToolbar } from "./FormatToolbar";
 import { S1000DPropertyPanel } from "./S1000DPropertyPanel";
 import {
@@ -63,6 +62,7 @@ import {
   exportEditorToDmXmlString,
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
   insertImageFromSchema,
+  insertTableFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
 import {
@@ -266,38 +266,6 @@ function normalizeEditorContentInput(
     return preprocessS1000dDescriptionHtmlFragment(content);
   }
   return migrateParagraphInJson(content);
-}
-
-function focusFirstCellByMouseLikeClick(
-  editor: NonNullable<ReturnType<typeof useEditor>>,
-): void {
-  setTimeout(() => {
-    const root = editor.view.dom as HTMLElement;
-    const tables = root.querySelectorAll(
-      ".s1000d-table-wrap, .s1000d-tgroup-table",
-    );
-    const latestTable = tables.item(tables.length - 1) as HTMLElement | null;
-    if (!latestTable) return;
-
-    const firstCell = latestTable.querySelector(
-      ".s1000d-entry, td, th",
-    ) as HTMLElement | null;
-    if (!firstCell) return;
-
-    firstCell.dispatchEvent(
-      new MouseEvent("mousedown", {
-        bubbles: true,
-        cancelable: true,
-        button: 0,
-      }),
-    );
-    firstCell.dispatchEvent(
-      new MouseEvent("mouseup", { bubbles: true, cancelable: true, button: 0 }),
-    );
-    firstCell.dispatchEvent(
-      new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }),
-    );
-  }, 0);
 }
 
 export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
@@ -561,24 +529,18 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         },
         insertTable: (options) => {
           if (!editor) return false;
-          const chain = editor.chain().focus() as unknown as {
-            insertTable: (opts: {
-              rows: number;
-              cols: number;
-              withHeaderRow: boolean;
-            }) => { run: () => boolean };
-          };
-          const inserted = chain
-            .insertTable({
-              rows: options?.rows ?? 3,
-              cols: options?.cols ?? 3,
-              withHeaderRow: options?.withHeaderRow ?? true,
-            })
-            .run();
-          if (inserted) {
-            focusFirstCellByMouseLikeClick(editor);
-          }
-          return inserted;
+          const rows = options?.rows ?? 3;
+          const cols = options?.cols ?? 3;
+          const withHeaderRow = options?.withHeaderRow ?? true;
+          const headerRowCount = withHeaderRow ? 1 : 0;
+          const bodyRows = Math.max(1, withHeaderRow ? rows - 1 : rows);
+          return insertTableFromSchema(
+            editor,
+            getDescriptionSchema(),
+            cols,
+            headerRowCount,
+            bodyRows,
+          );
         },
         addTableRowBefore: () => {
           if (!editor) return false;
@@ -733,17 +695,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       tableTabActivatedRef.current = false;
     };
 
-    const insertTable = () => {
-      const inserted = editor
-        .chain()
-        .focus()
-        .insertContent(createMinimalS1000dTableInsertJson(4, 1, 3))
-        .run();
-      if (inserted) {
-        focusFirstCellByMouseLikeClick(editor);
-      }
-      return inserted;
-    };
+    const insertTable = () =>
+      insertTableFromSchema(editor, getDescriptionSchema(), 4, 1, 3);
 
     const runInsertImageAction = () => {
       if (!editor) return;

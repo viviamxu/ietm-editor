@@ -188,6 +188,38 @@
   cursor: not-allowed;
 }
 
+.ietm-editor-surface .tiptap .s1000d-procedural-step__delete {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #f53f3f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-procedural-step__delete:hover:not(:disabled) {
+  background: #fff1f0;
+  border-color: #ffccc7;
+}
+
+.ietm-editor-surface .tiptap .s1000d-procedural-step__delete:disabled {
+  color: #c9cdd4;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
 .ietm-editor-surface .tiptap .s1000d-procedural-step-binding__check {
   color: #165dff;
   margin-right: 6px;

@@ -1,44 +1,8 @@
 import type { Editor } from "@tiptap/core";
 import type { JSONContent } from "@tiptap/core";
-import type { Node as PMNode } from "@tiptap/pm/model";
-import { NodeSelection } from "@tiptap/pm/state";
 import { ensureParaAfterFmftFromSelection } from "./insertParaAfterFmftBlock";
+import { insertFmftNodesIntoEditor } from "./resolveProcedureFmftInsertPos";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
-
-/** 程序类：光标在 `mainProcedure` 内但不在 `proceduralStep` 时，落到最近步骤末尾。 */
-function resolveProcedureMultimediaInsertPos(editor: Editor): number | null {
-  const { selection } = editor.state;
-  const $from = selection.$from;
-
-  for (let d = $from.depth; d >= 0; d--) {
-    if ($from.node(d).type.name === "proceduralStep") return null;
-  }
-
-  for (let d = $from.depth; d >= 0; d--) {
-    if ($from.node(d).type.name !== "mainProcedure") continue;
-
-    const main = $from.node(d);
-    const mainPos = $from.before(d);
-    if (main.childCount === 0) return null;
-
-    let stepPos = mainPos + 1;
-    let step: PMNode = main.child(0);
-    for (let i = 1; i < main.childCount; i++) {
-      const next = main.child(i);
-      const nextPos = stepPos + step.nodeSize;
-      if (selection.from >= nextPos) {
-        stepPos = nextPos;
-        step = next;
-      } else {
-        break;
-      }
-    }
-
-    return stepPos + step.nodeSize - 1;
-  }
-
-  return null;
-}
 
 export type InsertMultimediaParameterPayload = {
   id: string;
@@ -156,27 +120,7 @@ export function insertMultimediaIntoEditor(
   }
   if (nodes.length === 0) return false;
 
-  const { selection } = editor.state;
-  let inserted: boolean;
-
-  if (selection instanceof NodeSelection) {
-    inserted = editor
-      .chain()
-      .focus()
-      .insertContentAt(selection.from + selection.node.nodeSize, nodes)
-      .run();
-  } else {
-    const procedureInsertPos = resolveProcedureMultimediaInsertPos(editor);
-    inserted =
-      procedureInsertPos != null
-        ? editor
-            .chain()
-            .focus()
-            .insertContentAt(procedureInsertPos, nodes)
-            .run()
-        : editor.chain().focus().insertContent(nodes).run();
-  }
-
+  const inserted = insertFmftNodesIntoEditor(editor, nodes);
   if (!inserted) return false;
 
   ensureParaAfterFmftFromSelection(editor);

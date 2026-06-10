@@ -596,26 +596,30 @@ export function FormatToolbar({
         </>
       ) : null}
       <div className="ietm-format-toolbar__cluster">
-        <button
-          type="button"
-          className={`ietm-toggle-btn ${subscriptActive ? "is-active" : ""}`}
-          disabled={formatBarLocked}
-          onClick={toggleSubscript}
-          title="下标"
-          aria-pressed={subscriptActive}
-        >
-          <Subscript size={16} aria-hidden className="shrink-0" />
-        </button>
-        <button
-          type="button"
-          className={`ietm-toggle-btn ${superscriptActive ? "is-active" : ""}`}
-          disabled={formatBarLocked}
-          onClick={toggleSuperscript}
-          title="上标"
-          aria-pressed={superscriptActive}
-        >
-          <Superscript size={16} aria-hidden className="shrink-0" />
-        </button>
+        {!showTableTools ? (
+          <>
+            <button
+              type="button"
+              className={`ietm-toggle-btn ${subscriptActive ? "is-active" : ""}`}
+              disabled={formatBarLocked}
+              onClick={toggleSubscript}
+              title="下标"
+              aria-pressed={subscriptActive}
+            >
+              <Subscript size={16} aria-hidden className="shrink-0" />
+            </button>
+            <button
+              type="button"
+              className={`ietm-toggle-btn ${superscriptActive ? "is-active" : ""}`}
+              disabled={formatBarLocked}
+              onClick={toggleSuperscript}
+              title="上标"
+              aria-pressed={superscriptActive}
+            >
+              <Superscript size={16} aria-hidden className="shrink-0" />
+            </button>
+          </>
+        ) : null}
         <ToolbarCustomItems placement="format" ctx={toolbarCtx} />
       </div>
       <span

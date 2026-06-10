@@ -1,5 +1,5 @@
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
+import { Fragment, Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
@@ -86,6 +86,99 @@ function selectionInProceduralStepTitle(
   const fallback = Math.min(stepPos + 2, doc.content.size);
   if (fallback < 0 || fallback > doc.content.size) return null;
   return TextSelection.create(doc, fallback);
+}
+
+function countChildNodesOfType(parent: PMNode, typeName: string): number {
+  let count = 0;
+  parent.forEach((child) => {
+    if (child.type.name === typeName) count++;
+  });
+  return count;
+}
+
+/** 解析 `proceduralStep` 节点及其文档起始位置（兼容 NodeView `getPos` 边界）。 */
+export function resolveProceduralStepAtPos(
+  doc: PMNode,
+  pos: number,
+): { step: PMNode; stepPos: number } | null {
+  try {
+    const atPos = doc.nodeAt(pos);
+    if (atPos?.type.name === "proceduralStep") {
+      return { step: atPos, stepPos: pos };
+    }
+
+    const $pos = doc.resolve(pos);
+    const after = $pos.nodeAfter;
+    if (after?.type.name === "proceduralStep") {
+      return { step: after, stepPos: pos };
+    }
+
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name !== "proceduralStep") continue;
+      const stepPos = $pos.before(d);
+      const step = doc.nodeAt(stepPos);
+      if (step?.type.name === "proceduralStep") {
+        return { step, stepPos };
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * 按 `程序类.json`：`mainProcedure` 须保留 `proceduralStep+`；
+ * 嵌套 `proceduralStep*` 可删至 0。删除前校验父节点 `validContent`。
+ */
+export function canDeleteProceduralStep(doc: PMNode, stepPos: number): boolean {
+  const resolved = resolveProceduralStepAtPos(doc, stepPos);
+  if (!resolved) return false;
+
+  try {
+    const { stepPos: actualPos } = resolved;
+    const $pos = doc.resolve(actualPos);
+    const parent = $pos.parent;
+    const index = $pos.index();
+
+    if (parent.type.name === "mainProcedure") {
+      if (countChildNodesOfType(parent, "proceduralStep") <= 1) {
+        return false;
+      }
+    } else if (parent.type.name !== "proceduralStep") {
+      return false;
+    }
+
+    const siblings: PMNode[] = [];
+    for (let i = 0; i < parent.childCount; i++) {
+      if (i !== index) siblings.push(parent.child(i));
+    }
+    return parent.type.validContent(Fragment.from(siblings));
+  } catch {
+    return false;
+  }
+}
+
+/** 删除整块 `proceduralStep`（含子步骤）。 */
+export function deleteProceduralStepAtPos(
+  editor: Editor,
+  stepPos: number,
+): boolean {
+  if (!editor.isEditable) return false;
+
+  const doc = editor.state.doc;
+  if (!canDeleteProceduralStep(doc, stepPos)) return false;
+
+  const resolved = resolveProceduralStepAtPos(doc, stepPos);
+  if (!resolved) return false;
+
+  const { step, stepPos: actualPos } = resolved;
+
+  return editor
+    .chain()
+    .focus()
+    .deleteRange({ from: actualPos, to: actualPos + step.nodeSize })
+    .run();
 }
 
 /** 在父 `proceduralStep` 末尾插入子步骤，否则在 `mainProcedure` 末尾插入同级步骤。 */
