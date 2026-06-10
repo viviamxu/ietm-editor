@@ -1167,6 +1167,17 @@ function serializeNodeToXml(node: JSONContent): string {
     return children;
   }
 
+  // `remarks` 须包 `simplePara`；兼容旧文档中直接挂文本的结构
+  if (node.type === "remarks") {
+    const childNodes = node.content || [];
+    const hasSimplePara = childNodes.some((child) => child.type === "simplePara");
+    if (!hasSimplePara && childNodes.length > 0) {
+      const attrsStr = buildAttrsString(node.attrs);
+      const inner = childNodes.map(serializeNodeToXml).join("");
+      return `<remarks${attrsStr}><simplePara>${inner}</simplePara></remarks>`;
+    }
+  }
+
   if (node.type === "doc") {
     const kind = getDmContentKind(getDescriptionSchema());
     if (kind === "faultIsolation") {

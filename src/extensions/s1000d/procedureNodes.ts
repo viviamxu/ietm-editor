@@ -471,10 +471,12 @@ export const S1000DReqQuantity = Node.create({
   },
 });
 
+export const S1000DSimplePara = createInlineTextNode("simplePara");
+
 export const S1000DRemarks = Node.create({
   name: "remarks",
   group: PROCEDURE_TEXT_GROUP,
-  content: "inline*",
+  content: "simplePara?",
   parseHTML: () => tagRules("remarks"),
   renderHTML({ HTMLAttributes }) {
     return ["remarks", mergeAttributes(HTMLAttributes), 0];
@@ -511,6 +513,7 @@ export const s1000dProcedureNodes = [
   S1000DName,
   S1000DNatoStockNumber,
   S1000DReqQuantity,
+  S1000DSimplePara,
   S1000DRemarks,
   S1000DSupportEquipDescr,
   S1000DSupportEquipDescrGroup,

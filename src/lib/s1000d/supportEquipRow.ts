@@ -63,6 +63,23 @@ function inlineTextNode(
   return type.create(attrs ?? {}, content);
 }
 
+function readRemarksText(remarks: PMNode | null): string {
+  if (!remarks) return "";
+  const simplePara = findChild(remarks, "simplePara");
+  if (simplePara) return simplePara.textContent ?? "";
+  return remarks.textContent ?? "";
+}
+
+function remarksNode(schema: Schema, text: string): PMNode {
+  const remarksType = schema.nodes.remarks;
+  const simpleParaType = schema.nodes.simplePara;
+  if (!remarksType || !simpleParaType) {
+    throw new Error("Support equipment schema nodes are not registered");
+  }
+  const simplePara = inlineTextNode(schema, "simplePara", text);
+  return remarksType.create({}, simplePara);
+}
+
 /** 新建工装/辅料/备品行时的默认值（数量单位取 `timeUnit` 首项；字典为空则留空）。 */
 export function defaultSupportEquipRowData(): SupportEquipRowData {
   return {
@@ -85,7 +102,7 @@ export function readSupportEquipRowData(node: PMNode): SupportEquipRowData {
     natoStockNumber: natoStockNumber?.textContent ?? "",
     reqQuantity: reqQuantity?.textContent ?? "",
     unitOfMeasure: String(reqQuantity?.attrs.unitOfMeasure ?? "").trim(),
-    remarks: remarks?.textContent ?? "",
+    remarks: readRemarksText(remarks),
   };
 }
 
@@ -114,7 +131,7 @@ export function buildSupportEquipRowNode(
     );
   }
   if (data.remarks.trim()) {
-    children.push(inlineTextNode(schema, "remarks", data.remarks));
+    children.push(remarksNode(schema, data.remarks));
   }
 
   return rowNodeSchema.create({}, children);

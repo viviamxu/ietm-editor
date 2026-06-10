@@ -372,15 +372,11 @@ function liftListItemAtTarget(editor: Editor, target: ListLiftTarget): boolean {
         }
       }
 
-      let liftedOffset = 1;
-      for (let i = 0; i <= parentItemIndex; i++) {
-        liftedOffset += finalOuter[i]!.nodeSize;
-      }
-      const mapped = tr.mapping.map(outerListFrom + liftedOffset);
+      const mappedFrom = tr.mapping.map(state.selection.from, -1);
       tr.setSelection(
         TextSelection.near(
-          tr.doc.resolve(Math.min(mapped, tr.doc.content.size)),
-          1,
+          tr.doc.resolve(Math.min(Math.max(0, mappedFrom), tr.doc.content.size)),
+          -1,
         ),
       );
       dispatch(tr);

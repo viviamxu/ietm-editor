@@ -2060,7 +2060,7 @@ export function getFaultIsolationInnerXmlFromDmXml(
   return preprocessS1000dDescriptionHtmlFragment(joined);
 }
 
-/** 将 `simplePara` 内联化，便于 `remarks` 等 `inline*` 节点导入。 */
+/** 将 `simplePara` 内联化（`remarks` 下保留，须符合 S1000D `<remarks><simplePara>…</simplePara></remarks>`）。 */
 function flattenSimpleParaInSubtree(root: Element) {
   const paras = Array.from(
     root.querySelectorAll("simplePara, simplepara"),
@@ -2068,10 +2068,31 @@ function flattenSimpleParaInSubtree(root: Element) {
   for (const sp of paras) {
     const parent = sp.parentElement;
     if (!parent) continue;
+    if (parent.localName?.toLowerCase() === "remarks") continue;
     while (sp.firstChild) {
       parent.insertBefore(sp.firstChild, sp);
     }
     parent.removeChild(sp);
+  }
+}
+
+/** 无 `simplePara` 子节点的 `<remarks>` 文本包一层 `simplePara`。 */
+function wrapRemarksTextInSimplePara(root: Element) {
+  const remarksNodes = root.querySelectorAll("remarks, Remarks");
+  for (const remarks of remarksNodes) {
+    const hasSimplePara = Array.from(remarks.children).some(
+      (child) => child.localName?.toLowerCase() === "simplepara",
+    );
+    if (hasSimplePara) continue;
+    if (!remarks.textContent?.trim()) continue;
+
+    const doc = remarks.ownerDocument;
+    if (!doc) continue;
+    const sp = doc.createElement("simplePara");
+    while (remarks.firstChild) {
+      sp.appendChild(remarks.firstChild);
+    }
+    remarks.appendChild(sp);
   }
 }
 
@@ -2080,6 +2101,7 @@ function normalizeProcedureInnerXmlForEditor(procedureRoot: Element) {
   normalizeNoteParasForEditor(procedureRoot);
   normalizeS1000dListsForEditor(procedureRoot);
   flattenSimpleParaInSubtree(procedureRoot);
+  wrapRemarksTextInSimplePara(procedureRoot);
 }
 
 /**

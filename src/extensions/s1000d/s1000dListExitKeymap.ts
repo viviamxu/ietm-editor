@@ -1,9 +1,14 @@
 import { Extension } from "@tiptap/core";
 
-import { exitDescriptionListAsPara } from "../../lib/editor/exitDescriptionList";
+import {
+  backspaceDescriptionListItem,
+  exitDescriptionListAsPara,
+} from "../../lib/editor/exitDescriptionList";
 
 /**
- * 描述类列表（orderedList / bulletList）空项 Enter：退出列表并在其后插入 `para`。
+ * 描述类列表（orderedList / bulletList）：
+ * - Enter：空项退出列表并在其后插入 `para`
+ * - Backspace：空项行首嵌套升一级，或删除顶层空项
  * 优先级高于 StarterKit ListKeymap，避免 lift 出非法的 `paragraph` 块。
  */
 export const S1000DListExitKeymap = Extension.create({
@@ -13,6 +18,7 @@ export const S1000DListExitKeymap = Extension.create({
   addKeyboardShortcuts() {
     return {
       Enter: ({ editor }) => exitDescriptionListAsPara(editor),
+      Backspace: ({ editor }) => backspaceDescriptionListItem(editor),
     };
   },
 });
