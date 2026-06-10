@@ -23,6 +23,7 @@ import {
   canInsertDmRefIntoEditor,
   insertDmRefsIntoEditor,
 } from "../../lib/editor/insertDmRefs";
+import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 
 type ArcoTreeDataNode = NonNullable<TreeProps["treeData"]>[number];
@@ -323,7 +324,8 @@ function ExternalRefPublicationDialog() {
   }, []);
 
   const handleConfirm = () => {
-    if (!editor) {
+    const ed = editor;
+    if (!ed) {
       closeExternalRef();
       return;
     }
@@ -335,12 +337,15 @@ function ExternalRefPublicationDialog() {
       return;
     }
     const rawXml = buildMockDmRefRawXml(row);
-    if (!canInsertDmRefIntoEditor(editor, { rawXml })) {
+    if (!canInsertDmRefIntoEditor(ed, { rawXml })) {
       Message.warning("当前光标位置不能插入外部引用");
       return;
     }
-    insertDmRefsIntoEditor(editor, [{ rawXml, displayCode: row.code }]);
+    const payload = [{ rawXml, displayCode: row.code }] as const;
     closeExternalRef();
+    deferEditorMutation(() => {
+      insertDmRefsIntoEditor(ed, [...payload]);
+    });
   };
 
   const popupContainer = useCallback(() => {

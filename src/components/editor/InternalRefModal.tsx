@@ -6,6 +6,7 @@ import {
   collectInternalRefTargets,
   type InternalRefTargetRow,
 } from "../../lib/editor/collectInternalRefTargets";
+import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 
 const EMPTY_HINT = "暂无可用引用目标";
@@ -77,18 +78,21 @@ function InternalRefDialog() {
   );
 
   const handleConfirm = () => {
-    if (!editor || !selectedRow) return;
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: "internalRef",
-        attrs: {
-          internalRefId: selectedRow.id,
-        },
-      })
-      .run();
+    const ed = editor;
+    if (!ed || !selectedRow) return;
+    const row = selectedRow;
     closeInternalRef();
+    deferEditorMutation(() => {
+      ed.chain()
+        .focus()
+        .insertContent({
+          type: "internalRef",
+          attrs: {
+            internalRefId: row.id,
+          },
+        })
+        .run();
+    });
   };
 
   const popupContainer = useCallback(() => {

@@ -12,6 +12,7 @@ import {
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
+import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
 import { DEMO_MULTIMEDIA_MP4 } from "../../lib/ietm/multimediaIcnHydrate";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
@@ -239,17 +240,23 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
   }, []);
 
   const handleConfirm = () => {
-    if (!editor) {
+    const ed = editor;
+    if (!ed) {
       closeInsertPublication();
       return;
     }
     const rows = selectedIds
       .map((id) => ALL_ROWS.find((r) => r.id === id))
       .filter((r): r is PublicationRow => r != null);
-    if (rows.length > 0) {
+
+    closeInsertPublication();
+
+    if (rows.length === 0) return;
+
+    deferEditorMutation(() => {
       if (isMultimedia) {
         insertMultimediaIntoEditor(
-          editor,
+          ed,
           rows.map((row) => ({
             infoEntityIdent: row.code,
             title: row.title,
@@ -262,7 +269,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
         );
       } else {
         insertImagesIntoEditor(
-          editor,
+          ed,
           rows.map((row) => ({
             src: row.preview,
             alt: row.title,
@@ -270,8 +277,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
           })),
         );
       }
-    }
-    closeInsertPublication();
+    });
   };
 
   const popupContainer = useCallback(() => {
