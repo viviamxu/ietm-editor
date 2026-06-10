@@ -77,6 +77,7 @@ import {
   resolveDmPdfPreviewUrl,
 } from "./lib/ietm/dmPdfPreview";
 import { useDmMetadataStore } from "./store/dmMetadataStore";
+import { useFileUrlStore } from "./store/fileUrlStore";
 import "./style.css";
 
 export { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
@@ -471,10 +472,14 @@ export function createIETMEditor(
     }
   };
 
+  useFileUrlStore.getState().setFileUrlPrefix(options.fileUrlPrefix ?? "");
+
+  const initialContent = resolveInitialEditorContent(options);
+
   root.render(
     createElement(IETMEditorRoot, {
       ref: setHandle,
-      initialContent: resolveInitialEditorContent(options),
+      initialContent,
       initialEditable: options.editable ?? true,
       initialDescriptionSchema: options.descriptionSchema,
       onSaveDmXml: options.onSaveDmXml,
