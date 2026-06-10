@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
+import { TextSelection, type Selection } from "@tiptap/pm/state";
 
 import { LIST_TYPES, resolveListItemInList } from "./nestingLevelShared";
 import { canPromoteNesting, promoteNesting } from "./promoteNesting";
@@ -74,7 +74,7 @@ function isAtListItemParagraphStart($from: ResolvedPos): boolean {
 function selectionAtStartOfListItem(
   doc: PMNode,
   itemPos: number,
-): TextSelection {
+): Selection {
   const item = doc.nodeAt(itemPos);
   if (!item) {
     return TextSelection.near(doc.resolve(Math.min(itemPos + 1, doc.content.size)), 1);
@@ -94,7 +94,7 @@ function selectionAtStartOfListItem(
 function selectionAtEndOfListItem(
   doc: PMNode,
   itemPos: number,
-): TextSelection {
+): Selection {
   const item = doc.nodeAt(itemPos);
   if (!item) {
     return TextSelection.near(doc.resolve(Math.min(itemPos + 1, doc.content.size)), -1);

@@ -2,6 +2,7 @@ import type { Editor } from "@tiptap/core";
 import type { JSONContent } from "@tiptap/core";
 import { ensureParaAfterHostInsert } from "./insertParaAfterFmftBlock";
 import { insertFmftNodesIntoEditor } from "./resolveProcedureFmftInsertPos";
+import { resolveFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
 
 export type InsertMultimediaParameterPayload = {
@@ -108,10 +109,10 @@ export function insertMultimediaIntoEditor(
         multimediaType: resolveMultimediaTypeForXml(item),
         dataType: item.dataType ?? null,
         fileType: item.fileType ?? null,
-        sceneSrc: item.sceneSrc ?? null,
-        previewImgSrc: item.previewImgSrc ?? null,
-        cnfPath: item.cnfPath ?? null,
-        mediaSrc: item.mediaSrc ?? null,
+        sceneSrc: resolveFileUrl(item.sceneSrc) || null,
+        previewImgSrc: resolveFileUrl(item.previewImgSrc) || null,
+        cnfPath: resolveFileUrl(item.cnfPath) || null,
+        mediaSrc: resolveFileUrl(item.mediaSrc) || null,
       },
       ...(parameterContent.length > 0 ? { content: parameterContent } : {}),
     });

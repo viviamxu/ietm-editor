@@ -3,6 +3,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
+import { resolveFileUrl } from "../ietm/fileUrl";
 import type { InsertImagePayload } from "../../types/toolbar";
 
 /** 将插入参数转为 S1000D `graphic`（`figure` 子节点）。 */
@@ -10,7 +11,7 @@ export function buildGraphicJsonFromImagePayload(
   img: InsertImagePayload,
 ): JSONContent {
   const iei = img.figureId?.trim() || "ICN-UNKNOWN";
-  const src = img.src?.trim() ?? "";
+  const src = resolveFileUrl(img.src?.trim() ?? "");
   return {
     type: "graphic",
     attrs: {

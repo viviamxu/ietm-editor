@@ -42,6 +42,7 @@ import {
   readGraphicSrcFromElement,
   readXlinkHrefFromElement,
 } from "../lib/s1000d/xlinkHref";
+import { resolveFileUrl } from "../lib/ietm/fileUrl";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
 
@@ -972,7 +973,9 @@ export const S1000DGraphic = Node.create({
       src: {
         default: "",
         parseHTML: (el) =>
-          el instanceof Element ? readGraphicSrcFromElement(el) : "",
+          el instanceof Element
+            ? resolveFileUrl(readGraphicSrcFromElement(el))
+            : "",
         renderHTML: (attrs) => {
           const s = (attrs as { src?: string | null }).src;
           const t = typeof s === "string" ? s.trim() : "";
@@ -988,7 +991,7 @@ export const S1000DGraphic = Node.create({
         tag: "graphic",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          const src = readGraphicSrcFromElement(el);
+          const src = resolveFileUrl(readGraphicSrcFromElement(el));
           return {
             id: el.getAttribute("id"),
             infoEntityIdent:
@@ -1004,7 +1007,7 @@ export const S1000DGraphic = Node.create({
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
-          const src = readGraphicSrcFromElement(el);
+          const src = resolveFileUrl(readGraphicSrcFromElement(el));
           return {
             id: el.getAttribute("data-graphic-id") ?? el.getAttribute("id"),
             infoEntityIdent: el.getAttribute("data-info-entity-ident"),
@@ -1055,7 +1058,7 @@ export const S1000DGraphic = Node.create({
 
 /** 自源 XML `multimediaObject` 解析编辑器媒体 URL（`xlink:href` → mediaSrc / sceneSrc）。 */
 function readMultimediaObjectAttrsFromElement(el: Element) {
-  const xlinkHref = readXlinkHrefFromElement(el);
+  const xlinkHref = resolveFileUrl(readXlinkHrefFromElement(el));
   const multimediaType =
     el.getAttribute("multimediaType") ??
     el.getAttribute("multimediatype") ??
@@ -1066,20 +1069,24 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
   );
   const is3dByXml = multimediaType === "3D" || isZipHref;
   const dataType = dataIcnType ?? (is3dByXml ? "cc3d" : null);
-  const legacyMedia = el.getAttribute("data-media-src");
-  const legacyScene = el.getAttribute("data-scene-src");
+  const legacyMedia = resolveFileUrl(el.getAttribute("data-media-src"));
+  const legacyScene = resolveFileUrl(el.getAttribute("data-scene-src"));
+  const previewImgSrc = resolveFileUrl(el.getAttribute("data-preview-img-src"));
+  const cnfPath = resolveFileUrl(el.getAttribute("data-cnf-path"));
   return {
     infoEntityIdent:
       el.getAttribute("infoEntityIdent") ??
       el.getAttribute("infoentityident"),
     multimediaType,
     dataType,
-    sceneSrc: legacyScene ?? (is3dByXml && xlinkHref ? xlinkHref : null),
-    previewImgSrc: el.getAttribute("data-preview-img-src"),
-    cnfPath: el.getAttribute("data-cnf-path"),
+    sceneSrc:
+      legacyScene ||
+      (is3dByXml && xlinkHref ? xlinkHref : null),
+    previewImgSrc: previewImgSrc || null,
+    cnfPath: cnfPath || null,
     fileType: el.getAttribute("data-file-type"),
     mediaSrc:
-      legacyMedia ?? (!is3dByXml && xlinkHref ? xlinkHref : null),
+      legacyMedia || (!is3dByXml && xlinkHref ? xlinkHref : null),
     sourceXmlAttrKeys: xmlAttrsPresentOnElement(el, [
       "infoEntityIdent",
       "infoentityident",
@@ -1177,7 +1184,9 @@ export const S1000DMultimediaObject = Node.create({
       sceneSrc: {
         default: null,
         parseHTML: (el) =>
-          el instanceof Element ? el.getAttribute("data-scene-src") : null,
+          el instanceof Element
+            ? resolveFileUrl(el.getAttribute("data-scene-src")) || null
+            : null,
         renderHTML: (attrs) => {
           const v = (attrs as { sceneSrc?: string | null }).sceneSrc;
           return v ? { "data-scene-src": v } : {};
@@ -1187,7 +1196,9 @@ export const S1000DMultimediaObject = Node.create({
       previewImgSrc: {
         default: null,
         parseHTML: (el) =>
-          el instanceof Element ? el.getAttribute("data-preview-img-src") : null,
+          el instanceof Element
+            ? resolveFileUrl(el.getAttribute("data-preview-img-src")) || null
+            : null,
         renderHTML: (attrs) => {
           const v = (attrs as { previewImgSrc?: string | null }).previewImgSrc;
           return v ? { "data-preview-img-src": v } : {};
@@ -1197,7 +1208,9 @@ export const S1000DMultimediaObject = Node.create({
       cnfPath: {
         default: null,
         parseHTML: (el) =>
-          el instanceof Element ? el.getAttribute("data-cnf-path") : null,
+          el instanceof Element
+            ? resolveFileUrl(el.getAttribute("data-cnf-path")) || null
+            : null,
         renderHTML: (attrs) => {
           const v = (attrs as { cnfPath?: string | null }).cnfPath;
           return v ? { "data-cnf-path": v } : {};
@@ -1213,20 +1226,20 @@ export const S1000DMultimediaObject = Node.create({
           return v ? { "data-file-type": v } : {};
         },
       },
-      /** 主媒体 URL；保存为 S1000D `xlink:href`，加载时读回。 */
+      /** 主媒体 URL（运行时完整路径；导出时写入相对 `xlink:href`）。 */
       mediaSrc: {
         default: null,
         parseHTML: (el) => {
           if (!(el instanceof Element)) return null;
-          const legacy = el.getAttribute("data-media-src");
-          if (legacy?.trim()) return legacy.trim();
+          const legacy = resolveFileUrl(el.getAttribute("data-media-src"));
+          if (legacy) return legacy;
           const mt =
             el.getAttribute("multimediaType") ??
             el.getAttribute("multimediatype") ??
             "";
           const dataType = el.getAttribute("data-icn-type");
           if (mt === "3D" || dataType === "cc3d") return null;
-          const fromXlink = readXlinkHrefFromElement(el);
+          const fromXlink = resolveFileUrl(readXlinkHrefFromElement(el));
           return fromXlink || null;
         },
         renderHTML: () => ({}),

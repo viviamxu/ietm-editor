@@ -30,6 +30,7 @@ import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
+import { useFileUrlStore } from "../../store/fileUrlStore";
 import {
   writeIsolationFlowPayload,
   type IsolationFlowPayload,
@@ -75,6 +76,7 @@ interface IETMEditorRootProps {
   dmPdfPreviewPath?: string;
   fetchDmPdfPreview?: () => Promise<string | Blob>;
   icnInfoPath?: string;
+  fileUrlPrefix?: string;
   previewLibPath?: string;
 }
 
@@ -136,6 +138,10 @@ export const IETMEditorRoot = forwardRef<
       previewLibPath: props.previewLibPath,
     });
   }, [props.apiBaseUrl, props.icnInfoPath, props.previewLibPath]);
+
+  useEffect(() => {
+    useFileUrlStore.getState().setFileUrlPrefix(props.fileUrlPrefix ?? "");
+  }, [props.fileUrlPrefix]);
 
   // 初始化 @ietm-manual/preview（注册 cc-3d-scene Web Component）
   useEffect(() => {

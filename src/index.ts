@@ -81,6 +81,11 @@ import "./style.css";
 
 export { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
 export {
+  isAbsoluteFileUrl,
+  resolveFileUrl,
+  toRelativeFileUrl,
+} from "./lib/ietm/fileUrl";
+export {
   DEFAULT_DM_PDF_PREVIEW_PATH,
   openDmPdfPreview,
   pdfPreviewResultToUrl,
@@ -250,6 +255,11 @@ export interface IETMEditorOptions {
    * 与 `apiBaseUrl` 拼接后作为「插入多媒体」弹框的数据来源。
    */
   icnInfoPath?: string;
+  /**
+   * 媒体文件 URL 前缀。打开 XML 时与相对 `xlink:href` 拼接为完整路径供渲染；
+   * 导出 XML 时自动转回相对路径。宿主无需对 XML 字符串做路径 patch。
+   */
+  fileUrlPrefix?: string;
   /**
    * `@ietm-manual/preview` 静态资源根路径，传给 `setLibPath()`，默认 `"/"`。
    * 决定 cc-3d-scene 加载 Draco 等依赖资源的基准路径。
@@ -473,6 +483,7 @@ export function createIETMEditor(
       dmPdfPreviewPath: options.dmPdfPreviewPath,
       fetchDmPdfPreview: options.fetchDmPdfPreview,
       icnInfoPath: options.icnInfoPath,
+      fileUrlPrefix: options.fileUrlPrefix,
       previewLibPath: options.previewLibPath,
       onEditableChange: options.onEditableChange,
       lockReadonlyButtonTitle: options.lockReadonlyButtonTitle,

@@ -3,6 +3,7 @@ import {
   fetchIcnInfoList,
   type IcnInfoRow,
 } from "./icnInfo";
+import { resolveFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
 
@@ -51,9 +52,9 @@ export function icnInfoRowToMultimediaAttrs(
     return {
       dataType: "cc3d",
       fileType: fileType ?? "zip",
-      sceneSrc: row.filePath,
-      previewImgSrc: row.thPath,
-      cnfPath: row.cnfPath,
+      sceneSrc: resolveFileUrl(row.filePath),
+      previewImgSrc: resolveFileUrl(row.thPath),
+      cnfPath: row.cnfPath ? resolveFileUrl(row.cnfPath) : null,
       multimediaType: "3D",
     };
   }
@@ -62,8 +63,8 @@ export function icnInfoRowToMultimediaAttrs(
   return {
     dataType,
     fileType,
-    mediaSrc: isVideo ? row.filePath : null,
-    previewImgSrc: row.thPath,
+    mediaSrc: isVideo ? resolveFileUrl(row.filePath) : null,
+    previewImgSrc: resolveFileUrl(row.thPath),
     multimediaType: resolveMultimediaTypeForXml({
       dataType,
       fileType,

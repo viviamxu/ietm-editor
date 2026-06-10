@@ -23,6 +23,7 @@ import { getDmContentKind } from "./dmContentKind";
 import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { toRelativeFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "./multimediaType";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
@@ -968,12 +969,13 @@ function serializeMultimediaObjectToXml(node: JSONContent): string {
     dataType: attrs.dataType as string | null | undefined,
     fileType: attrs.fileType as string | null | undefined,
   });
-  const hrefRaw =
+  const hrefFull =
     attrs.mediaSrc != null && String(attrs.mediaSrc).trim() !== ""
       ? String(attrs.mediaSrc).trim()
       : attrs.sceneSrc != null && String(attrs.sceneSrc).trim() !== ""
         ? String(attrs.sceneSrc).trim()
         : "";
+  const hrefRaw = hrefFull ? toRelativeFileUrl(hrefFull) : "";
   const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
   const parameters = (node.content ?? [])
     .filter((child) => child.type === "parameter")
@@ -1002,7 +1004,8 @@ function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
       : srcRaw != null
         ? String(srcRaw).trim()
         : "";
-  const xlink = srcTrim ? ` xlink:href="${escapeXml(srcTrim)}"` : "";
+  const hrefRaw = srcTrim ? toRelativeFileUrl(srcTrim) : "";
+  const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
   return `<graphic${id}${iei}${xlink} />`;
 }
 
