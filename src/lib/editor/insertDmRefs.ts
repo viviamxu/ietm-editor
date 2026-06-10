@@ -1,17 +1,22 @@
 import type { Editor, JSONContent } from "@tiptap/core";
 
+import { normalizeDmRefEditorAttrs } from "../s1000d/dmRefXml";
 import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
 import type { InsertDmRefPayload } from "../../types/toolbar";
 
 /** 将宿主选中的 DM 引用转为 `dmRef` 节点 JSON。 */
 export function buildDmRefJsonFromPayload(item: InsertDmRefPayload): JSONContent {
-  const rawXml = item.rawXml.trim();
-  const displayCode = item.displayCode?.trim() ?? "";
+  const normalized = normalizeDmRefEditorAttrs(
+    item.rawXml,
+    item.displayCode,
+    item.refTargetId,
+  );
   return {
     type: "dmRef",
     attrs: {
-      rawXml,
-      displayCode: displayCode || null,
+      rawXml: normalized.rawXml,
+      displayCode: normalized.displayCode,
+      refTargetId: normalized.refTargetId,
       [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
     },
   };

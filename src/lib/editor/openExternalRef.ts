@@ -13,17 +13,20 @@ export function openExternalRefPublication(
   attrs: {
     rawXml?: string | null;
     displayCode?: string | null;
+    refTargetId?: string | null;
   },
 ): void {
   const rawXml = String(attrs.rawXml ?? "").trim();
   if (!rawXml) return;
 
   const meta = parseDmRefDisplayMeta(rawXml, attrs.displayCode);
+  const refTargetId = String(attrs.refTargetId ?? "").trim() || null;
   const ctx: OpenExternalRefContext = {
     editor,
     rawXml,
     title: meta.title,
     code: meta.code,
+    refTargetId,
     dmCode: meta.dmCode,
     issueInfo: meta.issueInfo,
     language: meta.language,

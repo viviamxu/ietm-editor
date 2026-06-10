@@ -25,6 +25,7 @@ export function DmRefNodeView(props: NodeViewProps) {
   const { editor, node } = props;
   const rawXml = String(node.attrs.rawXml ?? "");
   const displayCode = node.attrs.displayCode as string | null | undefined;
+  const refTargetId = node.attrs.refTargetId as string | null | undefined;
 
   const meta = useMemo(
     () => parseDmRefDisplayMeta(rawXml, displayCode),
@@ -40,7 +41,7 @@ export function DmRefNodeView(props: NodeViewProps) {
 
   const onOpenPointerDown = (e: ReactMouseEvent<HTMLButtonElement>) => {
     stopPointerToEditor(e);
-    openExternalRefPublication(editor, { rawXml, displayCode });
+    openExternalRefPublication(editor, { rawXml, displayCode, refTargetId });
   };
 
   const popupContainer = useCallback(() => {

@@ -182,6 +182,12 @@ export {
   parseDmRefDisplayTitle,
 } from "./extensions/s1000d/dmRefDisplay";
 export type { DmRefDisplayMeta } from "./extensions/s1000d/dmRefDisplay";
+export {
+  DM_REF_DISPLAY_CODE_ATTR,
+  DM_REF_TARGET_ID_ATTR,
+  normalizeDmRefEditorAttrs,
+  serializeDmRefToXml,
+} from "./lib/s1000d/dmRefXml";
 export { useToolbarConfigStore };
 export { useProcedureBindingStore };
 export { bindProceduralStepDerivativeRef } from "./lib/s1000d/bindProceduralStepAnimation";

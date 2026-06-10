@@ -25,6 +25,7 @@ import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { toRelativeFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "./multimediaType";
+import { serializeDmRefToXml } from "./dmRefXml";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
   const $from = editor.state.selection.$from;
@@ -802,8 +803,10 @@ const ignoredExportAttrs = [
   /** 故障隔离「是否 / 选择」切换缓存，仅编辑器内使用 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
-  /** 外部引用 Popover 展示编码，仅编辑器 */
+  /** 外部引用 Popover 展示编码；导出时写入 `<dmRef data-display-code>` */
   "displayCode",
+  /** 宿主跳转 ID；导出时写入 `<dmRef data-ref-target-id>` */
+  "refTargetId",
 ];
 const listNodeTypes = [
   "bulletList",
@@ -1065,6 +1068,9 @@ function serializeNodeToXml(node: JSONContent): string {
   }
 
   // 2. 兜底与黑盒数据提取
+  if (node.type === "dmRef" && node.attrs?.rawXml) {
+    return serializeDmRefToXml(node.attrs);
+  }
   if (node.attrs && node.attrs.rawXml) return node.attrs.rawXml;
 
   if (node.type === "graphic") {

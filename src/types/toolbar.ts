@@ -94,6 +94,8 @@ export type OpenExternalRefContext = {
   rawXml: string;
   title: string;
   code: string;
+  /** 宿主跳转用稳定 ID（如 dmInfoId）；导出/导入时写入 `<dmRef data-ref-target-id>` */
+  refTargetId?: string | null;
   dmCode: Record<string, string>;
   issueInfo: { issueNumber: string; inWork: string };
   language: { languageIsoCode: string; countryIsoCode: string };
@@ -103,8 +105,10 @@ export type OpenExternalRefContext = {
 export type InsertDmRefPayload = {
   /** 完整 `<dmRef>…</dmRef>` XML 字符串 */
   rawXml: string;
-  /** 表格「编码」列展示文案，仅编辑器内用于 Popover，不写入 S1000D XML */
-  displayCode?: string;
+  /** Popover 等 UI 展示编码；导出时写入 `<dmRef data-display-code>` 并 round-trip */
+  displayCode?: string | null;
+  /** 宿主跳转用稳定 ID；导出时写入 `<dmRef data-ref-target-id>` 并 round-trip */
+  refTargetId?: string | null;
 };
 
 export type InsertImagePayload = {

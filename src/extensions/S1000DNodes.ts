@@ -43,6 +43,11 @@ import {
   readXlinkHrefFromElement,
 } from "../lib/s1000d/xlinkHref";
 import { resolveFileUrl } from "../lib/ietm/fileUrl";
+import {
+  DM_REF_TARGET_ID_ATTR,
+  normalizeDmRefEditorAttrs,
+  readDmRefEditorAttrsFromElement,
+} from "../lib/s1000d/dmRefXml";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
 
@@ -770,6 +775,25 @@ function readInternalRefSourceXmlAttrKeys(el: Element): string[] {
   return keys;
 }
 
+function parseDmRefNodeAttrs(
+  el: Element,
+  rawXml: string,
+): Record<string, unknown> | false {
+  if (!rawXml.trim()) return false;
+  const fromEl = readDmRefEditorAttrsFromElement(el);
+  const normalized = normalizeDmRefEditorAttrs(
+    rawXml,
+    fromEl.displayCode,
+    fromEl.refTargetId,
+  );
+  return {
+    rawXml: normalized.rawXml,
+    displayCode: normalized.displayCode,
+    refTargetId: normalized.refTargetId,
+    [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
+  };
+}
+
 /** `dmRef` 行内占位：段落内整块 DM 引用若按块解析会破坏 `para` — 先吞成原子占位，后续可换完整 Node。 */
 export const S1000DDmRef = Node.create({
   name: "dmRef",
@@ -789,6 +813,15 @@ export const S1000DDmRef = Node.create({
           return { "data-display-code": String(v).trim() };
         },
       },
+      refTargetId: {
+        default: null as string | null,
+        parseHTML: (el: HTMLElement) => el.getAttribute(DM_REF_TARGET_ID_ATTR),
+        renderHTML: (attrs: { refTargetId?: string | null }) => {
+          const v = attrs.refTargetId;
+          if (v == null || String(v).trim() === "") return {};
+          return { [DM_REF_TARGET_ID_ATTR]: String(v).trim() };
+        },
+      },
     };
   },
 
@@ -802,27 +835,19 @@ export const S1000DDmRef = Node.create({
           const rawXml = encoded
             ? decodeURIComponent(encoded)
             : String(el.getAttribute("data-dm-ref-raw") ?? "");
-          if (!rawXml.trim()) return false;
-          return {
-            rawXml,
-            displayCode: el.getAttribute("data-display-code"),
-            [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
-          };
+          return parseDmRefNodeAttrs(el, rawXml);
         },
       },
       {
         tag: "dmref, dmRef", // HTML 会传小写，都拦截住
         getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
           const nodeEl = el as Element;
           const encoded = nodeEl.getAttribute("data-raw-xml");
           const rawXml = encoded
             ? decodeURIComponent(encoded)
             : nodeEl.outerHTML;
-          return {
-            rawXml,
-            displayCode: nodeEl.getAttribute("data-display-code"),
-            [SOURCE_XML_ATTR_KEYS]: ["rawXml"],
-          };
+          return parseDmRefNodeAttrs(nodeEl, rawXml);
         },
       },
     ];
@@ -840,6 +865,10 @@ export const S1000DDmRef = Node.create({
     const displayCode = String(node.attrs.displayCode ?? "").trim();
     if (displayCode) {
       extra["data-display-code"] = displayCode;
+    }
+    const refTargetId = String(node.attrs.refTargetId ?? "").trim();
+    if (refTargetId) {
+      extra[DM_REF_TARGET_ID_ATTR] = refTargetId;
     }
     return ["span", mergeAttributes(HTMLAttributes, extra)];
   },
