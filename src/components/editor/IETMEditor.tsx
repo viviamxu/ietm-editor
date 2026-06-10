@@ -26,6 +26,8 @@ import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagra
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
 import { S1000DFmftBlockEnterKeymap } from "../../extensions/s1000d/s1000dFmftBlockEnterKeymap";
+import { S1000DHostBlockTrailingParaBackspaceKeymap } from "../../extensions/s1000d/s1000dHostBlockTrailingParaBackspaceKeymap";
+import { RepairOrphanTgroupExtension } from "../../extensions/s1000d/repairOrphanTgroupExtension";
 import { S1000dAttentionParaKeymap } from "../../extensions/s1000d/s1000dAttentionParaKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
 import {
@@ -291,6 +293,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const [pdfPreviewError, setPdfPreviewError] = useState<string | null>(null);
     const pdfPreviewUrlRef = useRef<string | null>(null);
     const pdfPreviewRevokeRef = useRef(false);
+    const pdfPreviewSeqRef = useRef(0);
     const initialPreviewLoadRef = useRef(true);
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
     const [selectionBump, bumpSelectionUi] = useReducer(
@@ -319,6 +322,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000DParagraph,
         S1000DListExitKeymap,
         S1000DFmftBlockEnterKeymap,
+        S1000DHostBlockTrailingParaBackspaceKeymap,
+        RepairOrphanTgroupExtension,
         S1000dAttentionParaKeymap,
         S1000DNestingKeymap,
         S1000dSectionNumbersExtension,
@@ -418,6 +423,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     }, []);
 
     const dismissPadPreview = () => {
+      pdfPreviewSeqRef.current += 1;
       setPadPreviewOpen(false);
       setPdfPreviewError(null);
       setPdfPreviewLoading(false);
@@ -438,6 +444,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const runOpenPdfPreview = useCallback(() => {
       if (!editor) return;
 
+      const seq = ++pdfPreviewSeqRef.current;
       setPadPreviewOpen(true);
       setPdfPreviewError(null);
       setPdfPreviewLoading(true);
@@ -453,14 +460,17 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
             dmPdfPreviewPath: props.dmPdfPreviewPath,
             fetchDmPdfPreview: props.fetchDmPdfPreview,
           });
+          if (seq !== pdfPreviewSeqRef.current) return;
           pdfPreviewRevokeRef.current = revokeOnClose;
           pdfPreviewUrlRef.current = url;
           setPdfPreviewUrl(url);
         } catch (error) {
+          if (seq !== pdfPreviewSeqRef.current) return;
           const message =
             error instanceof Error ? error.message : "PDF 预览加载失败";
           setPdfPreviewError(message);
         } finally {
+          if (seq !== pdfPreviewSeqRef.current) return;
           setPdfPreviewLoading(false);
         }
       })();
@@ -623,7 +633,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       setPropertySettingsOpen(false);
     };
 
-    const showPropertyPane = viewMode === "editor" && propertySettingsOpen;
+    const showPropertyPane = propertySettingsOpen;
 
     const showPropertyPanelForm = showPropertyPane && resolvedTarget !== null;
 
@@ -638,8 +648,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       if (viewMode === "editor") {
         setSourceXml(exportEditorToDmXmlString(editor));
         setViewMode("source");
-        dismissPadPreview();
-        setPropertySettingsOpen(false);
         return;
       }
       setViewMode("editor");

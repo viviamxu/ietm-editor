@@ -96,6 +96,14 @@ function countChildNodesOfType(parent: PMNode, typeName: string): number {
   return count;
 }
 
+function buildMinimalProceduralStepNode(schema: PMNode["type"]["schema"]): PMNode | null {
+  try {
+    return PMNode.fromJSON(schema, buildMinimalProceduralStepJson());
+  } catch {
+    return null;
+  }
+}
+
 /** 解析 `proceduralStep` 节点及其文档起始位置（兼容 NodeView `getPos` 边界）。 */
 export function resolveProceduralStepAtPos(
   doc: PMNode,
@@ -129,7 +137,7 @@ export function resolveProceduralStepAtPos(
 
 /**
  * 按 `程序类.json`：`mainProcedure` 须保留 `proceduralStep+`；
- * 嵌套 `proceduralStep*` 可删至 0。删除前校验父节点 `validContent`。
+ * 删最后一个一级步骤时会在删除后补默认步骤。嵌套 `proceduralStep*` 可删至 0。
  */
 export function canDeleteProceduralStep(doc: PMNode, stepPos: number): boolean {
   const resolved = resolveProceduralStepAtPos(doc, stepPos);
@@ -141,11 +149,10 @@ export function canDeleteProceduralStep(doc: PMNode, stepPos: number): boolean {
     const parent = $pos.parent;
     const index = $pos.index();
 
-    if (parent.type.name === "mainProcedure") {
-      if (countChildNodesOfType(parent, "proceduralStep") <= 1) {
-        return false;
-      }
-    } else if (parent.type.name !== "proceduralStep") {
+    if (
+      parent.type.name !== "mainProcedure" &&
+      parent.type.name !== "proceduralStep"
+    ) {
       return false;
     }
 
@@ -153,6 +160,16 @@ export function canDeleteProceduralStep(doc: PMNode, stepPos: number): boolean {
     for (let i = 0; i < parent.childCount; i++) {
       if (i !== index) siblings.push(parent.child(i));
     }
+
+    if (
+      parent.type.name === "mainProcedure" &&
+      countChildNodesOfType(parent, "proceduralStep") <= 1
+    ) {
+      const defaultStep = buildMinimalProceduralStepNode(parent.type.schema);
+      if (!defaultStep) return false;
+      return parent.type.validContent(Fragment.from([...siblings, defaultStep]));
+    }
+
     return parent.type.validContent(Fragment.from(siblings));
   } catch {
     return false;
@@ -173,11 +190,40 @@ export function deleteProceduralStepAtPos(
   if (!resolved) return false;
 
   const { step, stepPos: actualPos } = resolved;
+  const $pos = doc.resolve(actualPos);
+  const parent = $pos.parent;
+  const isLastInMain =
+    parent.type.name === "mainProcedure" &&
+    countChildNodesOfType(parent, "proceduralStep") <= 1;
+  const mainPos = isLastInMain ? $pos.before($pos.depth) : null;
 
   return editor
     .chain()
     .focus()
-    .deleteRange({ from: actualPos, to: actualPos + step.nodeSize })
+    .command(({ state, tr, dispatch }) => {
+      if (!dispatch) return true;
+
+      tr.delete(actualPos, actualPos + step.nodeSize);
+
+      if (mainPos != null) {
+        const mappedMainPos = tr.mapping.map(mainPos);
+        const main = tr.doc.nodeAt(mappedMainPos);
+        if (
+          main?.type.name === "mainProcedure" &&
+          countChildNodesOfType(main, "proceduralStep") === 0
+        ) {
+          const defaultStep = buildMinimalProceduralStepNode(state.schema);
+          if (!defaultStep) return false;
+          const insertPos = mappedMainPos + main.nodeSize - 1;
+          tr.insert(insertPos, defaultStep);
+          const sel = selectionInProceduralStepTitle(tr.doc, insertPos);
+          if (sel) tr.setSelection(sel);
+        }
+      }
+
+      dispatch(tr);
+      return true;
+    })
     .run();
 }
 

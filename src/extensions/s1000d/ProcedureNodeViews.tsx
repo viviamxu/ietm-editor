@@ -237,17 +237,6 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
   const stepPos = typeof getPos === "function" ? getPos() : null;
   const canDeleteStep =
     stepPos != null && canDeleteProceduralStep(editor.state.doc, stepPos);
-  const deleteBlockedByMainProcedure =
-    stepPos != null &&
-    !canDeleteStep &&
-    (() => {
-      try {
-        const $pos = editor.state.doc.resolve(stepPos);
-        return $pos.parent.type.name === "mainProcedure";
-      } catch {
-        return false;
-      }
-    })();
 
   const boundId =
     String(node.attrs.derivativeClassificationRefId ?? "").trim() || null;
@@ -331,13 +320,7 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
           className="s1000d-procedural-step__delete"
           contentEditable={false}
           disabled={readOnly || !canDeleteStep}
-          title={
-            canDeleteStep
-              ? "删除此操作步骤"
-              : deleteBlockedByMainProcedure
-                ? "作业步骤中至少保留一个操作步骤"
-                : "无法删除此操作步骤"
-          }
+          title={canDeleteStep ? "删除此操作步骤" : "无法删除此操作步骤"}
           aria-label="删除此操作步骤"
           onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
           onClick={deleteStep}

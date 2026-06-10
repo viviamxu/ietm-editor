@@ -1,5 +1,6 @@
 import type { Editor, JSONContent } from "@tiptap/core";
 
+import { ensureParaAfterHostInsert } from "../editor/insertParaAfterFmftBlock";
 import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 
@@ -175,5 +176,9 @@ export function handleWordTablePaste(
   const tableJson = buildMergedTableJsonFromClipboard(html, plain);
   if (!tableJson) return false;
 
-  return insertFmftNodesIntoEditor(editor, tableJson);
+  const inserted = insertFmftNodesIntoEditor(editor, tableJson);
+  if (inserted.ok) {
+    ensureParaAfterHostInsert(editor, inserted.fmftBlockPos);
+  }
+  return inserted.ok;
 }

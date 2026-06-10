@@ -2,6 +2,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
+import { AttentionBlockDeleteButton } from "./AttentionBlockDeleteButton";
 import {
   useCallback,
   useEffect,
@@ -117,6 +118,13 @@ export function NoteNodeView(props: NodeViewProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {showChrome ? (
+        <AttentionBlockDeleteButton
+          editor={editor}
+          getPos={getPos}
+          blockLabel="note"
+        />
+      ) : null}
       <button
         type="button"
         className="s1000d-attention-block__block-handle"

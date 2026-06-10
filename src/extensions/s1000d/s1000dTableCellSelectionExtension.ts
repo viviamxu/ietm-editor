@@ -86,7 +86,11 @@ function buildCellDecorations(state: EditorState): DecorationSet {
 }
 
 function dispatchCellDragState(
-  view: { state: EditorState; dispatch: (tr: import('@tiptap/pm/state').Transaction) => void },
+  view: {
+    state: EditorState
+    dispatch: (tr: import('@tiptap/pm/state').Transaction) => void
+    focus: () => void
+  },
   anchor: TableCellAddress,
   head: TableCellAddress,
   cellSelectMode: boolean,
@@ -101,6 +105,7 @@ function dispatchCellDragState(
     cellSelectMode ? { anchor, head } : null,
   )
   view.dispatch(tr)
+  view.focus()
 }
 
 /**

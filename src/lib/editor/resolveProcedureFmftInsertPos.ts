@@ -2,8 +2,16 @@ import type { Editor, JSONContent } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
+import {
+  resolveHostBlockPosFromSelection,
+  resolveHostBlockPosNear,
+} from "./insertParaAfterFmftBlock";
 import { getDmContentKind } from "../s1000d/dmContentKind";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+
+export type FmftInsertResult =
+  | { ok: true; fmftBlockPos?: number }
+  | { ok: false };
 
 export type ProcedureFmftInsertResolution =
   | { kind: "cursor" }
@@ -79,47 +87,83 @@ export function resolveProcedureFmftInsert(
   return { kind: "blocked" };
 }
 
+function resolveInsertedHostBlockPos(
+  editor: Editor,
+  fallbackNearPos: number,
+): number | undefined {
+  return (
+    resolveHostBlockPosFromSelection(editor) ??
+    resolveHostBlockPosNear(editor, fallbackNearPos)
+  );
+}
+
 /** 在解析后的位置插入 `fmftElemGroup` 块（`table` / `multimedia` / `figure` 等）。 */
 export function insertFmftNodesIntoEditor(
   editor: Editor,
   nodes: JSONContent | JSONContent[],
-): boolean {
+): FmftInsertResult {
   const payload = Array.isArray(nodes)
     ? nodes.length === 1
       ? nodes[0]
       : nodes
     : nodes;
   if (payload == null || (Array.isArray(payload) && payload.length === 0)) {
-    return false;
+    return { ok: false };
   }
 
   const { selection } = editor.state;
+  let plannedInsertPos: number | null = null;
 
   if (selection instanceof NodeSelection) {
     if (isInsideProcedureSectionBlock(editor, selection.from)) {
-      return false;
+      return { ok: false };
     }
-    const insertPos = selection.from + selection.node.nodeSize;
-    if (!editor.can().insertContentAt(insertPos, payload)) {
-      return false;
+    plannedInsertPos = selection.from + selection.node.nodeSize;
+    if (!editor.can().insertContentAt(plannedInsertPos, payload)) {
+      return { ok: false };
     }
-    return editor.chain().focus().insertContentAt(insertPos, payload).run();
+    const ok = editor
+      .chain()
+      .focus()
+      .insertContentAt(plannedInsertPos, payload)
+      .run();
+    if (!ok) return { ok: false };
+    return {
+      ok: true,
+      fmftBlockPos: resolveInsertedHostBlockPos(editor, plannedInsertPos),
+    };
   }
 
   const resolution = resolveProcedureFmftInsert(editor);
   if (resolution?.kind === "blocked") {
-    return false;
+    return { ok: false };
   }
 
   if (resolution?.kind === "at") {
-    if (!editor.can().insertContentAt(resolution.pos, payload)) {
-      return false;
+    plannedInsertPos = resolution.pos;
+    if (!editor.can().insertContentAt(plannedInsertPos, payload)) {
+      return { ok: false };
     }
-    return editor.chain().focus().insertContentAt(resolution.pos, payload).run();
+    const ok = editor
+      .chain()
+      .focus()
+      .insertContentAt(plannedInsertPos, payload)
+      .run();
+    if (!ok) return { ok: false };
+    return {
+      ok: true,
+      fmftBlockPos: resolveInsertedHostBlockPos(editor, plannedInsertPos),
+    };
   }
 
+  plannedInsertPos = selection.from;
   if (!editor.can().insertContent(payload)) {
-    return false;
+    return { ok: false };
   }
-  return editor.chain().focus().insertContent(payload).run();
+  const ok = editor.chain().focus().insertContent(payload).run();
+  if (!ok) return { ok: false };
+  return {
+    ok: true,
+    fmftBlockPos: resolveInsertedHostBlockPos(editor, plannedInsertPos),
+  };
 }

@@ -8,6 +8,11 @@ import {
   collectAncestorDepths,
   getInnermostLevelledParaDepth,
 } from "../editor/nestingLevelShared";
+import {
+  ensureParaAfterHostInsert,
+  insertParaAfterHostBlock,
+  resolveHostBlockPosFromSelection,
+} from "../editor/insertParaAfterFmftBlock";
 import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
@@ -394,10 +399,11 @@ export function insertTableFromSchema(
     includeEmptyTitle,
   );
   const inserted = insertFmftNodesIntoEditor(editor, json);
-  if (inserted) {
+  if (inserted.ok) {
+    ensureParaAfterHostInsert(editor, inserted.fmftBlockPos);
     focusFirstCellByMouseLikeClick(editor);
   }
-  return inserted;
+  return inserted.ok;
 }
 
 export function insertFilmFromSchema(
@@ -513,6 +519,14 @@ function selectionInWarningAndCautionLeadFromResolved(
   return null;
 }
 
+function ensureParaAfterAttentionShellInsert(editor: Editor): void {
+  const blockPos = resolveHostBlockPosFromSelection(editor);
+  if (blockPos == null) return;
+  const block = editor.state.doc.nodeAt(blockPos);
+  if (!block) return;
+  insertParaAfterHostBlock(editor, blockPos, block, { focus: false });
+}
+
 function insertAttentionBlockFromSchema(
   editor: Editor,
   buildNode: (schema: DescriptionSchema) => JSONContent | null,
@@ -520,7 +534,7 @@ function insertAttentionBlockFromSchema(
 ): boolean {
   const node = buildNode(schema);
   if (!node) return false;
-  return editor
+  const ok = editor
     .chain()
     .focus()
     .insertContent(node)
@@ -536,6 +550,10 @@ function insertAttentionBlockFromSchema(
       return true;
     })
     .run();
+  if (ok) {
+    ensureParaAfterAttentionShellInsert(editor);
+  }
+  return ok;
 }
 
 /** `warning`：`warningAndCautionPara+`（schema 描述类规则） */
@@ -606,7 +624,11 @@ export function insertNoteFromSchema(
 ): boolean {
   const node = buildInsertNoteJson(schema);
   if (!node) return false;
-  return editor.chain().focus().insertContent(node).run();
+  const ok = editor.chain().focus().insertContent(node).run();
+  if (ok) {
+    ensureParaAfterAttentionShellInsert(editor);
+  }
+  return ok;
 }
 
 /** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */

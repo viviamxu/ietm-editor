@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import type { JSONContent } from "@tiptap/core";
-import { ensureParaAfterFmftFromSelection } from "./insertParaAfterFmftBlock";
+import { ensureParaAfterHostInsert } from "./insertParaAfterFmftBlock";
 import { insertFmftNodesIntoEditor } from "./resolveProcedureFmftInsertPos";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
 
@@ -121,8 +121,8 @@ export function insertMultimediaIntoEditor(
   if (nodes.length === 0) return false;
 
   const inserted = insertFmftNodesIntoEditor(editor, nodes);
-  if (!inserted) return false;
+  if (!inserted.ok) return false;
 
-  ensureParaAfterFmftFromSelection(editor);
+  ensureParaAfterHostInsert(editor, inserted.fmftBlockPos);
   return true;
 }
