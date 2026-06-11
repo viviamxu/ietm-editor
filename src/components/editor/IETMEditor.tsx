@@ -63,7 +63,6 @@ import {
 import {
   exportEditorToDmXmlString,
   fillEmptyContentFromSchema as applyFillEmptyContentFromSchema,
-  insertImageFromSchema,
   insertTableFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
@@ -85,7 +84,6 @@ import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { normalizeDmDocumentName } from "../../lib/ietm/dmDocumentName";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { usePropertyPanelStore } from "../../store/propertyPanelStore";
-import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
 import type {
   InsertDmRefPayload,
   InsertImagePayload,
@@ -282,9 +280,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     >("file");
 
     const [propertySettingsOpen, setPropertySettingsOpen] = useState(true);
-    const documentDisplayTitle = useDmMetadataStore(
-      (s) => s.documentDisplayTitle,
-    );
     const [viewMode, setViewMode] = useState<EditorViewMode>("editor");
     const [sourceXml, setSourceXml] = useState("");
     const [padPreviewOpen, setPadPreviewOpen] = useState(true);
@@ -701,25 +696,6 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       if (!tableTabActivatedRef.current) return;
       setActiveTabKey(prevActiveTabKeyRef.current);
       tableTabActivatedRef.current = false;
-    };
-
-    const insertTable = () =>
-      insertTableFromSchema(editor, getDescriptionSchema(), 4, 1, 3);
-
-    const runInsertImageAction = () => {
-      if (!editor) return;
-      const onInsertImageClick =
-        useToolbarConfigStore.getState().onInsertImageClick;
-      if (onInsertImageClick) {
-        onInsertImageClick({
-          editor,
-          editable: props.editable,
-          activeTabKey,
-          formatBarLocked: !props.editable,
-        });
-        return;
-      }
-      insertImageFromSchema(editor, getDescriptionSchema());
     };
 
     const runTableAction = (
