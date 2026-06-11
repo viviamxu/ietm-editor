@@ -362,7 +362,12 @@ function mergeCells(editor: Editor): boolean {
     }
 
     if (entries.length === 0) {
-      nextRows.splice(r, 1);
+      // CALS: rows spanned by morerows above omit entry elements but must remain in tgroup.
+      if (rowSpan > 1 && r > rowStart) {
+        nextRows[r] = row.type.create(row.attrs, entries);
+      } else {
+        nextRows.splice(r, 1);
+      }
     } else {
       nextRows[r] = row.type.create(row.attrs, entries);
     }

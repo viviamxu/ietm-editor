@@ -33,7 +33,7 @@ function htmlSpanAttrs(attrs: Record<string, unknown>) {
  * 生成符合 `src/data/描述类Schema.json` 中表格定义的 JSON，供 `insertContent` 使用：
  * - `table`: `title? tgroup+`
  * - `tgroup`: `thead? tbody`（编辑器侧 `tbody+`，插入时仅一个 `tbody`；`tfoot` 未建模）
- * - `thead`/`tbody`: `row+`；`row`: `entry+`；`entry`: `(para|warning|caution)+`（此处用 `para+`）
+ * - `thead`/`tbody`: `row+`；`row`: `entry*`（CALS 纵向合并时次行可无 entry）；`entry`: `(para|warning|caution)+`（此处用 `para+`）
  *
  * @param includeEmptyTitle 是否与常见 DM 一致插入空 `title`（对应 schema 可选 `title?`）
  */
@@ -187,7 +187,7 @@ export const S1000DTableEntry = Node.create({
 
 export const S1000DTableRow = Node.create({
   name: 'row',
-  content: 'entry+',
+  content: 'entry*',
   defining: true,
 
   parseHTML() {
