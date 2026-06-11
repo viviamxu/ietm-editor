@@ -466,20 +466,23 @@ function toggleHeader(editor: Editor): boolean {
       const thead = tgroupChildren[theadIndex];
       const theadRows = [...contentArray(thead), rowToMove];
       tgroupChildren[theadIndex] = thead.type.create(thead.attrs, theadRows);
+      tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
+        ctx.section.attrs,
+        nextTbodyRows,
+      );
     } else {
-      const theadNode = editor.schema.nodes.thead.create(null, [rowToMove]);
+      tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
+        ctx.section.attrs,
+        nextTbodyRows,
+      );
       const firstTbodyIndex = tgroupChildren.findIndex(
         (section) => section.type.name === "tbody",
       );
       const insertAt =
         firstTbodyIndex >= 0 ? firstTbodyIndex : tgroupChildren.length;
+      const theadNode = editor.schema.nodes.thead.create(null, [rowToMove]);
       tgroupChildren.splice(insertAt, 0, theadNode);
     }
-
-    tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
-      ctx.section.attrs,
-      nextTbodyRows,
-    );
   } else if (ctx.section.type.name === "thead") {
     const theadRows = contentArray(ctx.section);
     const rowToMove = theadRows[ctx.rowIndex];
