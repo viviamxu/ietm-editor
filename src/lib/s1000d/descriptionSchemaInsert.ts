@@ -26,6 +26,10 @@ import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { toRelativeFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "./multimediaType";
 import { serializeDmRefToXml } from "./dmRefXml";
+import {
+  internalRefHasExportableContent,
+  serializeInternalRefToXml,
+} from "./internalRefXml";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
   const $from = editor.state.selection.$from;
@@ -780,6 +784,7 @@ function hasEffectiveContent(node: JSONContent): boolean {
     node.type === "graphic" ||
     node.type === "multimedia" ||
     node.type === "multimediaObject" ||
+    (node.type === "internalRef" && internalRefHasExportableContent(node.attrs)) ||
     (node.attrs && node.attrs.rawXml)
   )
     return true;
@@ -1083,6 +1088,10 @@ function serializeNodeToXml(node: JSONContent): string {
 
   if (node.type === "parameter") {
     return serializeParameterToXml(node.attrs);
+  }
+
+  if (node.type === "internalRef") {
+    return serializeInternalRefToXml(node.attrs);
   }
 
   // 3. 出版物 / IETMImage：转为 figure + graphic（路径写入 xlink:href）

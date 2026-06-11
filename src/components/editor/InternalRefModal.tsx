@@ -7,6 +7,7 @@ import {
   type InternalRefTargetRow,
 } from "../../lib/editor/collectInternalRefTargets";
 import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
+import { resolveInternalRefTargetType } from "../../lib/s1000d/internalRefXml";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 
 const EMPTY_HINT = "暂无可用引用目标";
@@ -83,12 +84,16 @@ function InternalRefDialog() {
     const row = selectedRow;
     closeInternalRef();
     deferEditorMutation(() => {
+      const internalRefTargetType = resolveInternalRefTargetType(row.type);
       ed.chain()
         .focus()
         .insertContent({
           type: "internalRef",
           attrs: {
             internalRefId: row.id,
+            ...(internalRefTargetType
+              ? { internalRefTargetType }
+              : {}),
           },
         })
         .run();

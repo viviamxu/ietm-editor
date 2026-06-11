@@ -916,7 +916,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                 </div>
               </Tabs.TabPane>
 
-              <Tabs.TabPane key="insert" title="插入">
+              {/* <Tabs.TabPane key="insert" title="插入">
                 <div className="ietm-menu-dropdown" role="menu">
                   <button
                     type="button"
@@ -939,17 +939,17 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
                     插入图片
                   </button>
                 </div>
-              </Tabs.TabPane>
+              </Tabs.TabPane> */}
             </Tabs>
 
-            <div className="ietm-app-header-right">
+            {/* <div className="ietm-app-header-right">
               <span
                 className="ietm-doc-title"
                 title={documentDisplayTitle || undefined}
               >
                 数据模块标题 {documentDisplayTitle}
               </span>
-            </div>
+            </div> */}
           </header>
 
           <FormatToolbar

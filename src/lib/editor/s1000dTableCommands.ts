@@ -442,42 +442,70 @@ function deleteTable(editor: Editor): boolean {
   return true;
 }
 
-/** 将光标所在 tbody 行移至 thead 末尾，原样保留行内所有 entry */
+/** 切换表头：tbody 行 → thead 末尾；thead 行 → tbody 开头。 */
 function toggleHeader(editor: Editor): boolean {
   const ctx = resolvePrimaryCellContext(editor);
-  if (!ctx || ctx.section.type.name !== "tbody") return false;
-
-  const tbodyRows = contentArray(ctx.section);
-  if (tbodyRows.length <= 1) return false;
-
-  const rowToMove = tbodyRows[ctx.rowIndex];
-  const nextTbodyRows = [...tbodyRows];
-  nextTbodyRows.splice(ctx.rowIndex, 1);
+  if (!ctx) return false;
 
   const tgroupChildren = contentArray(ctx.tgroup);
-  let theadIndex = -1;
-  tgroupChildren.forEach((section, index) => {
-    if (section.type.name === "thead") theadIndex = index;
-  });
 
-  if (theadIndex >= 0) {
-    const thead = tgroupChildren[theadIndex];
-    const theadRows = [...contentArray(thead), rowToMove];
-    tgroupChildren[theadIndex] = thead.type.create(thead.attrs, theadRows);
-  } else {
-    const theadNode = editor.schema.nodes.thead.create(null, [rowToMove]);
-    const firstTbodyIndex = tgroupChildren.findIndex(
+  if (ctx.section.type.name === "tbody") {
+    const tbodyRows = contentArray(ctx.section);
+    if (tbodyRows.length <= 1) return false;
+
+    const rowToMove = tbodyRows[ctx.rowIndex];
+    const nextTbodyRows = [...tbodyRows];
+    nextTbodyRows.splice(ctx.rowIndex, 1);
+
+    let theadIndex = -1;
+    tgroupChildren.forEach((section, index) => {
+      if (section.type.name === "thead") theadIndex = index;
+    });
+
+    if (theadIndex >= 0) {
+      const thead = tgroupChildren[theadIndex];
+      const theadRows = [...contentArray(thead), rowToMove];
+      tgroupChildren[theadIndex] = thead.type.create(thead.attrs, theadRows);
+    } else {
+      const theadNode = editor.schema.nodes.thead.create(null, [rowToMove]);
+      const firstTbodyIndex = tgroupChildren.findIndex(
+        (section) => section.type.name === "tbody",
+      );
+      const insertAt =
+        firstTbodyIndex >= 0 ? firstTbodyIndex : tgroupChildren.length;
+      tgroupChildren.splice(insertAt, 0, theadNode);
+    }
+
+    tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
+      ctx.section.attrs,
+      nextTbodyRows,
+    );
+  } else if (ctx.section.type.name === "thead") {
+    const theadRows = contentArray(ctx.section);
+    const rowToMove = theadRows[ctx.rowIndex];
+    const nextTheadRows = [...theadRows];
+    nextTheadRows.splice(ctx.rowIndex, 1);
+
+    const tbodyIndex = tgroupChildren.findIndex(
       (section) => section.type.name === "tbody",
     );
-    const insertAt =
-      firstTbodyIndex >= 0 ? firstTbodyIndex : tgroupChildren.length;
-    tgroupChildren.splice(insertAt, 0, theadNode);
-  }
+    if (tbodyIndex < 0) return false;
 
-  tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
-    ctx.section.attrs,
-    nextTbodyRows,
-  );
+    const tbody = tgroupChildren[tbodyIndex];
+    const tbodyRows = [rowToMove, ...contentArray(tbody)];
+    tgroupChildren[tbodyIndex] = tbody.type.create(tbody.attrs, tbodyRows);
+
+    if (nextTheadRows.length === 0) {
+      tgroupChildren.splice(ctx.sectionIndex, 1);
+    } else {
+      tgroupChildren[ctx.sectionIndex] = ctx.section.type.create(
+        ctx.section.attrs,
+        nextTheadRows,
+      );
+    }
+  } else {
+    return false;
+  }
 
   const moved = replaceTgroup(
     editor,
@@ -505,8 +533,13 @@ export function canRunS1000dTableAction(
     return entryColSpan(ctx.entry) > 1 || entryRowSpan(ctx.entry) > 1;
   }
   if (action === "toggleHeader") {
-    if (ctx.section.type.name !== "tbody") return false;
-    return contentArray(ctx.section).length > 1;
+    if (ctx.section.type.name === "tbody") {
+      return contentArray(ctx.section).length > 1;
+    }
+    if (ctx.section.type.name === "thead") {
+      return true;
+    }
+    return false;
   }
   return true;
 }
