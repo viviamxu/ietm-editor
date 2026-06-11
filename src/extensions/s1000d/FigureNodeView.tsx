@@ -2,6 +2,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
+import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
 import {
   useCallback,
   useEffect,
@@ -85,6 +86,14 @@ export function FigureNodeView(props: NodeViewProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {showChrome ? (
+        <FmftBlockDeleteButton
+          editor={editor}
+          getPos={getPos}
+          blockLabel="图片"
+          className="s1000d-figure__delete"
+        />
+      ) : null}
       <button
         type="button"
         className="s1000d-figure__block-handle"

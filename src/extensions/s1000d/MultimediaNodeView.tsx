@@ -2,6 +2,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
+import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
 import {
   useCallback,
   useEffect,
@@ -100,6 +101,14 @@ export function MultimediaNodeView(props: NodeViewProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {showChrome ? (
+        <FmftBlockDeleteButton
+          editor={editor}
+          getPos={getPos}
+          blockLabel="多媒体"
+          className="s1000d-multimedia-node__delete"
+        />
+      ) : null}
       <button
         type="button"
         className="s1000d-multimedia-node__block-handle"

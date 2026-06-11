@@ -1,27 +1,39 @@
 [
   {
     "id": "media-1",
-    "label": "媒体1",
+    "label": "媒体标题",
     "type": "media",
     "children": [
       {
-        "id": "anim-1-1",
-        "label": "动画1",
-        "type": "animation",
+        "id": "scene-1",
+        "label": "场景 A",
+        "type": "scene",
         "children": [
-          { "id": "slice-1-1-1", "label": "切面1", "type": "slice" },
-          { "id": "slice-1-1-2", "label": "切面2", "type": "slice" }
+          {
+            "id": "anim-1-1",
+            "label": "动画组",
+            "type": "animation",
+            "children": [
+              { "id": "slice-1-1-1", "label": "移除插口", "type": "slice" },
+              { "id": "slice-1-1-2", "label": "移除按钮", "type": "slice" }
+            ]
+          },
+          {
+            "id": "clip-1-1",
+            "label": "新建动画0",
+            "type": "animationClip"
+          }
+        ]
+      },
+      {
+        "id": "scene-2",
+        "label": "场景 B",
+        "type": "scene",
+        "children": [
+          { "id": "anim-2-1", "label": "动画1", "type": "animation" },
+          { "id": "clip-2-1", "label": "新建动画1", "type": "animationClip" }
         ]
       }
-    ]
-  },
-  {
-    "id": "media-2",
-    "label": "媒体2",
-    "type": "media",
-    "children": [
-      { "id": "anim-2-1", "label": "动画1", "type": "animation" },
-      { "id": "anim-2-2", "label": "动画2", "type": "animation" }
     ]
   }
 ]

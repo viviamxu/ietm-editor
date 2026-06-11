@@ -96,9 +96,13 @@ function dispatchCellDragState(
   cellSelectMode: boolean,
 ): void {
   let tr = view.state.tr
-  const collapsePos = resolveSelectionPosInCell(view.state.doc, anchor)
-  if (collapsePos != null) {
-    tr = tr.setSelection(TextSelection.near(view.state.doc.resolve(collapsePos)))
+  // 只有在拖拽多选时才强制设置选区到单元格起始位置
+  // 单单元格点击时保持默认行为，让浏览器根据鼠标位置定位光标
+  if (cellSelectMode) {
+    const collapsePos = resolveSelectionPosInCell(view.state.doc, anchor)
+    if (collapsePos != null) {
+      tr = tr.setSelection(TextSelection.near(view.state.doc.resolve(collapsePos)))
+    }
   }
   tr = tr.setMeta(
     tableSelectionPluginKey,
@@ -159,18 +163,21 @@ export const S1000dTableCellSelectionExtension = Extension.create({
               const anchor = resolveCellFromDom(editor, td)
               if (!anchor) return false
 
-              event.preventDefault()
-
+              // 延迟 preventDefault，只有在确认开始拖拽时才阻止默认行为
+              // 简单点击时让浏览器正常处理光标定位
+              let hasDragged = false
               let dragging = true
               let head: TableCellAddress = anchor
               let cellSelectMode = false
               const tableEl = findTableElement(td)
-              tableEl?.classList.add('is-cell-dragging')
-
-              view.dispatch(view.state.tr.setMeta(tableSelectionPluginKey, null))
 
               const onMove = (e: MouseEvent) => {
                 if (!dragging) return
+                if (!hasDragged) {
+                  hasDragged = true
+                  event.preventDefault()
+                  tableEl?.classList.add('is-cell-dragging')
+                }
                 e.preventDefault()
                 window.getSelection()?.removeAllRanges()
 
@@ -187,10 +194,17 @@ export const S1000dTableCellSelectionExtension = Extension.create({
                 tableEl?.classList.remove('is-cell-dragging')
                 window.getSelection()?.removeAllRanges()
 
-                const next = applyHeadFromMouse(editor, anchor, head, e)
-                head = next.head
-                cellSelectMode = next.cellSelectMode
-                dispatchCellDragState(view, anchor, head, cellSelectMode)
+                // 如果发生了拖拽，应用最终选区；否则保持浏览器默认的光标位置
+                if (hasDragged || cellSelectMode) {
+                  const next = applyHeadFromMouse(editor, anchor, head, e)
+                  head = next.head
+                  cellSelectMode = next.cellSelectMode
+                  dispatchCellDragState(view, anchor, head, cellSelectMode)
+                } else {
+                  // 简单点击时，只清除可能的拖拽选区状态，不强制设置光标位置
+                  view.dispatch(view.state.tr.setMeta(tableSelectionPluginKey, null))
+                  view.focus()
+                }
               }
 
               document.addEventListener('mousemove', onMove)

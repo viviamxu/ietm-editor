@@ -1,6 +1,11 @@
 import type { Editor } from "@tiptap/core";
 
-export type DerivativeBindingNodeType = "media" | "animation" | "slice";
+export type DerivativeBindingNodeType =
+  | "media"
+  | "scene"
+  | "animation"
+  | "animationClip"
+  | "slice";
 
 export interface DerivativeBindingTreeNode {
   id: string;

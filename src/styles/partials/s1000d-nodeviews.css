@@ -119,6 +119,40 @@
   .s1000d-figure__block-handle {
   opacity: 1;
   pointer-events: auto;
+  right: 42px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #f53f3f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-figure__delete:hover:not(:disabled) {
+  background: #fff1f0;
+  border-color: #ffccc7;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__delete:disabled {
+  color: #c9cdd4;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
 }
 
 .ietm-editor-surface .tiptap .s1000d-figure__block-handle:hover {

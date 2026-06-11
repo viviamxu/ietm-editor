@@ -3,7 +3,16 @@ import { IconCheck } from "@arco-design/web-react/icon";
 import { LayoutGrid } from "lucide-react";
 import type { ReactNode } from "react";
 
-import type { DerivativeBindingTreeNode } from "../../types/procedureAnimationBinding";
+import type {
+  DerivativeBindingNodeType,
+  DerivativeBindingTreeNode,
+} from "../../types/procedureAnimationBinding";
+
+/** 有子节点时：自身可绑定，子节点平铺展示（与 animation 一致）。 */
+const BINDABLE_WITH_FLAT_CHILDREN = new Set<DerivativeBindingNodeType>([
+  "scene",
+  "animation",
+]);
 
 function renderBindingMenuItem(
   node: DerivativeBindingTreeNode,
@@ -42,7 +51,7 @@ function renderBindingMenuNodes(
 
     const children = node.children ?? [];
 
-    if (node.type === "animation" && children.length > 0) {
+    if (BINDABLE_WITH_FLAT_CHILDREN.has(node.type) && children.length > 0) {
       return [
         renderBindingMenuItem(node, boundId, onBind),
         ...renderBindingMenuNodes(children, boundId, onBind),
