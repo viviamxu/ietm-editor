@@ -14,6 +14,10 @@ import {
   resolveHostBlockPosFromSelection,
 } from "../editor/insertParaAfterFmftBlock";
 import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
+import {
+  canInsertAttentionNodeIntoEditor,
+  resolveAttentionInsertPosForEditor,
+} from "../editor/resolveProcedureAttentionInsertPos";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
@@ -540,10 +544,18 @@ function insertAttentionBlockFromSchema(
 ): boolean {
   const node = buildNode(schema);
   if (!node) return false;
-  const ok = editor
-    .chain()
-    .focus()
-    .insertContent(node)
+  if (!canInsertAttentionNodeIntoEditor(editor, node)) return false;
+
+  const insertPos = resolveAttentionInsertPosForEditor(editor);
+  if (insertPos == null) return false;
+
+  const chain = editor.chain().focus();
+  const withContent =
+    insertPos === "cursor"
+      ? chain.insertContent(node)
+      : chain.insertContentAt(insertPos, node);
+
+  const ok = withContent
     .command(({ state, tr, dispatch }) => {
       const sel = selectionInWarningAndCautionLeadFromResolved(
         state.doc,
@@ -556,10 +568,21 @@ function insertAttentionBlockFromSchema(
       return true;
     })
     .run();
+
   if (ok) {
     ensureParaAfterAttentionShellInsert(editor);
   }
   return ok;
+}
+
+function canInsertAttentionBlockFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+  buildNode: (schema: DescriptionSchema) => JSONContent | null,
+): boolean {
+  const node = buildNode(schema);
+  if (!node) return false;
+  return canInsertAttentionNodeIntoEditor(editor, node);
 }
 
 /** `warning`：`warningAndCautionPara+`（schema 描述类规则） */
@@ -588,11 +611,25 @@ export function buildInsertCautionJson(
   };
 }
 
+export function canInsertWarningFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  return canInsertAttentionBlockFromSchema(editor, schema, buildInsertWarningJson);
+}
+
 export function insertWarningFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
   return insertAttentionBlockFromSchema(editor, buildInsertWarningJson, schema);
+}
+
+export function canInsertCautionFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  return canInsertAttentionBlockFromSchema(editor, schema, buildInsertCautionJson);
 }
 
 export function insertCautionFromSchema(
@@ -624,17 +661,18 @@ export function buildInsertNoteJson(
   };
 }
 
+export function canInsertNoteFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  return canInsertAttentionBlockFromSchema(editor, schema, buildInsertNoteJson);
+}
+
 export function insertNoteFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  const node = buildInsertNoteJson(schema);
-  if (!node) return false;
-  const ok = editor.chain().focus().insertContent(node).run();
-  if (ok) {
-    ensureParaAfterAttentionShellInsert(editor);
-  }
-  return ok;
+  return insertAttentionBlockFromSchema(editor, buildInsertNoteJson, schema);
 }
 
 /** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */

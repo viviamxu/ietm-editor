@@ -3,6 +3,13 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import type { ResolvedPos } from '@tiptap/pm/model'
 import { PluginKey } from '@tiptap/pm/state'
 
+import {
+  collectSlotsInLogicalRange,
+  entryAddressAtLogicalCell,
+  getSectionGridMap,
+  resolveLogicalColIndex,
+} from './tableGridMap'
+
 /** Plugin 内维护的拖拽单元格选区 */
 export type TableCellSelectionState = {
   anchor: TableCellAddress
@@ -20,7 +27,10 @@ export type TableCellAddress = {
   sectionIndex: number
   sectionType: 'thead' | 'tbody'
   rowIndex: number
+  /** entry 在 row 内的子节点序号 */
   entryIndex: number
+  /** 0-based 逻辑列号（合并后仍与视觉列对齐）；解析失败时回退为 entryIndex */
+  colIndex: number
 }
 
 export type TableCellRange = {
@@ -91,7 +101,7 @@ export function resolveCellFromResolvedPos($pos: ResolvedPos): TableCellAddress 
   const sectionType = $pos.node(sectionDepth).type.name
   if (!isTableSectionName(sectionType)) return null
 
-  return {
+  const base = {
     tablePos: $pos.before(tableDepth),
     tgroupIndex: $pos.index(tableDepth),
     sectionIndex: $pos.index(tgroupDepth),
@@ -99,6 +109,10 @@ export function resolveCellFromResolvedPos($pos: ResolvedPos): TableCellAddress 
     rowIndex: $pos.index(sectionDepth),
     entryIndex: $pos.index(rowDepth),
   }
+
+  // 逻辑列号；网格解析失败时降级为 entryIndex，避免整体返回 null 导致拖拽失效
+  const colIndex = resolveLogicalColIndex($pos.doc, base) ?? base.entryIndex
+  return { ...base, colIndex }
 }
 
 export function resolveCellFromPos(editor: Editor, pos: number): TableCellAddress | null {
@@ -124,7 +138,8 @@ export function sameTableCell(a: TableCellAddress, b: TableCellAddress): boolean
     a.tgroupIndex === b.tgroupIndex &&
     a.sectionIndex === b.sectionIndex &&
     a.rowIndex === b.rowIndex &&
-    a.entryIndex === b.entryIndex
+    a.entryIndex === b.entryIndex &&
+    a.colIndex === b.colIndex
   )
 }
 
@@ -140,25 +155,9 @@ function getSectionDimensions(
   doc: PMNode,
   address: Pick<TableCellAddress, 'tablePos' | 'tgroupIndex' | 'sectionIndex'>,
 ): { rowCount: number; colCount: number } | null {
-  const table = doc.nodeAt(address.tablePos)
-  if (!table || table.type.name !== 'table') return null
-  const tgroup = table.child(address.tgroupIndex)
-  if (!tgroup) return null
-  const section = tgroup.child(address.sectionIndex)
-  if (!section) return null
-
-  let rowCount = 0
-  let colCount = 0
-  section.forEach((row) => {
-    if (row.type.name !== 'row') return
-    rowCount += 1
-    let entries = 0
-    row.forEach((entry) => {
-      if (entry.type.name === 'entry') entries += 1
-    })
-    colCount = Math.max(colCount, entries)
-  })
-  return { rowCount, colCount }
+  const map = getSectionGridMap(doc, address)
+  if (!map) return null
+  return { rowCount: map.rowCount, colCount: map.colCount }
 }
 
 /** 跨 thead/tbody 时将 head 钳制在 anchor 所在 section 的边界内 */
@@ -180,9 +179,9 @@ export function clampHeadToAnchorSection(
 
   const maxRow = dims.rowCount - 1
   const maxCol = dims.colCount - 1
-  let rowIndex = anchor.rowIndex
-  const entryIndex = Math.max(0, Math.min(maxCol, target.entryIndex))
+  const colIndex = Math.max(0, Math.min(maxCol, target.colIndex))
 
+  let rowIndex: number
   if (target.sectionIndex > anchor.sectionIndex) {
     rowIndex = maxRow
   } else if (target.sectionIndex < anchor.sectionIndex) {
@@ -191,10 +190,19 @@ export function clampHeadToAnchorSection(
     rowIndex = Math.max(0, Math.min(maxRow, target.rowIndex))
   }
 
+  // 用逻辑列回查 anchor section 内的真实 entry；失败则退回 anchor
+  const resolved = entryAddressAtLogicalCell(
+    editor.state.doc,
+    anchor,
+    rowIndex,
+    colIndex,
+  )
+  if (!resolved) return anchor
   return {
     ...anchor,
-    rowIndex,
-    entryIndex,
+    rowIndex: resolved.rowIndex,
+    entryIndex: resolved.entryIndex,
+    colIndex: resolved.colIndex,
   }
 }
 
@@ -215,8 +223,8 @@ export function normalizeTableRange(range: TableCellRange): NormalizedTableRange
 
   const rowStart = Math.min(anchor.rowIndex, head.rowIndex)
   const rowEnd = Math.max(anchor.rowIndex, head.rowIndex)
-  const colStart = Math.min(anchor.entryIndex, head.entryIndex)
-  const colEnd = Math.max(anchor.entryIndex, head.entryIndex)
+  const colStart = Math.min(anchor.colIndex, head.colIndex)
+  const colEnd = Math.max(anchor.colIndex, head.colIndex)
   const rowCount = rowEnd - rowStart + 1
   const colCount = colEnd - colStart + 1
   const isSingleCell = rowCount === 1 && colCount === 1
@@ -245,29 +253,13 @@ export function normalizeTableRangeInDoc(
   const base = normalizeTableRange(range)
   if (!base) return null
 
-  const table = doc.nodeAt(base.tablePos)
-  if (!table || table.type.name !== 'table') return null
-  const tgroup = table.child(base.tgroupIndex)
-  if (!tgroup) return null
-  const section = tgroup.child(base.sectionIndex)
-  if (!section) return null
-
-  let maxEntries = 0
-  let rowCountInSection = 0
-  section.forEach((row) => {
-    if (row.type.name !== 'row') return
-    rowCountInSection += 1
-    let entries = 0
-    row.forEach((entry) => {
-      if (entry.type.name === 'entry') entries += 1
-    })
-    maxEntries = Math.max(maxEntries, entries)
-  })
+  const map = getSectionGridMap(doc, base)
+  if (!map) return null
 
   return {
     ...base,
-    isFullRow: base.colStart === 0 && base.colEnd === maxEntries - 1,
-    isFullColumn: base.rowStart === 0 && base.rowEnd === rowCountInSection - 1,
+    isFullRow: base.colStart === 0 && base.colEnd === map.colCount - 1,
+    isFullColumn: base.rowStart === 0 && base.rowEnd === map.rowCount - 1,
   }
 }
 
@@ -342,11 +334,20 @@ export function resolvePrimaryCellContext(editor: Editor): TableCellContext | nu
   if (dragSel) {
     const normalized = normalizeTableRange(dragSel)
     if (normalized) {
-      return resolveCellContext(editor, {
-        ...dragSel.anchor,
-        rowIndex: normalized.rowStart,
-        entryIndex: normalized.colStart,
-      })
+      const topLeft = entryAddressAtLogicalCell(
+        editor.state.doc,
+        dragSel.anchor,
+        normalized.rowStart,
+        normalized.colStart,
+      )
+      if (topLeft) {
+        return resolveCellContext(editor, {
+          ...dragSel.anchor,
+          rowIndex: topLeft.rowIndex,
+          entryIndex: topLeft.entryIndex,
+          colIndex: topLeft.colIndex,
+        })
+      }
     }
   }
   return resolveCellContextFromSelection(editor, 'anchor')
@@ -367,6 +368,14 @@ export function resolveActiveTableTarget(editor: Editor): TableCellRange | null 
     sectionType: anchor.section.type.name as 'thead' | 'tbody',
     rowIndex: anchor.rowIndex,
     entryIndex: anchor.entryIndex,
+    colIndex:
+      resolveLogicalColIndex(editor.state.doc, {
+        tablePos: anchor.tablePos,
+        tgroupIndex: anchor.tgroupIndex,
+        sectionIndex: anchor.sectionIndex,
+        rowIndex: anchor.rowIndex,
+        entryIndex: anchor.entryIndex,
+      }) ?? anchor.entryIndex,
   }
 
   if (!head) {
@@ -380,6 +389,14 @@ export function resolveActiveTableTarget(editor: Editor): TableCellRange | null 
     sectionType: head.section.type.name as 'thead' | 'tbody',
     rowIndex: head.rowIndex,
     entryIndex: head.entryIndex,
+    colIndex:
+      resolveLogicalColIndex(editor.state.doc, {
+        tablePos: head.tablePos,
+        tgroupIndex: head.tgroupIndex,
+        sectionIndex: head.sectionIndex,
+        rowIndex: head.rowIndex,
+        entryIndex: head.entryIndex,
+      }) ?? head.entryIndex,
   }
 
   return { anchor: anchorAddr, head: headAddr }
@@ -426,18 +443,30 @@ export function collectEntryPositionsInRange(
   doc: PMNode,
   range: NormalizedTableRange,
 ): number[] {
+  const map = getSectionGridMap(doc, range)
+  if (!map) return []
+
+  const seen = new Set<number>()
   const positions: number[] = []
-  for (let r = range.rowStart; r <= range.rowEnd; r += 1) {
-    for (let c = range.colStart; c <= range.colEnd; c += 1) {
-      const pos = entryPosFromAddress(doc, {
-        tablePos: range.tablePos,
-        tgroupIndex: range.tgroupIndex,
-        sectionIndex: range.sectionIndex,
-        sectionType: range.sectionType,
-        rowIndex: r,
-        entryIndex: c,
-      })
-      if (pos != null) positions.push(pos)
+  for (const slot of collectSlotsInLogicalRange(
+    map,
+    range.rowStart,
+    range.rowEnd,
+    range.colStart,
+    range.colEnd,
+  )) {
+    const pos = entryPosFromAddress(doc, {
+      tablePos: range.tablePos,
+      tgroupIndex: range.tgroupIndex,
+      sectionIndex: range.sectionIndex,
+      sectionType: range.sectionType,
+      rowIndex: slot.rowIndex,
+      entryIndex: slot.entryIndex,
+      colIndex: slot.colStart,
+    })
+    if (pos != null && !seen.has(pos)) {
+      seen.add(pos)
+      positions.push(pos)
     }
   }
   return positions

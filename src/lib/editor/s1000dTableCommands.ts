@@ -3,6 +3,12 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import {
+  collectSlotsInLogicalRange,
+  entryAddressAtLogicalCell,
+  getSectionGridMap,
+  slotOverlapsLogicalRange,
+} from "./tableGridMap";
+import {
   clearTableCellSelection,
   resolveCellContext,
   resolveCommandRange,
@@ -317,26 +323,50 @@ function mergeCells(editor: Editor): boolean {
   const range = resolveCommandRange(editor);
   if (!range || range.isSingleCell) return false;
 
+  const gridMap = getSectionGridMap(editor.state.doc, range);
+  if (!gridMap) return false;
+
+  const { rowStart, rowEnd, colStart, colEnd } = range;
+  const rowSpan = rowEnd - rowStart + 1;
+  const colSpan = colEnd - colStart + 1;
+
+  const topLeft = entryAddressAtLogicalCell(
+    editor.state.doc,
+    range,
+    rowStart,
+    colStart,
+  );
+  if (!topLeft) return false;
+
   const anchor = resolveCellContext(editor, {
     tablePos: range.tablePos,
     tgroupIndex: range.tgroupIndex,
     sectionIndex: range.sectionIndex,
     sectionType: range.sectionType,
-    rowIndex: range.rowStart,
-    entryIndex: range.colStart,
+    rowIndex: topLeft.rowIndex,
+    entryIndex: topLeft.entryIndex,
+    colIndex: topLeft.colIndex,
   });
   if (!anchor) return false;
 
-  const { rowStart, rowEnd, colStart, colEnd } = range;
-  const rowSpan = rowEnd - rowStart + 1;
-  const colSpan = colEnd - colStart + 1;
   const rows = contentArray(anchor.section);
-  const collected: PMNode[] = [];
+  const slotsToMerge = collectSlotsInLogicalRange(
+    gridMap,
+    rowStart,
+    rowEnd,
+    colStart,
+    colEnd,
+  );
+  if (slotsToMerge.length === 0) return false;
 
-  for (let r = rowStart; r <= rowEnd; r += 1) {
-    const entries = contentArray(rows[r]);
-    collected.push(...entries.slice(colStart, colEnd + 1));
+  const collected: PMNode[] = [];
+  for (const slot of slotsToMerge) {
+    const row = rows[slot.rowIndex];
+    if (!row) continue;
+    const entry = contentArray(row)[slot.entryIndex];
+    if (entry) collected.push(entry);
   }
+  if (collected.length === 0) return false;
 
   const first = collected[0];
   const mergedEntry = first.type.create(
@@ -352,24 +382,41 @@ function mergeCells(editor: Editor): boolean {
   const nextRows = [...rows];
   for (let r = rowEnd; r >= rowStart; r -= 1) {
     const row = nextRows[r];
-    const entries = contentArray(row);
-    entries.splice(colStart, colSpan);
+    if (!row) continue;
+    const originalEntries = contentArray(row);
+
+    // 按逻辑列范围剔除落在选区内的 entry；记录左上角插入点
+    const kept: PMNode[] = [];
+    let insertAt = 0;
+    originalEntries.forEach((entry, entryIndex) => {
+      const slot = gridMap.slots.find(
+        (s) => s.rowIndex === r && s.entryIndex === entryIndex,
+      );
+      const overlaps =
+        slot != null &&
+        slotOverlapsLogicalRange(slot, rowStart, rowEnd, colStart, colEnd);
+      if (overlaps) return;
+      kept.push(entry);
+      if (r === rowStart && slot && slot.colStart < colStart) {
+        insertAt = kept.length;
+      }
+    });
 
     if (r === rowStart) {
-      entries.splice(colStart, 0, mergedEntry);
-      nextRows[r] = row.type.create(row.attrs, entries);
+      kept.splice(insertAt, 0, mergedEntry);
+      nextRows[r] = row.type.create(row.attrs, kept);
       continue;
     }
 
-    if (entries.length === 0) {
+    if (kept.length === 0) {
       // CALS: rows spanned by morerows above omit entry elements but must remain in tgroup.
       if (rowSpan > 1 && r > rowStart) {
-        nextRows[r] = row.type.create(row.attrs, entries);
+        nextRows[r] = row.type.create(row.attrs, kept);
       } else {
         nextRows.splice(r, 1);
       }
     } else {
-      nextRows[r] = row.type.create(row.attrs, entries);
+      nextRows[r] = row.type.create(row.attrs, kept);
     }
   }
 

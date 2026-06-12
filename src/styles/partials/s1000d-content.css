@@ -310,6 +310,54 @@
   line-height: 1.55;
 }
 
+/* 空 para 保留可点高度，便于在宿主块后落光标 */
+.ietm-editor-surface .tiptap para:empty,
+.ietm-editor-surface
+  .tiptap
+  para:has(> br.ProseMirror-trailingBreak:only-child) {
+  min-height: 2em;
+  cursor: text;
+}
+
+/*
+ * 宿主块（warning / 表 / 图 / 多媒体）后续写引导：hover / 选中块时底缘提示（仅编辑态）。
+ */
+.ietm-editor-surface .tiptap[contenteditable="true"]
+  :is(
+    aside.s1000d-attention-block,
+    .s1000d-table-wrap,
+    figure.s1000d-figure,
+    section.s1000d-multimedia-node
+  )
+  + para:is(:empty, :has(> br.ProseMirror-trailingBreak:only-child)) {
+  min-height: 1.5em;
+}
+
+/* .ietm-editor-surface .tiptap[contenteditable="true"]
+  :is(
+    aside.s1000d-attention-block,
+    .s1000d-table-wrap,
+    figure.s1000d-figure,
+    section.s1000d-multimedia-node
+  ):is(
+    :hover,
+    .ProseMirror-selectednode,
+    .s1000d-attention-block--chrome,
+    .s1000d-figure--chrome,
+    .s1000d-multimedia-node--chrome
+  )::after {
+  content: "点击下方继续输入";
+  display: block;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+} */
+
 .ietm-editor-surface .tiptap warningAndCautionPara {
   display: block;
   margin: 0.2em 0;

@@ -35,20 +35,20 @@ function applyHeadFromMouse(
   const cell = findCellElement(under)
   if (!cell) {
     const cellSelectMode =
-      head.rowIndex !== anchor.rowIndex || head.entryIndex !== anchor.entryIndex
+      head.rowIndex !== anchor.rowIndex || head.colIndex !== anchor.colIndex
     return { head, cellSelectMode }
   }
 
   const addr = resolveCellFromDom(editor, cell)
   if (!addr) {
     const cellSelectMode =
-      head.rowIndex !== anchor.rowIndex || head.entryIndex !== anchor.entryIndex
+      head.rowIndex !== anchor.rowIndex || head.colIndex !== anchor.colIndex
     return { head, cellSelectMode }
   }
 
   const nextHead = clampHeadToAnchorSection(editor, anchor, addr)
   const cellSelectMode =
-    nextHead.rowIndex !== anchor.rowIndex || nextHead.entryIndex !== anchor.entryIndex
+    nextHead.rowIndex !== anchor.rowIndex || nextHead.colIndex !== anchor.colIndex
   return { head: nextHead, cellSelectMode }
 }
 

@@ -11,6 +11,9 @@ import {
   insertWarningFromSchema,
   insertCautionFromSchema,
   insertNoteFromSchema,
+  canInsertWarningFromSchema,
+  canInsertCautionFromSchema,
+  canInsertNoteFromSchema,
   exportEditorToDmXmlString,
   save,
   internalRef,
@@ -149,6 +152,9 @@ export function FormatToolbar({
   const strikethroughActive = editor.isActive("strikethrough");
   const demoteEnabled = canDemoteNesting(editor);
   const promoteEnabled = canPromoteNesting(editor);
+  const canInsertWarning = canInsertWarningFromSchema(editor, schema);
+  const canInsertCaution = canInsertCautionFromSchema(editor, schema);
+  const canInsertNote = canInsertNoteFromSchema(editor, schema);
 
   const toggleSubscript = () => {
     const chain = editor.chain().focus().unsetMark("s1000dSup");
@@ -664,7 +670,7 @@ export function FormatToolbar({
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={formatBarLocked}
+          disabled={formatBarLocked || !canInsertWarning}
           onClick={() => insertWarningFromSchema(editor, schema)}
           title="插入警告（warning）"
           aria-label="插入警告"
@@ -678,7 +684,7 @@ export function FormatToolbar({
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={formatBarLocked}
+          disabled={formatBarLocked || !canInsertCaution}
           onClick={() => insertCautionFromSchema(editor, schema)}
           title="插入注意（caution）"
           aria-label="插入注意"
@@ -692,7 +698,7 @@ export function FormatToolbar({
         <button
           type="button"
           className="ietm-icon-btn"
-          disabled={formatBarLocked}
+          disabled={formatBarLocked || !canInsertNote}
           onClick={() => insertNoteFromSchema(editor, schema)}
           title="插入注（note）"
           aria-label="插入注"

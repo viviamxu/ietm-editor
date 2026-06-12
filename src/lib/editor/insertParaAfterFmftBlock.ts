@@ -12,14 +12,15 @@ export const ATTENTION_SHELL_BLOCK_TYPES = new Set([
   "note",
 ]);
 
-/** 在 `proceduralStep` / `levelledPara` 内、其后可接 `para` 的块级兄弟节点。 */
+/** 在宿主容器内、其后可接 `para` 的块级兄弟节点。 */
 export const HOST_BLOCK_TYPES_NEEDING_PARA_AFTER = new Set([
   ...FMFT_BLOCK_TYPES,
   ...ATTENTION_SHELL_BLOCK_TYPES,
 ]);
 
-/** 允许 `para` 跟在上述块后的容器。 */
+/** 允许 `para` 跟在上述块后的容器（含描述类根 `doc`）。 */
 export const FMFT_PARA_CONTAINER_TYPES = new Set([
+  "doc",
   "proceduralStep",
   "levelledPara",
 ]);
@@ -198,8 +199,8 @@ function hostBlockNeedsParaAfter(
 }
 
 /**
- * Enter：选中宿主块（表/图/warning 等），或光标在块后间隙且其后尚无 `para` 时，
- * 插入/聚焦 `para`。已在块后 `para` 内编辑时不拦截。
+ * Enter：选中宿主块（表/图/warning 等），或光标位于块后间隙时，
+ * 插入/聚焦 trailing `para`。已在块后 `para` 内编辑时不拦截。
  */
 export function handleFmftBlockEnter(editor: Editor): boolean {
   const fromNode = resolveHostBlockFromNodeSelection(editor);
@@ -210,9 +211,6 @@ export function handleFmftBlockEnter(editor: Editor): boolean {
   const found = findHostBlockBeforeSelection(editor);
   if (!found) return false;
   if (isCursorInsideParaAfterHostBlock(editor, found.pos, found.node)) {
-    return false;
-  }
-  if (!hostBlockNeedsParaAfter(editor.state.doc, found.pos, found.node)) {
     return false;
   }
 
