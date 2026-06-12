@@ -5,9 +5,11 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import {
   clampHeadToAnchorSection,
   collectEntryPositionsInRange,
+  entryPosFromAddress,
   getTableCellSelectionState,
   normalizeTableRangeInDoc,
   resolveCellFromDom,
+  resolveCellFromResolvedPos,
   resolveSelectionPosInCell,
   tableSelectionPluginKey,
   type TableCellAddress,
@@ -64,15 +66,14 @@ function syncTableSelectingClass(view: { dom: Element }, state: EditorState): vo
   })
 }
 
-function buildCellDecorations(state: EditorState): DecorationSet {
+function buildCellDecorationList(state: EditorState): Decoration[] {
   const sel = tableSelectionPluginKey.getState(state)
-  if (!sel) return DecorationSet.empty
+  if (!sel) return []
 
   const range = normalizeTableRangeInDoc(state.doc, sel)
-  if (!range || range.isSingleCell) return DecorationSet.empty
+  if (!range || range.isSingleCell) return []
 
-  const positions = collectEntryPositionsInRange(state.doc, range)
-  const decorations = positions
+  return collectEntryPositionsInRange(state.doc, range)
     .map((pos) => {
       const node = state.doc.nodeAt(pos)
       if (!node) return null
@@ -81,7 +82,33 @@ function buildCellDecorations(state: EditorState): DecorationSet {
       })
     })
     .filter((d): d is Decoration => d != null)
+}
 
+/** 当前文本光标所在 entry：用 decoration 挂 class，避免 PM 重绘抹掉手动 DOM class。 */
+function buildActiveCellDecorationList(state: EditorState): Decoration[] {
+  if (tableSelectionPluginKey.getState(state)) return []
+
+  const address = resolveCellFromResolvedPos(state.selection.$from)
+  if (!address) return []
+
+  const entryPos = entryPosFromAddress(state.doc, address)
+  if (entryPos == null) return []
+
+  const node = state.doc.nodeAt(entryPos)
+  if (!node) return []
+
+  return [
+    Decoration.node(entryPos, entryPos + node.nodeSize, {
+      class: 'is-cell-editing',
+    }),
+  ]
+}
+
+function buildTableCellDecorations(state: EditorState): DecorationSet {
+  const decorations = [
+    ...buildCellDecorationList(state),
+    ...buildActiveCellDecorationList(state),
+  ]
   return DecorationSet.create(state.doc, decorations)
 }
 
@@ -136,6 +163,7 @@ export const S1000dTableCellSelectionExtension = Extension.create({
           },
         },
         view(editorView) {
+          syncTableSelectingClass(editorView, editorView.state)
           return {
             update(_view, prevState) {
               if (editorView.state !== prevState) {
@@ -146,7 +174,7 @@ export const S1000dTableCellSelectionExtension = Extension.create({
         },
         props: {
           decorations(state) {
-            return buildCellDecorations(state)
+            return buildTableCellDecorations(state)
           },
           handleDOMEvents: {
             mousedown(view, event) {

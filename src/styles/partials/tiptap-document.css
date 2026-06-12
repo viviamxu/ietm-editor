@@ -173,6 +173,35 @@
   background: #d0d0d0;
 }
 
+/* 非当前编辑单元格：隐藏空 para 里的蓝色文本光标 */
+.ietm-editor-surface .tiptap .s1000d-tgroup-table td:not(.is-cell-editing) para,
+.ietm-editor-surface .tiptap .s1000d-tgroup-table th:not(.is-cell-editing) para {
+  caret-color: transparent;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  td:not(.is-cell-editing)
+  .ProseMirror-cursor,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  th:not(.is-cell-editing)
+  .ProseMirror-cursor,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  td:not(.is-cell-editing)
+  .ProseMirror-cursor::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  th:not(.is-cell-editing)
+  .ProseMirror-cursor::before {
+  display: none !important;
+}
+
 .ietm-editor-surface .tiptap code {
   font-family: ui-monospace, Consolas, "Courier New", monospace;
   font-size: 0.92em;
