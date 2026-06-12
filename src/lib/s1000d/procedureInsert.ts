@@ -4,19 +4,17 @@ import { TextSelection } from "@tiptap/pm/state";
 
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { buildMinimalWarningAndCautionParaJson } from "./descriptionSchemaInsert";
+import {
+  buildMinimalCloseRqmtsJsonFromSchema,
+  buildMinimalPreliminaryRqmtsJsonFromSchema,
+  parseSchemaContentRuleTokens,
+} from "./procedureSchemaBuild";
+import type { DescriptionSchema } from "../../types/descriptionSchema";
 
-export function buildMinimalPreliminaryRqmtsJson(): JSONContent {
-  return {
-    type: "preliminaryRqmts",
-    content: [
-      { type: "reqCondGroup", content: [{ type: "noConds", content: [] }] },
-      { type: "reqPersons", content: [] },
-      { type: "reqSupportEquips", content: [{ type: "noSupportEquips", content: [] }] },
-      { type: "reqSupplies", content: [{ type: "noSupplies", content: [] }] },
-      { type: "reqSpares", content: [{ type: "noSpares", content: [] }] },
-      { type: "reqSafety", content: [{ type: "noSafety", content: [] }] },
-    ],
-  };
+export function buildMinimalPreliminaryRqmtsJson(
+  schema: DescriptionSchema = getDescriptionSchema(),
+): JSONContent {
+  return buildMinimalPreliminaryRqmtsJsonFromSchema(schema);
 }
 
 export function buildMinimalProceduralStepJson(): JSONContent {
@@ -275,33 +273,49 @@ export function insertProceduralStepAtCursor(editor: Editor): boolean {
     .run();
 }
 
-export function buildMinimalCloseRqmtsJson(): JSONContent {
-  return {
-    type: "closeRqmts",
-    content: [
-      {
-        type: "reqCondGroup",
-        content: [
-          {
-            type: "reqCondNoRef",
-            content: [{ type: "reqCond", content: [] }],
-          },
-        ],
-      },
-    ],
-  };
+export function buildMinimalCloseRqmtsJson(
+  schema: DescriptionSchema = getDescriptionSchema(),
+): JSONContent {
+  return buildMinimalCloseRqmtsJsonFromSchema(schema);
+}
+
+/** 按 `schema.procedure.content` 组装程序类 DM 最小合法 `doc` JSON。 */
+export function buildEmptyProcedureDocJsonFromSchema(
+  schema: DescriptionSchema,
+): JSONContent {
+  const declared = parseSchemaContentRuleTokens(schema.procedure?.content);
+  const sectionTokens =
+    declared.length > 0
+      ? declared
+      : ["preliminaryRqmts", "mainProcedure", "closeRqmts"];
+
+  const content: JSONContent[] = [];
+  for (const token of sectionTokens) {
+    if (token === "preliminaryRqmts" && hasSchemaNode(schema, "preliminaryRqmts")) {
+      content.push(buildMinimalPreliminaryRqmtsJsonFromSchema(schema));
+    } else if (token === "mainProcedure" && hasSchemaNode(schema, "mainProcedure")) {
+      content.push(buildMinimalMainProcedureJson());
+    } else if (token === "closeRqmts" && hasSchemaNode(schema, "closeRqmts")) {
+      content.push(buildMinimalCloseRqmtsJsonFromSchema(schema));
+    }
+  }
+
+  if (content.length === 0) {
+    content.push(buildMinimalPreliminaryRqmtsJsonFromSchema(schema));
+  }
+
+  return { type: "doc", content };
+}
+
+function hasSchemaNode(schema: DescriptionSchema, name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(schema, name);
 }
 
 /** 程序类 DM 正文最小稿（`doc` 下为 `preliminaryRqmts mainProcedure closeRqmts`）。 */
-export function buildEmptyProcedureDocJson(): JSONContent {
-  return {
-    type: "doc",
-    content: [
-      buildMinimalPreliminaryRqmtsJson(),
-      buildMinimalMainProcedureJson(),
-      buildMinimalCloseRqmtsJson(),
-    ],
-  };
+export function buildEmptyProcedureDocJson(
+  schema: DescriptionSchema = getDescriptionSchema(),
+): JSONContent {
+  return buildEmptyProcedureDocJsonFromSchema(schema);
 }
 
 /** 将 `noSafety` 替换为含一条空 `warning` 的 `safetyRqmts`。 */

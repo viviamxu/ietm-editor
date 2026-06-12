@@ -1,5 +1,5 @@
 import type { Editor, JSONContent } from "@tiptap/core";
-import type { Node as PMNode } from "@tiptap/pm/model";
+import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import { getDmContentKind } from "../s1000d/dmContentKind";
@@ -9,6 +9,16 @@ export type ProcedureAttentionInsertResolution =
   | { kind: "cursor" }
   | { kind: "at"; pos: number }
   | { kind: "blocked" };
+
+const ATTENTION_SHELL_TYPES = new Set(["warning", "caution", "note"]);
+
+/** 光标是否在 `warning` / `caution` / `note` 内部（含 attention 列表等）。 */
+function isInsideAttentionShell($from: ResolvedPos): boolean {
+  for (let d = $from.depth; d >= 0; d--) {
+    if (ATTENTION_SHELL_TYPES.has($from.node(d).type.name)) return true;
+  }
+  return false;
+}
 
 function findNearestProceduralStepEndInMain(
   editor: Editor,
@@ -100,6 +110,8 @@ export function resolveAttentionInsertPosForEditor(
   editor: Editor,
 ): number | "cursor" | null {
   const { selection, doc } = editor.state;
+
+  if (isInsideAttentionShell(selection.$from)) return null;
 
   if (selection instanceof NodeSelection) {
     const procedureResolution = resolveProcedureAttentionInsert(editor);

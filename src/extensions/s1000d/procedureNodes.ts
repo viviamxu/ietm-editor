@@ -109,7 +109,7 @@ export const S1000DPreliminaryRqmts = Node.create({
   name: "preliminaryRqmts",
   group: PROCEDURE_SECTION_GROUP,
   content:
-    "reqCondGroup reqPersons reqSupportEquips reqSupplies reqSpares reqSafety",
+    "reqCondGroup? reqPersons? reqSupportEquips? reqSupplies? reqSpares? reqSafety?",
   parseHTML: () => blockTagParseRules("preliminaryRqmts"),
   renderHTML({ HTMLAttributes }) {
     return ["preliminaryRqmts", mergeAttributes(HTMLAttributes), 0];

@@ -3,7 +3,7 @@ import type { JSONContent } from "@tiptap/core";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { buildEmptyDescriptionDocJson } from "./descriptionSchemaInsert";
 import { buildEmptyFaultIsolationDocJson } from "./faultIsolationInsert";
-import { buildEmptyProcedureDocJson } from "./procedureInsert";
+import { buildEmptyProcedureDocJsonFromSchema } from "./procedureInsert";
 import { getDmContentKind } from "./dmContentKind";
 
 /** 按当前 schema 的 DM 正文类型生成最小合法 `doc` JSON。 */
@@ -15,7 +15,7 @@ export function buildEmptyDocJsonFromSchema(
     return buildEmptyFaultIsolationDocJson();
   }
   if (kind === "procedure") {
-    return buildEmptyProcedureDocJson();
+    return buildEmptyProcedureDocJsonFromSchema(schema);
   }
   return buildEmptyDescriptionDocJson(schema);
 }
