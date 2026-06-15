@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
-import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
-import { NodeSelection, TextSelection } from "@tiptap/pm/state";
+import { Fragment, type Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
+import { NodeSelection, TextSelection, type Transaction } from "@tiptap/pm/state";
 
 /** `fmftElemGroup` 块：其后可接 S1000D `para`。 */
 export const FMFT_BLOCK_TYPES = new Set(["multimedia", "figure", "table"]);
@@ -24,6 +24,13 @@ export const FMFT_PARA_CONTAINER_TYPES = new Set([
   "proceduralStep",
   "levelledPara",
 ]);
+
+/** 宿主块后可接的 trailing 段类型（含 StarterKit `paragraph` 误落）。 */
+const TRAILING_BLOCK_TYPES = new Set(["para", "paragraph"]);
+
+function isTrailingBlockType(typeName: string): boolean {
+  return TRAILING_BLOCK_TYPES.has(typeName);
+}
 
 function childPos(parentPos: number, parent: PMNode, childIndex: number): number {
   let pos = parentPos + 1;
@@ -175,11 +182,11 @@ function isCursorInsideParaAfterHostBlock(
   const parent = $insert.parent;
   const nextIndex = $insert.index();
   if (nextIndex >= parent.childCount) return false;
-  if (parent.child(nextIndex).type.name !== "para") return false;
+  if (!isTrailingBlockType(parent.child(nextIndex).type.name)) return false;
 
   const $from = selection.$from;
   for (let d = $from.depth; d > 0; d--) {
-    if ($from.node(d).type.name !== "para") continue;
+    if (!isTrailingBlockType($from.node(d).type.name)) continue;
     if ($from.before(d) === insertPos) return true;
   }
   return false;
@@ -195,7 +202,7 @@ function hostBlockNeedsParaAfter(
   const parent = $insert.parent;
   const nextIndex = $insert.index();
   if (nextIndex >= parent.childCount) return true;
-  return parent.child(nextIndex).type.name !== "para";
+  return !isTrailingBlockType(parent.child(nextIndex).type.name);
 }
 
 /**
@@ -384,8 +391,26 @@ const NESTED_BLOCK_AFTER_TRAILING_PARA = new Set([
   "levelledPara",
 ]);
 
-function isEmptyParaNode(para: PMNode): boolean {
-  return para.textContent.length === 0;
+function isEmptyTrailingBlockNode(block: PMNode): boolean {
+  return block.textContent.length === 0;
+}
+
+function resolveTrailingBlockDepth($from: ResolvedPos): number {
+  for (let d = $from.depth; d > 0; d--) {
+    if (isTrailingBlockType($from.node(d).type.name)) return d;
+  }
+  return -1;
+}
+
+function selectionAfterHostBlock(
+  tr: Transaction,
+  found: { pos: number; node: PMNode },
+) {
+  if (found.node.type.name === "table") {
+    return tr.setSelection(NodeSelection.create(tr.doc, found.pos));
+  }
+  const afterHost = Math.min(found.pos + found.node.nodeSize, tr.doc.content.size);
+  return tr.setSelection(TextSelection.near(tr.doc.resolve(afterHost), -1));
 }
 
 function focusFirstEditableInNestedBlock(
@@ -444,8 +469,7 @@ function deleteTrailingParaAfterHostBlock(
     return true;
   }
 
-  const afterHost = Math.min(found.pos + found.node.nodeSize, tr.doc.content.size);
-  tr = tr.setSelection(TextSelection.near(tr.doc.resolve(afterHost), 1));
+  tr = selectionAfterHostBlock(tr, found);
   editor.view.dispatch(tr.scrollIntoView());
   return true;
 }
@@ -465,40 +489,31 @@ export function handleTrailingParaAfterHostBackspace(editor: Editor): boolean {
   if (selection instanceof NodeSelection) return false;
 
   const $from = selection.$from;
-  let paraDepth = -1;
-  for (let d = $from.depth; d > 0; d--) {
-    if ($from.node(d).type.name === "para") {
-      paraDepth = d;
-      break;
-    }
-  }
-  if (paraDepth < 0) return false;
+  const trailingDepth = resolveTrailingBlockDepth($from);
+  if (trailingDepth < 0) return false;
 
-  const para = $from.node(paraDepth);
-  const paraStart = $from.before(paraDepth);
-  if (paraStart !== found.pos + found.node.nodeSize) return false;
+  const trailingBlock = $from.node(trailingDepth);
+  const trailingStart = $from.before(trailingDepth);
+  if (trailingStart !== found.pos + found.node.nodeSize) return false;
 
-  if ($from.parent.type.name === "para" && $from.parentOffset > 0) {
+  const parentName = $from.parent.type.name;
+  if (isTrailingBlockType(parentName) && $from.parentOffset > 0) {
     return false;
   }
 
-  const containerDepth = paraDepth - 1;
-  const paraIndex = $from.index(containerDepth);
+  const containerDepth = trailingDepth - 1;
+  const trailingIndex = $from.index(containerDepth);
   const container = $from.node(containerDepth);
 
-  if (isEmptyParaNode(para)) {
-    if (
-      deleteTrailingParaAfterHostBlock(
-        editor,
-        found,
-        paraStart,
-        para,
-        container,
-        paraIndex,
-      )
-    ) {
-      return true;
-    }
+  if (isEmptyTrailingBlockNode(trailingBlock)) {
+    deleteTrailingParaAfterHostBlock(
+      editor,
+      found,
+      trailingStart,
+      trailingBlock,
+      container,
+      trailingIndex,
+    );
     return true;
   }
 

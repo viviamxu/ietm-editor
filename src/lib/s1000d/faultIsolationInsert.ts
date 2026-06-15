@@ -4,10 +4,12 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { isFaultIsolationDm } from "./dmContentKind";
 
-/** 在文档内分配下一个 `stp-NNNN` 引用 id。 */
-export function allocateNextIsolationRefId(editor: Editor): string {
+const ISOLATION_REF_ID_PATTERN = /^stp-(\d+)$/i;
+
+/** 扫描文档中已有 `stp-NNNN` 的最大序号。 */
+export function maxIsolationRefIdInDoc(doc: PMNode): number {
   let max = 0;
-  editor.state.doc.descendants((node) => {
+  doc.descendants((node) => {
     if (
       node.type.name !== "isolationStep" &&
       node.type.name !== "isolationProcedureEnd"
@@ -15,10 +17,40 @@ export function allocateNextIsolationRefId(editor: Editor): string {
       return;
     }
     const id = String(node.attrs.id ?? "").trim();
-    const m = /^stp-(\d+)$/i.exec(id);
+    const m = ISOLATION_REF_ID_PATTERN.exec(id);
     if (m) max = Math.max(max, Number.parseInt(m[1], 10));
   });
-  return `stp-${String(max + 1).padStart(4, "0")}`;
+  return max;
+}
+
+export function formatIsolationRefId(sequence: number): string {
+  return `stp-${String(sequence).padStart(4, "0")}`;
+}
+
+/** 在文档内分配下一个 `stp-NNNN` 引用 id（单次调用）。 */
+export function allocateNextIsolationRefId(editor: Editor): string {
+  return formatIsolationRefId(maxIsolationRefIdInDoc(editor.state.doc) + 1);
+}
+
+/**
+ * 连续分配多个 id（同一轮循环内递增）。
+ * `reservedIds` 可传入本轮已占用/即将占用的 `stp-xxxx`，避免与 flow 节点 id 冲突。
+ */
+export function createIsolationRefIdAllocator(
+  doc: PMNode,
+  reservedIds?: Iterable<string>,
+): () => string {
+  let max = maxIsolationRefIdInDoc(doc);
+  if (reservedIds) {
+    for (const id of reservedIds) {
+      const m = ISOLATION_REF_ID_PATTERN.exec(String(id).trim());
+      if (m) max = Math.max(max, Number.parseInt(m[1], 10));
+    }
+  }
+  return () => {
+    max += 1;
+    return formatIsolationRefId(max);
+  };
 }
 
 /** 在第一个 `isolationProcedureEnd` 之前插入；无结束块时插在末尾。 */

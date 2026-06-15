@@ -9,6 +9,7 @@ import {
   buildMinimalIsolationProcedureEndJson,
   buildMinimalIsolationStepJson,
   buildYesNoAnswerJson,
+  createIsolationRefIdAllocator,
 } from "./faultIsolationInsert";
 import { useIsolationFlowOverlayStore } from "../../store/isolationFlowOverlayStore";
 import { layoutIsolationFlowGraph } from "./isolationFlowLayout";
@@ -147,6 +148,7 @@ export function ensureIsolationRefIdsInProcedure(
 
   let tr = editor.state.tr;
   let changed = false;
+  const allocate = createIsolationRefIdAllocator(editor.state.doc);
 
   forEachMainProcedureChild(procedurePos, proc, (child, childPos) => {
     if (
@@ -157,7 +159,7 @@ export function ensureIsolationRefIdsInProcedure(
     }
     const id = String(child.attrs.id ?? "").trim();
     if (/^stp-\d+$/i.test(id)) return;
-    const nextId = allocateNextIsolationRefId(editor);
+    const nextId = allocate();
     tr = tr.setNodeMarkup(childPos, undefined, {
       ...child.attrs,
       id: nextId,
@@ -364,16 +366,26 @@ function buildRefIdMap(
   flowNodes: IsolationFlowNodePayload[],
 ): Map<string, string> {
   const map = new Map<string, string>();
-  const allocate = () => allocateNextIsolationRefId(editor);
+  const reservedStpIds: string[] = [];
 
   for (const node of flowNodes) {
     const id = node.id.trim();
     if (/^stp-\d+$/i.test(id)) {
       map.set(node.id, id);
-    } else {
-      map.set(node.id, allocate());
+      reservedStpIds.push(id);
     }
   }
+
+  const allocate = createIsolationRefIdAllocator(
+    editor.state.doc,
+    reservedStpIds,
+  );
+
+  for (const node of flowNodes) {
+    if (map.has(node.id)) continue;
+    map.set(node.id, allocate());
+  }
+
   return map;
 }
 
