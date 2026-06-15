@@ -920,14 +920,14 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
               </Tabs.TabPane> */}
             </Tabs>
 
-            {/* <div className="ietm-app-header-right">
-              <span
+            <div className="ietm-app-header-right">
+              {/* <span
                 className="ietm-doc-title"
                 title={documentDisplayTitle || undefined}
               >
                 数据模块标题 {documentDisplayTitle}
-              </span>
-            </div> */}
+              </span> */}
+            </div>
           </header>
 
           <FormatToolbar

@@ -4,6 +4,7 @@
  * - Tailwind：工具类（preflight 已关，见 tailwind.config.js）
  */
 
+@import './styles/partials/theme.css';
 @import './styles/partials/shell.css';
 @import './styles/partials/toolbar.css';
 @import './styles/partials/insert-table-picker.css';
@@ -18,6 +19,7 @@
 @import './styles/partials/external-ref-publication-modal.css';
 @import './styles/partials/internal-ref-modal.css';
 @import './styles/partials/isolation-flow-editor.css';
+@import './styles/partials/theme-dark-overrides.css';
 
 @tailwind base;
 @tailwind components;

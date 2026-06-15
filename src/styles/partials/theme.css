@@ -1,0 +1,121 @@
+/*
+ * IETM 编辑器主题 Token（方案 B：`data-ietm-theme` + CSS 变量）
+ * 默认值挂在 #ietm-sdk-portal-root，不污染宿主 body。
+ */
+
+#ietm-sdk-portal-root,
+#ietm-sdk-portal-root[data-ietm-theme="light"] {
+  color-scheme: light;
+
+  --ietm-bg-page: #f3f4f6;
+  --ietm-bg-surface: #ffffff;
+  --ietm-bg-surface-secondary: #f9fafb;
+  --ietm-bg-chrome: #ffffff;
+  --ietm-bg-muted: #f3f4f6;
+  --ietm-bg-hover: #f3f4f6;
+  --ietm-bg-active: #eff6ff;
+  --ietm-bg-toolbar-hover: #dde2e8;
+  --ietm-bg-toggle-active: #dbe5f8;
+  --ietm-bg-code: #f9fafb;
+  --ietm-bg-input: #ffffff;
+  --ietm-bg-input-disabled: #f9fafb;
+
+  --ietm-text-primary: #1f2330;
+  --ietm-text-heading: #111827;
+  --ietm-text-secondary: #374151;
+  --ietm-text-muted: #6b7280;
+  --ietm-text-placeholder: #9ca3af;
+  --ietm-text-tab: #5b677d;
+  --ietm-text-tab-active: rgb(78, 89, 105);
+  --ietm-text-icon: #7a8089;
+  --ietm-text-icon-hover: #5c6675;
+  --ietm-text-link: #2563eb;
+  --ietm-text-link-hover: #1d4ed8;
+  --ietm-text-error: #dc2626;
+  --ietm-text-readonly: #d94a4a;
+
+  --ietm-border: #e5e7eb;
+  --ietm-border-strong: #d6dae1;
+  --ietm-border-subtle: #eef2f7;
+  --ietm-border-input: #e5e7eb;
+  --ietm-border-table: #e5e7eb;
+  --ietm-border-tiptap: #e3e6ec;
+
+  --ietm-accent: #ff8f1f;
+  --ietm-accent-hover: #e67e00;
+  --ietm-accent-active: #cc7000;
+  --ietm-accent-ink: #ff8f1f;
+
+  --ietm-shadow-menu: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --ietm-shadow-toast: 0 4px 10px rgba(0, 0, 0, 0.1);
+
+  --ietm-table-head-bg: #f3f4f6;
+  --ietm-table-head-border: #2563eb;
+  --ietm-focus-ring: #2563eb;
+  --ietm-selection-bg: rgba(37, 99, 235, 0.12);
+  --ietm-blockquote-bg: #fffaf0;
+  --ietm-blockquote-text: #6b4a05;
+  --ietm-blockquote-border: #f59e0b;
+  --ietm-image-bg: #f8fafc;
+  --ietm-fold-summary-bg: #eef2ff;
+  --ietm-fold-summary-text: #4b5563;
+  --ietm-success: #22c55e;
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] {
+  color-scheme: dark;
+
+  --ietm-bg-page: #17171a;
+  --ietm-bg-surface: #232324;
+  --ietm-bg-surface-secondary: #2a2a2b;
+  --ietm-bg-chrome: #232324;
+  --ietm-bg-muted: #2e2e30;
+  --ietm-bg-hover: #2e2e30;
+  --ietm-bg-active: rgba(22, 93, 255, 0.16);
+  --ietm-bg-toolbar-hover: #373739;
+  --ietm-bg-toggle-active: rgba(22, 93, 255, 0.22);
+  --ietm-bg-code: #2a2a2b;
+  --ietm-bg-input: #2a2a2b;
+  --ietm-bg-input-disabled: #232324;
+
+  --ietm-text-primary: #e5e6eb;
+  --ietm-text-heading: #f2f3f5;
+  --ietm-text-secondary: #c9cdd4;
+  --ietm-text-muted: #86909c;
+  --ietm-text-placeholder: #6b7785;
+  --ietm-text-tab: #c9cdd4;
+  --ietm-text-tab-active: #f2f3f5;
+  --ietm-text-icon: #86909c;
+  --ietm-text-icon-hover: #c9cdd4;
+  --ietm-text-link: #4080ff;
+  --ietm-text-link-hover: #6aa1ff;
+  --ietm-text-error: #f76560;
+  --ietm-text-readonly: #f76560;
+
+  --ietm-border: #484849;
+  --ietm-border-strong: #5f5f60;
+  --ietm-border-subtle: #3a3a3c;
+  --ietm-border-input: #484849;
+  --ietm-border-table: #484849;
+  --ietm-border-tiptap: #484849;
+
+  --ietm-accent: #ff8f1f;
+  --ietm-accent-hover: #ffa94d;
+  --ietm-accent-active: #e67e00;
+  --ietm-accent-ink: #ff8f1f;
+
+  --ietm-shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --ietm-shadow-toast: 0 4px 10px rgba(0, 0, 0, 0.35);
+
+  --ietm-table-head-bg: #2e2e30;
+  --ietm-table-head-border: #4080ff;
+  --ietm-focus-ring: #4080ff;
+  --ietm-selection-bg: rgba(64, 128, 255, 0.2);
+  --ietm-blockquote-bg: rgba(255, 143, 31, 0.12);
+  --ietm-blockquote-text: #ffcf8b;
+  --ietm-blockquote-border: #ff8f1f;
+  --ietm-image-bg: #2a2a2b;
+  --ietm-fold-summary-bg: rgba(64, 128, 255, 0.16);
+  --ietm-fold-summary-text: #c9cdd4;
+  --ietm-success: #23c343;
+}

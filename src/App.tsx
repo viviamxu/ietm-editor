@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import "./App.css";
 
@@ -7,8 +7,8 @@ import {
   getDescriptionSchema,
   type DescriptionSchema,
   type IETMEditorInstance,
+  type IETMResolvedTheme,
 } from "./index";
-
 // import bikeDmSampleXml from "./data/描述类.xml?raw";
 
 // import faultDmXml from "./data/故障类.XML?raw";
@@ -31,6 +31,14 @@ function App() {
 
   const instanceRef = useRef<IETMEditorInstance | null>(null);
 
+  const [resolvedTheme, setResolvedTheme] = useState<IETMResolvedTheme>("light");
+
+  const toggleHostTheme = useCallback(() => {
+    const next =
+      document.body.getAttribute("arco-theme") === "dark" ? "light" : "dark";
+    document.body.setAttribute("arco-theme", next);
+  }, []);
+
   useEffect(() => {
     const el = containerRef.current;
 
@@ -43,8 +51,10 @@ function App() {
 
       dmDocumentName: "procedureDm.xml",
 
-      // dmXml: faultDmXml,
+      theme: "auto",
+      onThemeChange: setResolvedTheme,
 
+      // dmXml: faultDmXml,
       // dmDocumentName: "故障类.XML",
 
       descriptionSchema: procedureSchema as DescriptionSchema,
@@ -63,6 +73,7 @@ function App() {
 
     instanceRef.current = instance;
 
+    setResolvedTheme(instance.getTheme());
     const offUpdate = instance.on("update", ({ json }) => {
       // 演示 update 事件：打印根节点子项数量
 
@@ -96,9 +107,20 @@ function App() {
 
   return (
     <main className="ietm-demo-shell">
+      {/* <header className="ietm-demo-toolbar">
+        <span className="ietm-demo-toolbar__label">
+          主题（auto）：{resolvedTheme}
+        </span>
+        <button
+          type="button"
+          className="ietm-demo-toolbar__btn"
+          onClick={toggleHostTheme}
+        >
+          切换主题
+        </button>
+      </header> */}
       <div ref={containerRef} className="ietm-demo-mount" />
     </main>
   );
 }
-
 export default App;

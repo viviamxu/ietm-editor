@@ -6,8 +6,8 @@
   align-items: center;
   gap: 8px 12px;
   padding: 12px 28px 12px;
-  background: #fff;
-  border-bottom: 1px solid #d6dae1;
+  background: var(--ietm-bg-chrome);
+  border-bottom: 1px solid var(--ietm-border-strong);
 }
 
 .ietm-format-toolbar__cluster {
@@ -30,7 +30,7 @@
 .ietm-format-toolbar__divider {
   width: 1px;
   height: 26px;
-  background: #d4d8df;
+  background: var(--ietm-border-strong);
   margin: 0 6px;
 }
 
@@ -42,17 +42,17 @@
   background: transparent;
   cursor: pointer;
   font-size: 16px;
-  color: #7a8089;
+  color: var(--ietm-text-icon);
 }
 
 .ietm-icon-btn:hover:not(:disabled) {
-  background: #dde2e8;
-  color: #5c6675;
+  background: var(--ietm-bg-toolbar-hover);
+  color: var(--ietm-text-icon-hover);
 }
 
 .ietm-icon-btn:disabled {
   opacity: 0.5;
-  color: #aeb4bf;
+  color: var(--ietm-text-muted);
   cursor: not-allowed;
 }
 
@@ -65,16 +65,16 @@
   background: transparent;
   cursor: pointer;
   font-size: 14px;
-  color: #6a7280;
+  color: var(--ietm-text-muted);
 }
 
 .ietm-toggle-btn:hover {
-  background: #dde2e8;
+  background: var(--ietm-bg-toolbar-hover);
 }
 
 .ietm-toggle-btn.is-active {
-  background: #dbe5f8;
-  color: #37598e;
+  background: var(--ietm-bg-toggle-active);
+  color: var(--ietm-text-link);
 }
 
 .ietm-toggle-btn:disabled {
@@ -101,11 +101,11 @@
 .ietm-toolbar-select {
   height: 32px;
   padding: 0 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ietm-border-input);
   border-radius: 6px;
   font-size: 13px;
-  background: #fff;
-  color: #374151;
+  background: var(--ietm-bg-input);
+  color: var(--ietm-text-secondary);
   max-width: 140px;
 }
 
@@ -122,8 +122,8 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1px solid #e5e7eb;
-  background: #fafafa;
+  border: 1px solid var(--ietm-border-input);
+  background: var(--ietm-bg-surface-secondary);
 }
 
 .ietm-color-swatch input[type="color"] {
@@ -141,7 +141,7 @@
 .ietm-color-swatch__glyph {
   font-weight: 700;
   font-size: 14px;
-  color: #1f2937;
+  color: var(--ietm-text-heading);
 }
 
 .ietm-highlight-icon {

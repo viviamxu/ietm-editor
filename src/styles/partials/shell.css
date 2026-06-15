@@ -9,8 +9,8 @@
   flex: 1;
   /* 不设 overflow:hidden：否则会阻断子元素 position:sticky 相对视口吸顶 */
   min-width: 0;
-  background: #f3f4f6;
-  color: #1f2330;
+  background: var(--ietm-bg-page);
+  color: var(--ietm-text-primary);
   font:
     14px/1.5 system-ui,
     -apple-system,
@@ -30,7 +30,7 @@
   z-index: 40;
   flex-shrink: 0;
   align-self: stretch;
-  background: #fff;
+  background: var(--ietm-bg-chrome);
   box-shadow: none;
 }
 
@@ -42,8 +42,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: #fff;
-  border-bottom: 1px solid #d6dae1;
+  background: var(--ietm-bg-chrome);
+  border-bottom: 1px solid var(--ietm-border-strong);
   box-sizing: border-box;
 }
 
@@ -73,25 +73,25 @@
 .ietm-app-nav.ietm-arco-tabs .ietm-arco-tabs-tab {
   padding: 0 18px 10px;
   margin-right: 8px;
-  color: #5b677d;
+  color: var(--ietm-text-tab);
   font-size: 18px;
   font-weight: 600;
   line-height: 1.25;
 }
 
 .ietm-app-nav.ietm-arco-tabs .ietm-arco-tabs-tab-active {
-  color: rgb(78, 89, 105);
+  color: var(--ietm-text-tab-active);
 }
 
 .ietm-app-nav.ietm-arco-tabs .ietm-arco-tabs-header-title-active,
 .ietm-app-nav.ietm-arco-tabs .ietm-arco-tabs-header-title-active:hover {
-  color: rgb(78, 89, 105);
+  color: var(--ietm-text-tab-active);
   font-weight: 500;
 }
 
 .ietm-app-nav.ietm-arco-tabs .ietm-arco-tabs-nav-ink {
   height: 4px;
-  background: #ff8f1f;
+  background: var(--ietm-accent-ink);
   border-radius: 2px;
 }
 
@@ -105,14 +105,14 @@
   padding: 8px 12px;
   font-size: 14px;
   font-weight: 400;
-  color: #374151;
+  color: var(--ietm-text-secondary);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .ietm-menu-trigger:hover,
 .ietm-menu-trigger.is-open {
-  background: #f3f4f6;
+  background: var(--ietm-bg-hover);
 }
 
 .ietm-menu-dropdown {
@@ -122,10 +122,10 @@
   margin-top: 4px;
   min-width: 180px;
   padding: 6px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--ietm-bg-surface);
+  border: 1px solid var(--ietm-border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--ietm-shadow-menu);
   z-index: 50;
 }
 
@@ -146,13 +146,13 @@
   background: transparent;
   padding: 8px 10px;
   font-size: 14px;
-  color: #374151;
+  color: var(--ietm-text-secondary);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .ietm-menu-item:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--ietm-bg-hover);
 }
 
 .ietm-menu-item:disabled {
@@ -163,13 +163,13 @@
 .ietm-menu-section {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid #eef2f7;
+  border-top: 1px solid var(--ietm-border-subtle);
 }
 
 .ietm-menu-section__title {
   margin: 0 0 6px;
   padding: 0 4px;
-  color: #64748b;
+  color: var(--ietm-text-muted);
   font-size: 12px;
   line-height: 1.2;
 }
@@ -189,12 +189,12 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #374151;
+  color: var(--ietm-text-secondary);
   cursor: pointer;
 }
 
 .ietm-menu-icon-btn:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--ietm-bg-hover);
 }
 
 .ietm-menu-icon-btn:disabled {
@@ -207,7 +207,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: #4b5563;
+  color: var(--ietm-text-secondary);
   margin-bottom: 10px;
 }
 
@@ -217,7 +217,7 @@
 
 .ietm-menu-field select {
   padding: 6px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ietm-border-input);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -249,7 +249,7 @@
 .ietm-doc-title {
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: var(--ietm-text-heading);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -257,9 +257,9 @@
 }
 
 .ietm-share-btn {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--ietm-border);
+  background: var(--ietm-bg-chrome);
+  color: var(--ietm-text-secondary);
   font-size: 14px;
   padding: 6px 14px;
   border-radius: 8px;
@@ -271,8 +271,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #2563eb;
-  color: #fff;
+  background: var(--ietm-focus-ring);
+  color: var(--ietm-bg-chrome);
   font-size: 14px;
   font-weight: 600;
   display: flex;

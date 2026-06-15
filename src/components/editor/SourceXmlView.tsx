@@ -2,11 +2,14 @@ import { memo, useMemo, useState } from "react";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import createElement from "react-syntax-highlighter/dist/esm/create-element";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import markup from "react-syntax-highlighter/dist/esm/languages/prism/markup";
 import formatXml from "xml-formatter";
 import type { ReactNode } from "react";
 import type { SyntaxHighlighterProps } from "react-syntax-highlighter";
 import { IconRight, IconDown } from "@arco-design/web-react/icon";
+
+import { useThemeStore } from "../../store/themeStore";
 
 SyntaxHighlighter.registerLanguage("xml", markup);
 
@@ -93,6 +96,21 @@ function collectXmlFoldRanges(xml: string): XmlFoldRange[] {
 export const SourceXmlView = memo(function SourceXmlView({
   xml,
 }: SourceXmlViewProps) {
+  const resolvedTheme = useThemeStore((state) => state.resolved);
+  const prismStyle = resolvedTheme === "dark" ? oneDark : oneLight;
+  const lineNumberStyle = useMemo(
+    () => ({
+      minWidth: "2.5em",
+      paddingRight: "1em",
+      color:
+        resolvedTheme === "dark"
+          ? "var(--ietm-text-muted)"
+          : "#9ca3af",
+      userSelect: "none" as const,
+    }),
+    [resolvedTheme],
+  );
+
   const [collapsedRanges, setCollapsedRanges] = useState<
     Record<string, boolean>
   >({});
@@ -193,7 +211,7 @@ export const SourceXmlView = memo(function SourceXmlView({
     <div className="ietm-source-xml-view" aria-readonly="true">
       <SyntaxHighlighter
         language="xml"
-        style={oneLight}
+        style={prismStyle}
         customStyle={{
           margin: 0,
           padding: 0,
@@ -202,12 +220,7 @@ export const SourceXmlView = memo(function SourceXmlView({
         codeTagProps={{
           className: "ietm-source-xml-view__code",
         }}
-        lineNumberStyle={{
-          minWidth: "2.5em",
-          paddingRight: "1em",
-          color: "#9ca3af",
-          userSelect: "none",
-        }}
+        lineNumberStyle={lineNumberStyle}
         showLineNumbers
         renderer={renderedLines}
       >

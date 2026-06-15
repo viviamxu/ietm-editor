@@ -290,6 +290,31 @@ instance.setToolbarConfig(null); // 恢复默认
 
 ---
 
+## 主题适配
+
+SDK 通过挂载根 `#ietm-sdk-portal-root` 的 **`data-ietm-theme`** 与 CSS 变量切换亮色 / 暗色，**不污染宿主 `body`**。只需引入 `@ccengine/ietm-editor/style.css`（`style.dark.css` 为兼容别名，指向同一产物）。
+
+```ts
+const instance = createIETMEditor({
+  element: mountEl,
+  theme: "light", // 默认；可选 'dark' | 'auto'
+  onThemeChange: (resolved) => console.log(resolved),
+});
+
+instance.setTheme("dark"); // 运行时切换，不丢失编辑内容
+instance.getTheme(); // => 'light' | 'dark'
+```
+
+| `theme` | 行为 |
+|---------|------|
+| `light` | 固定亮色（默认，与 1.3.x 一致） |
+| `dark` | 固定暗色 |
+| `auto` | 跟随 `arco-theme` / `data-theme` / `prefers-color-scheme` |
+
+与 continew-admin-ui 联动示例见 `a.md` §4；`destroy()` 后主题 store 恢复默认。
+
+---
+
 ## API
 
 ### `createIETMEditor(options): IETMEditorInstance`
@@ -307,6 +332,8 @@ instance.setToolbarConfig(null); // 恢复默认
 | `editModeButtonTitle` | `string` | `编辑` | 只读状态下工具栏「编辑」图标的 `title`。 |
 | `footerStatus` | `IETMEditorFooterStatus` | 见下 | 覆盖底栏 `.ietm-app-footer`：`variant` 控制样式，`text` 为宿主文案。不传时按 `editable` 自动：`saved` +「已保存」或 `readonly` +「只读：数据模块未检出」。 |
 | `toolbar` | `ToolbarConfig` | 无 | 格式工具栏：自定义按钮、隐藏内置项、接管插入图片/多媒体等。详见上文 **「工具栏可配置化、插入图片与异步检出」**。 |
+| `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | 编辑器 UI 主题；见 **「主题适配」**。 |
+| `onThemeChange` | `(theme: 'light' \| 'dark') => void` | 无 | 生效主题变化时回调。 |
 
 **`IETMEditorFooterStatus`**（包入口已导出类型）：
 
@@ -340,6 +367,8 @@ interface IETMEditorFooterStatus {
   setEditable(value): void
   setFooterStatus(status: IETMEditorFooterStatus | null): void
   setToolbarConfig(config: ToolbarConfig | null): void // null 恢复默认工具栏配置
+  setTheme(theme: 'light' | 'dark' | 'auto'): void
+  getTheme(): 'light' | 'dark'
   insertImages(images: InsertImagePayload[]): boolean // 光标处插入 S1000D figure（title+graphic）；未就绪 false
   getJSON(): JSONContent
   focus(): void

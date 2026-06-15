@@ -78,6 +78,8 @@ import {
 } from "./lib/ietm/dmPdfPreview";
 import { useDmMetadataStore } from "./store/dmMetadataStore";
 import { useFileUrlStore } from "./store/fileUrlStore";
+import { useThemeStore } from "./store/themeStore";
+import type { IETMResolvedTheme, IETMThemeMode } from "./types/ietmTheme";
 import "./style.css";
 
 export { normalizeDmDocumentName } from "./lib/ietm/dmDocumentName";
@@ -214,10 +216,8 @@ export type {
 
 export type { SaveDmXmlHandler };
 export type { OpenDmPdfPreviewContext, OpenDmPdfPreviewHandler };
-export type {
-  IETMEditorFooterStatus,
-  IETMEditorFooterVariant,
-} from "./types/ietmEditorFooter";
+export type { IETMEditorFooterStatus, IETMEditorFooterVariant } from "./types/ietmEditorFooter";
+export type { IETMResolvedTheme, IETMThemeMode } from "./types/ietmTheme";
 
 export interface IETMEditorOptions {
   element: HTMLElement;
@@ -295,6 +295,10 @@ export interface IETMEditorOptions {
    * 亦可通过 `instance.setProcedureBindingConfig()` 在运行时更新。
    */
   onFetchDerivativeBindingTree?: FetchDerivativeBindingTreeHandler;
+  /** 编辑器 UI 主题；默认 `'light'`（与 1.3.x 一致） */
+  theme?: IETMThemeMode;
+  /** 生效主题变化时回调（`light` / `dark`） */
+  onThemeChange?: (theme: IETMResolvedTheme) => void;
 }
 
 export interface IETMEditorEvents {
@@ -359,6 +363,10 @@ export interface IETMEditorInstance {
   refreshDmPdfPreview(): void;
   /** 隔离流程编排器保存后写回对应隔离程序。 */
   applyIsolationFlow(payload: IsolationFlowPayload): boolean;
+  /** 运行时切换 UI 主题（不重建实例、不丢失编辑内容） */
+  setTheme(theme: IETMThemeMode): void;
+  /** 当前生效的亮色 / 暗色 */
+  getTheme(): IETMResolvedTheme;
   on<E extends IETMEditorEventName>(
     event: E,
     handler: IETMEditorEventHandler<E>,
@@ -480,6 +488,12 @@ export function createIETMEditor(
 
   useFileUrlStore.getState().setFileUrlPrefix(options.fileUrlPrefix ?? "");
 
+  useThemeStore.getState().initialize({
+    mode: options.theme ?? "light",
+    mountEl: options.element,
+    onThemeChange: options.onThemeChange,
+  });
+
   const initialContent = resolveInitialEditorContent(options);
 
   root.render(
@@ -568,6 +582,11 @@ export function createIETMEditor(
       if (disposed || !handleRef.current) return false;
       return handleRef.current.applyIsolationFlow(payload);
     },
+    setTheme: (theme) => {
+      if (disposed) return;
+      useThemeStore.getState().setMode(theme);
+    },
+    getTheme: () => useThemeStore.getState().resolved,
     on: emitter.on,
     off: emitter.off,
     destroy: () => {
@@ -584,6 +603,7 @@ export function createIETMEditor(
       if (options.procedureUiConfig) {
         resetProcedureUiConfig();
       }
+      useThemeStore.getState().reset();
       queueMicrotask(() => root.unmount());
     },
   };

@@ -1,6 +1,6 @@
 {
   "name": "@ccengine/ietm-editor",
-  "version": "1.3.11",
+  "version": "1.4.0",
   "type": "module",
   "description": "S1000D IETM editor SDK (React island, Vanilla shell). Framework-agnostic mount API for Vue / React / vanilla hosts.",
   "license": "UNLICENSED",
@@ -22,7 +22,8 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./style.dark.css": "./dist/style.css"
   },
   "files": [
     "dist",

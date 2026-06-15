@@ -11,8 +11,55 @@
   background: #f3f4f6;
 }
 
-.ietm-demo-mount {
-  flex: 1;
+body[arco-theme="dark"] .ietm-demo-shell {
+  background: #17171a;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ietm-demo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+body[arco-theme="dark"] .ietm-demo-toolbar {
+  border-bottom-color: #373739;
+  background: #232324;
+}
+
+.ietm-demo-toolbar__label {
+  font-size: 13px;
+  margin-right: 4px;
+}
+
+.ietm-demo-toolbar__btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid #d6dae1;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+body[arco-theme="dark"] .ietm-demo-toolbar__btn {
+  border-color: #484849;
+  background: #2a2a2b;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ietm-demo-toolbar__btn:hover {
+  background: #f3f4f6;
+}
+
+body[arco-theme="dark"] .ietm-demo-toolbar__btn:hover {
+  background: #373739;
+}
+
+.ietm-demo-mount {  flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;

@@ -6,7 +6,7 @@
   font-weight: 700;
   line-height: 1.3;
   margin: 0.4em 0 0.25em;
-  color: #0f172a;
+  color: var(--ietm-text-heading);
 }
 
 .ietm-editor-surface
@@ -17,7 +17,7 @@
   font-weight: 650;
   line-height: 1.32;
   margin: 0.35em 0 0.2em;
-  color: #0f172a;
+  color: var(--ietm-text-heading);
 }
 
 .ietm-editor-surface
@@ -28,7 +28,7 @@
   font-weight: 625;
   line-height: 1.38;
   margin: 0.32em 0 0.18em;
-  color: #1e293b;
+  color: var(--ietm-text-heading);
 }
 
 .ietm-editor-surface
@@ -39,7 +39,7 @@
   font-weight: 600;
   line-height: 1.42;
   margin: 0.28em 0 0.16em;
-  color: #334155;
+  color: var(--ietm-text-secondary);
 }
 
 .ietm-editor-surface
@@ -50,7 +50,7 @@
   font-weight: 600;
   line-height: 1.45;
   margin: 0.26em 0 0.14em;
-  color: #475569;
+  color: var(--ietm-text-secondary);
 }
 
 .ietm-editor-surface
@@ -61,7 +61,7 @@
   font-weight: 600;
   line-height: 1.45;
   margin: 0.24em 0 0.12em;
-  color: #64748b;
+  color: var(--ietm-text-muted);
 }
 
 /* levelledPara 章节标题：自动层级序号（仅编辑区展示，不入库） */

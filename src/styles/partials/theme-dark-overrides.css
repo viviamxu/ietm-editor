@@ -1,0 +1,144 @@
+/*
+ * 暗色模式：尚未变量化的组件（Tiptap / S1000D NodeView / 隔离编排器等）
+ */
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .tiptap {
+  color: var(--ietm-text-primary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .tiptap h1,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .tiptap h2 {
+  color: var(--ietm-text-heading);
+  border-bottom-color: var(--ietm-border-tiptap);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .tiptap blockquote {
+  background: var(--ietm-blockquote-bg);
+  color: var(--ietm-blockquote-text);
+  border-left-color: var(--ietm-blockquote-border);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .tiptap img {
+  border-color: var(--ietm-border-table);
+  background: var(--ietm-image-bg);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"]
+  .ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  .s1000d-entry,
+#ietm-sdk-portal-root[data-ietm-theme="dark"]
+  .ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  td,
+#ietm-sdk-portal-root[data-ietm-theme="dark"]
+  .ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  th {
+  border-color: var(--ietm-border-table);
+  color: var(--ietm-text-primary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"]
+  .ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  thead
+  td,
+#ietm-sdk-portal-root[data-ietm-theme="dark"]
+  .ietm-editor-surface
+  .tiptap
+  .s1000d-tgroup-table
+  thead
+  th {
+  background: var(--ietm-table-head-bg);
+  border-bottom-color: var(--ietm-table-head-border);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .s1000d-internal-ref-popover-shell.ietm-arco-popover .ietm-arco-popover-content,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .s1000d-internal-ref-popover-shell.ietm-arco-popover .ietm-arco-popover-inner,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .s1000d-dm-ref-popover-shell.ietm-arco-popover .ietm-arco-popover-content,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .s1000d-dm-ref-popover-shell.ietm-arco-popover .ietm-arco-popover-inner {
+  background: var(--ietm-bg-surface);
+  color: var(--ietm-text-primary);
+  border-color: var(--ietm-border);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-root {
+  background: var(--ietm-bg-page);
+  color: var(--ietm-text-primary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-topbar,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-sidebar,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-canvas-wrap {
+  background: var(--ietm-bg-chrome);
+  border-color: var(--ietm-border);
+  color: var(--ietm-text-primary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-title,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-sidebar__title {
+  color: var(--ietm-text-heading);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-library-item,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-node-card {
+  background: var(--ietm-bg-surface-secondary);
+  border-color: var(--ietm-border);
+  color: var(--ietm-text-secondary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-library-item:hover,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-node-card:hover {
+  background: var(--ietm-bg-hover);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .react-flow__background {
+  background: var(--ietm-bg-page);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .react-flow__controls-button {
+  background: var(--ietm-bg-surface);
+  border-color: var(--ietm-border);
+  color: var(--ietm-text-secondary);
+  fill: var(--ietm-text-secondary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .react-flow__minimap {
+  background: var(--ietm-bg-surface-secondary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ife-toast--error {
+  background-color: rgba(245, 63, 63, 0.16);
+  border-color: rgba(245, 63, 63, 0.35);
+  color: #f76560;
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .s1000d-procedural-step,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .s1000d-levelled-para,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .s1000d-figure,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .s1000d-multimedia-node,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .s1000d-table-wrap,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .s1000d-fault-isolation-procedure,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface .node-isolationStep,
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface [data-s1000d-node="isolationStep"] {
+  background: var(--ietm-bg-surface);
+  border-color: var(--ietm-border);
+  color: var(--ietm-text-primary);
+}
+
+/* warning / caution / note（`.s1000d-attention-block`）暂不随 UI 主题变更，沿用 s1000d-nodeviews.css 原色 */
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-editor-surface para {
+  color: var(--ietm-text-primary);
+}
+
+#ietm-sdk-portal-root[data-ietm-theme="dark"] .ietm-insert-table-picker {
+  background: var(--ietm-bg-surface);
+  border-color: var(--ietm-border);
+  color: var(--ietm-text-primary);
+}

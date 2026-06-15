@@ -36,6 +36,7 @@ import {
   type IsolationFlowPayload,
 } from "../../lib/s1000d/isolationFlowBridge";
 import { useIsolationFlowOverlayStore } from "../../store/isolationFlowOverlayStore";
+import { useThemeStore } from "../../store/themeStore";
 import IsolationFlowEditor from "../IsolationFlowEditor";
 export interface IETMEditorRootHandle {
   setContent: (content: JSONContent | string) => void;
@@ -92,6 +93,9 @@ export const IETMEditorRoot = forwardRef<
   onEditableChangeRef.current = props.onEditableChange;
 
   const flowSession = useIsolationFlowOverlayStore((s) => s.session);
+  const resolvedTheme = useThemeStore((s) => s.resolved);
+  const setPortalRoot = useThemeStore((s) => s.setPortalRoot);
+  const portalRef = useRef<HTMLDivElement>(null);
   const editableBeforeFlow = useIsolationFlowOverlayStore(
     (s) => s.editableBeforeOpen,
   );
@@ -101,6 +105,11 @@ export const IETMEditorRoot = forwardRef<
     setEditable(value);
     onEditableChangeRef.current?.(value);
   }, []);
+
+  useEffect(() => {
+    setPortalRoot(portalRef.current);
+    return () => setPortalRoot(null);
+  }, [setPortalRoot]);
 
   useEffect(() => {
     if (!flowSession) return;
@@ -194,10 +203,13 @@ export const IETMEditorRoot = forwardRef<
   return (
     <div
       id="ietm-sdk-portal-root"
+      ref={portalRef}
+      data-ietm-theme={resolvedTheme}
       style={{ position: "relative", width: "100%", height: "100%" }}
     >
       <ConfigProvider
         prefixCls="ietm-arco"
+        theme={resolvedTheme === "dark" ? { dark: true } : undefined}
         getPopupContainer={getPopupContainer}
       >
         <IETMEditor
