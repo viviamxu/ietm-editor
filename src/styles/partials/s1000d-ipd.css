@@ -1,0 +1,27 @@
+/* 图解类 IPD：catalogSeqNumber 物料表 */
+
+.ietm-editor-surface .tiptap .s1000d-catalog-seq-group {
+  margin: 16px 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-catalog-seq-group__table {
+  width: 100%;
+}
+
+.ietm-editor-surface .tiptap .s1000d-catalog-seq-group__table .ietm-arco-table-th {
+  background: var(--ietm-table-head-bg);
+  color: var(--ietm-text-heading);
+  font-weight: 600;
+}
+
+.ietm-editor-surface .tiptap .s1000d-catalog-seq-group__table .ietm-arco-table-td {
+  vertical-align: middle;
+}
+
+.ietm-editor-surface .tiptap .s1000d-catalog-seq-group__toolbar {
+  margin-top: 8px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-catalog-seq-group__add-btn {
+  color: var(--ietm-text-link);
+}

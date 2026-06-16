@@ -170,6 +170,97 @@
   outline: none;
 }
 
+.ietm-editor-surface .tiptap .s1000d-figure__content--pick-image .s1000d-graphic-node {
+  display: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__pick-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 8rem;
+  margin: 8px 0 0;
+  padding: 16px;
+  border: 1px dashed var(--ietm-border-strong);
+  border-radius: 6px;
+  background: var(--ietm-bg-muted);
+  color: var(--ietm-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__pick-image:hover {
+  border-color: var(--ietm-focus-ring);
+  color: var(--ietm-text-link);
+  background: var(--ietm-bg-hover);
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__pick-image:focus-visible {
+  outline: 2px solid var(--ietm-focus-ring);
+  outline-offset: 2px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__add-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border: 1px dashed var(--ietm-border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ietm-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__add-image:hover {
+  border-color: var(--ietm-focus-ring);
+  color: var(--ietm-text-link);
+  background: var(--ietm-bg-hover);
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure__add-image:focus-visible {
+  outline: 2px solid var(--ietm-focus-ring);
+  outline-offset: 2px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia__content--pick-media .s1000d-multimedia-object-node {
+  display: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-node__pick-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 8rem;
+  margin: 8px 0 0;
+  padding: 16px;
+  border: 1px dashed var(--ietm-border-strong);
+  border-radius: 6px;
+  background: var(--ietm-bg-muted);
+  color: var(--ietm-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-node__pick-media:hover {
+  border-color: var(--ietm-focus-ring);
+  color: var(--ietm-text-link);
+  background: var(--ietm-bg-hover);
+}
+
+.ietm-editor-surface .tiptap .s1000d-multimedia-node__pick-media:focus-visible {
+  outline: 2px solid var(--ietm-focus-ring);
+  outline-offset: 2px;
+}
+
 /* `warning` / `caution` NodeView 共用 */
 .ietm-editor-surface .tiptap .s1000d-attention-block {
   position: relative;

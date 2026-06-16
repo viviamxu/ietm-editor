@@ -8,7 +8,7 @@ export type DmContentKind =
   | "ipd";
 
 /**
- * 根据描述类 / 故障隔离 / 程序类 schema 判定编辑器模式。
+ * 根据描述类 / 故障隔离 / 程序类 / 图解类 schema 判定编辑器模式。
  * 宿主应保证 `setDescriptionSchema` 与导入的 DM XML 类型一致。
  */
 export function getDmContentKind(schema: DescriptionSchema): DmContentKind {
@@ -24,6 +24,14 @@ export function getDmContentKind(schema: DescriptionSchema): DmContentKind {
   }
   if (/\bdescription\b/.test(contentRule)) {
     return "description";
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(schema, "illustratedPartsCatalog") &&
+    !Object.prototype.hasOwnProperty.call(schema, "description") &&
+    !Object.prototype.hasOwnProperty.call(schema, "procedure") &&
+    !Object.prototype.hasOwnProperty.call(schema, "faultIsolation")
+  ) {
+    return "ipd";
   }
   if (
     Object.prototype.hasOwnProperty.call(schema, "faultIsolation") &&

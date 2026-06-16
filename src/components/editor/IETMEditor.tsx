@@ -29,6 +29,7 @@ import { S1000DFmftBlockEnterKeymap } from "../../extensions/s1000d/s1000dFmftBl
 import { S1000DHostBlockAfterClickExtension } from "../../extensions/s1000d/s1000dHostBlockAfterClickExtension";
 import { S1000DSchemaContentGuardExtension } from "../../extensions/s1000d/s1000dSchemaContentGuardExtension";
 import { S1000DHostBlockTrailingParaBackspaceKeymap } from "../../extensions/s1000d/s1000dHostBlockTrailingParaBackspaceKeymap";
+import { S1000DFmftInnerNodeDeleteKeymap } from "../../extensions/s1000d/s1000dFmftInnerNodeDeleteKeymap";
 import { RepairOrphanTgroupExtension } from "../../extensions/s1000d/repairOrphanTgroupExtension";
 import { S1000dAttentionParaKeymap } from "../../extensions/s1000d/s1000dAttentionParaKeymap";
 import { S1000DNestingKeymap } from "../../extensions/s1000d/s1000dNestingKeymap";
@@ -46,6 +47,7 @@ import {
   s1000dProcedureNodes,
   PROCEDURE_TEXT_ALIGN_NODE_TYPES,
 } from "../../extensions/s1000d/procedureNodes";
+import { s1000dIpdNodes } from "../../extensions/s1000d/ipdNodes";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { FormatToolbar } from "./FormatToolbar";
@@ -322,6 +324,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000DHostBlockAfterClickExtension,
         S1000DSchemaContentGuardExtension,
         S1000DHostBlockTrailingParaBackspaceKeymap,
+        S1000DFmftInnerNodeDeleteKeymap,
         RepairOrphanTgroupExtension,
         S1000dAttentionParaKeymap,
         S1000DNestingKeymap,
@@ -349,6 +352,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000dTableCellSelectionExtension,
         ...s1000dFaultIsolationNodes,
         ...s1000dProcedureNodes,
+        ...s1000dIpdNodes,
       ],
       content:
         normalizeEditorContentInput(props.initialContent) ??

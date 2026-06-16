@@ -23,8 +23,9 @@ import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
-import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
 import { getDmContentKind } from "./dmContentKind";
+import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
+import { resolvePreferredFmftBlockType } from "./resolveFmftPublicationMode";
 import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
@@ -701,11 +702,12 @@ function buildMinimalAttentionElemChild(
   return null;
 }
 
-/** 满足 `fmftElemGroup` 的最小块：优先 `figure`（含一个 `graphic`），否则最小 `table`。 */
+/** 满足 `fmftElemGroup` 的最小块：按 schema 内容规则优先 `figure` / `multimedia`，否则最小 `table`。 */
 function buildMinimalFmftElemChild(
   schema: DescriptionSchema,
 ): JSONContent | null {
-  if (requireSchemaNode(schema, "multimedia")) {
+  const preferred = resolvePreferredFmftBlockType(schema);
+  if (preferred === "multimedia") {
     return {
       type: "multimedia",
       content: [
@@ -713,13 +715,13 @@ function buildMinimalFmftElemChild(
       ],
     };
   }
-  if (requireSchemaNode(schema, "figure")) {
+  if (preferred === "figure") {
     return {
       type: "figure",
       content: [{ type: "graphic", attrs: { src: "" } }],
     };
   }
-  if (requireSchemaNode(schema, "table")) {
+  if (preferred === "table" || requireSchemaNode(schema, "table")) {
     return createMinimalS1000dTableInsertJson(1, 0, 1, false);
   }
   return null;
@@ -844,6 +846,10 @@ const ignoredExportAttrs = [
   "src",
   /** 仅编辑器 WYSIWYG；不写入 S1000D XML */
   "textAlign",
+  /** 图解类表格行：由 `<internalRef>` 导出，非 S1000D 属性 */
+  "hotspotRefId",
+  /** 图解类 hotspot → internalRef 关联缓存 */
+  "linkedCsnId",
   /** 故障隔离「是否 / 选择」切换缓存，仅编辑器内使用 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
@@ -1034,8 +1040,11 @@ function serializeMultimediaObjectToXml(node: JSONContent): string {
   return `<multimediaObject${iei} multimediaType="${escapeXml(multimediaType)}"${xlink} />`;
 }
 
-function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
-  if (!attrs) return "<graphic />";
+function serializeGraphicToXml(
+  attrs: JSONContent["attrs"],
+  innerXml = "",
+): string {
+  if (!attrs) return innerXml ? "<graphic></graphic>" : "<graphic />";
   const id =
     attrs.id != null && String(attrs.id).trim() !== ""
       ? ` id="${escapeXml(String(attrs.id))}"`
@@ -1053,6 +1062,9 @@ function serializeGraphicToXml(attrs: JSONContent["attrs"]): string {
         : "";
   const hrefRaw = srcTrim ? toRelativeFileUrl(srcTrim) : "";
   const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
+  if (innerXml) {
+    return `<graphic${id}${iei}${xlink}>${innerXml}</graphic>`;
+  }
   return `<graphic${id}${iei}${xlink} />`;
 }
 
@@ -1118,7 +1130,40 @@ function serializeNodeToXml(node: JSONContent): string {
   if (node.attrs && node.attrs.rawXml) return node.attrs.rawXml;
 
   if (node.type === "graphic") {
-    return serializeGraphicToXml(node.attrs);
+    const inner = (node.content || []).map(serializeNodeToXml).join("");
+    return serializeGraphicToXml(node.attrs, inner);
+  }
+
+  if (node.type === "catalogSeqNumberGroup") {
+    return (node.content || []).map(serializeNodeToXml).join("");
+  }
+
+  if (node.type === "catalogSeqNumber") {
+    const refId = String(node.attrs?.hotspotRefId ?? "").trim();
+    const refXml = refId
+      ? `<internalRef internalRefId="${escapeXml(refId)}" />`
+      : "";
+    const children = (node.content || []).map(serializeNodeToXml).join("");
+    const attrsStr = buildAttrsString(node.attrs);
+    return `<catalogSeqNumber${attrsStr}>${refXml}${children}</catalogSeqNumber>`;
+  }
+
+  if (node.type === "partRef") {
+    const manufacturer = String(node.attrs?.manufacturerCodeValue ?? "").trim();
+    const partNumber = String(node.attrs?.partNumberValue ?? "").trim();
+    return `<partRef manufacturerCodeValue="${escapeXml(manufacturer)}" partNumberValue="${escapeXml(partNumber)}" />`;
+  }
+
+  if (node.type === "hotspot") {
+    const attrsStr = buildAttrsString(node.attrs);
+    const linked = String(node.attrs?.linkedCsnId ?? "").trim();
+    const refXml = linked
+      ? `<internalRef internalRefId="${escapeXml(linked)}"></internalRef>`
+      : "";
+    if (refXml) {
+      return `<hotspot${attrsStr}>${refXml}</hotspot>`;
+    }
+    return `<hotspot${attrsStr}></hotspot>`;
   }
 
   if (node.type === "multimediaObject") {
@@ -1290,7 +1335,9 @@ export function exportEditorToDmXmlString(editor: Editor): string {
       ? "proced.xsd"
       : kind === "faultIsolation"
         ? "fault.xsd"
-        : "descript.xsd";
+        : kind === "ipd"
+          ? "ipd.xsd"
+          : "descript.xsd";
 
   return `<?xml version="1.0" encoding="utf-8"?>
 ${doctypeXml}

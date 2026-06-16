@@ -1,7 +1,8 @@
-import type { Node as PMNode } from "@tiptap/pm/model";
+import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
+import type { Transaction } from "@tiptap/pm/state";
 
 import type { DescriptionSchema } from "../../types/descriptionSchema";
-import { getDmContentKind, type DmContentKind } from "./dmContentKind";
+import { getDmContentKind } from "./dmContentKind";
 
 const LOOSE_PARA_TYPES = new Set(["para", "paragraph"]);
 
@@ -64,7 +65,7 @@ function schemaTokensForEditorNode(
   if (ATTENTION_TYPES.has(nodeTypeName)) return ["attentionElemGroup"];
   if (FMFT_TYPES.has(nodeTypeName)) {
     const tokens = [nodeTypeName];
-    if (schema[nodeTypeName]?.group === "fmftElemGroup") {
+    if (schema[nodeTypeName]?.group?.split(/\s+/).includes("fmftElemGroup")) {
       tokens.push("fmftElemGroup");
     }
     return tokens;
@@ -72,18 +73,25 @@ function schemaTokensForEditorNode(
   return [nodeTypeName];
 }
 
-function tokenMatchesNodeType(token: string, nodeTypeName: string, schema: DescriptionSchema): boolean {
+function tokenMatchesNodeType(
+  token: string,
+  nodeTypeName: string,
+  schema: DescriptionSchema,
+): boolean {
   if (token === nodeTypeName) return true;
-  const nodeTokens = schemaTokensForEditorNode(nodeTypeName, schema);
-  if (nodeTokens.includes(token)) return true;
+  if (schemaTokensForEditorNode(nodeTypeName, schema).includes(token)) {
+    return true;
+  }
   if (token === "fmftElemGroup" && FMFT_TYPES.has(nodeTypeName)) return true;
-  if (token === "attentionElemGroup" && ATTENTION_TYPES.has(nodeTypeName)) return true;
+  if (token === "attentionElemGroup" && ATTENTION_TYPES.has(nodeTypeName)) {
+    return true;
+  }
   if (token === "para" && LOOSE_PARA_TYPES.has(nodeTypeName)) return true;
   if (token === "catalogSeqNumber" && nodeTypeName === "catalogSeqNumberGroup") {
     return true;
   }
-  const rule = schema[nodeTypeName]?.group;
-  if (rule && rule.split(/\s+/).includes(token)) return true;
+  const group = schema[nodeTypeName]?.group;
+  if (group && group.split(/\s+/).includes(token)) return true;
   return false;
 }
 
@@ -103,21 +111,6 @@ export function nodeTypeAllowedInContentRule(
   return false;
 }
 
-function resolveDocContentRule(schema: DescriptionSchema, kind: DmContentKind): string {
-  const contentRule = schema.content?.content ?? "";
-  if (/\billustratedPartsCatalog\b/.test(contentRule)) {
-    return schema.illustratedPartsCatalog?.content ?? "";
-  }
-  switch (kind) {
-    case "faultIsolation":
-      return schema.faultIsolation?.content ?? "";
-    case "procedure":
-      return schema.procedure?.content ?? "";
-    default:
-      return schema.description?.content ?? "";
-  }
-}
-
 /** 编辑器内父容器 → schema `content` 规则字符串。 */
 export function resolveSchemaContentRuleForEditorParent(
   parentTypeName: string,
@@ -126,7 +119,16 @@ export function resolveSchemaContentRuleForEditorParent(
   const kind = getDmContentKind(schema);
   switch (parentTypeName) {
     case "doc":
-      return resolveDocContentRule(schema, kind);
+      switch (kind) {
+        case "ipd":
+          return schema.illustratedPartsCatalog?.content ?? "";
+        case "procedure":
+          return schema.procedure?.content ?? "";
+        case "faultIsolation":
+          return schema.faultIsolation?.content ?? "";
+        default:
+          return schema.description?.content ?? "";
+      }
     case "levelledPara":
       return schema.levelledPara?.content ?? "";
     case "proceduralStep":
@@ -152,7 +154,7 @@ export function resolveSchemaContentRuleForEditorParent(
   }
 }
 
-/** 该容器是否允许直接子节点为 `para` / `paragraph`（schema 驱动）。 */
+/** 该容器是否允许直接子节点为 `para` / `paragraph`。 */
 export function containerAllowsLooseParaChild(
   parentTypeName: string,
   schema: DescriptionSchema,
@@ -169,86 +171,144 @@ export function containerAllowsTrailingPara(
   return containerAllowsLooseParaChild(parentTypeName, schema);
 }
 
-/** 子节点是否为该容器 schema 规则下的非法块（用于清理 loose `para` 等）。 */
-export function isIllegalChildForSchemaContentRule(
+/** 子节点是否为该容器下非法的 loose `para` / `paragraph`。 */
+export function isIllegalLooseParaInContainer(
   parentTypeName: string,
   childTypeName: string,
   schema: DescriptionSchema,
 ): boolean {
-  if (LOOSE_PARA_TYPES.has(childTypeName)) {
-    return !containerAllowsLooseParaChild(parentTypeName, schema);
-  }
-  const rule = resolveSchemaContentRuleForEditorParent(parentTypeName, schema);
-  if (!rule.trim()) return false;
-  return !nodeTypeAllowedInContentRule(childTypeName, rule, schema);
+  if (!LOOSE_PARA_TYPES.has(childTypeName)) return false;
+  return !containerAllowsLooseParaChild(parentTypeName, schema);
 }
 
-const CONTAINERS_TO_SCAN_FOR_ILLEGAL_CHILDREN = new Set([
-  "doc",
-  "levelledPara",
-  "proceduralStep",
-  "mainProcedure",
-  "preliminaryRqmts",
-  "closeRqmts",
-  "catalogSeqNumberGroup",
-  "faultIsolationProcedure",
-  "isolationMainProcedure",
-  "isolationProcedure",
-]);
-
 function shouldScanContainer(typeName: string, schema: DescriptionSchema): boolean {
-  if (CONTAINERS_TO_SCAN_FOR_ILLEGAL_CHILDREN.has(typeName)) return true;
   return Boolean(resolveSchemaContentRuleForEditorParent(typeName, schema).trim());
 }
 
-/** 收集文档树中不符合 schema content 的非法子节点区间（含 loose `para`）。 */
-export function collectIllegalSchemaContentRanges(
+/** 统计文档中非法 loose `para` / `paragraph` 数量。 */
+export function countIllegalLooseParas(
   doc: PMNode,
   schema: DescriptionSchema,
-  parentPos = 0,
+): number {
+  let count = 0;
+  doc.descendants((node, _pos, parent) => {
+    if (!parent) return;
+    if (
+      isIllegalLooseParaInContainer(
+        parent.type.name,
+        node.type.name,
+        schema,
+      )
+    ) {
+      count++;
+    }
+  });
+  return count;
+}
+
+/** 收集文档树中不符合 schema 的 loose `para` / `paragraph` 区间。 */
+export function collectIllegalLooseParaRanges(
+  doc: PMNode,
+  schema: DescriptionSchema,
 ): { from: number; to: number }[] {
   const ranges: { from: number; to: number }[] = [];
-  let pos = parentPos + 1;
 
-  for (let i = 0; i < doc.childCount; i++) {
-    const child = doc.child(i);
-    const childPos = pos;
-
-    if (shouldScanContainer(doc.type.name, schema)) {
-      if (
-        isIllegalChildForSchemaContentRule(
-          doc.type.name,
-          child.type.name,
-          schema,
-        )
-      ) {
-        ranges.push({ from: childPos, to: childPos + child.nodeSize });
-      }
+  doc.descendants((node, pos, parent) => {
+    if (!parent) return;
+    if (!shouldScanContainer(parent.type.name, schema)) return;
+    if (
+      !isIllegalLooseParaInContainer(
+        parent.type.name,
+        node.type.name,
+        schema,
+      )
+    ) {
+      return;
     }
-
-    if (child.childCount > 0 && shouldScanContainer(child.type.name, schema)) {
-      ranges.push(
-        ...collectIllegalSchemaContentRanges(child, schema, childPos),
-      );
-    }
-
-    pos += child.nodeSize;
-  }
+    const to = pos + node.nodeSize;
+    if (to > doc.content.size) return;
+    ranges.push({ from: pos, to });
+  });
 
   return ranges;
 }
 
-/** 导出 JSON 时过滤非法 `doc` 直系子节点。 */
+/** 按 `from` 降序安全删除非法 loose `para` / `paragraph`。 */
+export function deleteIllegalLooseParaRanges(
+  tr: Transaction,
+  ranges: { from: number; to: number }[],
+): boolean {
+  if (ranges.length === 0) return false;
+
+  const sorted = [...ranges].sort((a, b) => b.from - a.from);
+  let changed = false;
+
+  for (const { from, to } of sorted) {
+    const size = tr.doc.content.size;
+    if (from < 0 || to > size || from >= to) continue;
+    const node = tr.doc.nodeAt(from);
+    if (!node || !LOOSE_PARA_TYPES.has(node.type.name)) continue;
+    if (to !== from + node.nodeSize) continue;
+    tr.delete(from, to);
+    changed = true;
+  }
+
+  return changed;
+}
+
+/** 导出 JSON 时过滤 `doc` 下非法 loose `para` / `paragraph`。 */
 export function filterDocChildrenForSchemaExport(
   children: { type?: string }[],
   schema: DescriptionSchema,
 ): { type?: string }[] {
   return children.filter(
     (child) =>
-      !isIllegalChildForSchemaContentRule(
-        "doc",
-        child.type ?? "",
-        schema,
-      ),
+      !isIllegalLooseParaInContainer("doc", child.type ?? "", schema),
   );
+}
+
+/**
+ * 当前 `TextSelection` 是否落在 schema 不允许 loose `para` 的位置
+ *（如图解类 `doc` 末尾间隙、非法 `doc` 直系 `para` 内）。
+ */
+export function isIllegalTextCursorPos(
+  $pos: ResolvedPos,
+  schema: DescriptionSchema,
+): boolean {
+  for (let d = $pos.depth; d > 0; d--) {
+    const node = $pos.node(d);
+    if (!LOOSE_PARA_TYPES.has(node.type.name)) continue;
+    const parent = $pos.node(d - 1);
+    return isIllegalLooseParaInContainer(
+      parent.type.name,
+      node.type.name,
+      schema,
+    );
+  }
+
+  if (
+    $pos.parent.type.name === "doc" &&
+    !containerAllowsLooseParaChild("doc", schema)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/** 点击非法文本区时，回退为选中点击位置之前最近的顶层块。 */
+export function resolveBlockNodeSelectionBeforePos(
+  doc: PMNode,
+  clickPos: number,
+): number | null {
+  let pos = 1;
+  let lastBlockPos: number | null = null;
+  for (let i = 0; i < doc.childCount; i++) {
+    const child = doc.child(i);
+    if (pos <= clickPos && child.isBlock) {
+      lastBlockPos = pos;
+    }
+    pos += child.nodeSize;
+  }
+  return lastBlockPos;
 }

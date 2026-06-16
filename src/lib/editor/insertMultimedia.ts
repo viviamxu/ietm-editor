@@ -1,5 +1,7 @@
 import type { Editor } from "@tiptap/core";
 import type { JSONContent } from "@tiptap/core";
+import type { Node as PMNode } from "@tiptap/pm/model";
+import { NodeSelection } from "@tiptap/pm/state";
 import { ensureParaAfterHostInsert } from "./insertParaAfterFmftBlock";
 import { insertFmftNodesIntoEditor } from "./resolveProcedureFmftInsertPos";
 import { resolveFileUrl } from "../ietm/fileUrl";
@@ -81,12 +83,85 @@ function buildParameterContentJson(
   return nodes;
 }
 
+function buildMultimediaObjectJson(item: InsertMultimediaPayload): JSONContent {
+  const ident = item.infoEntityIdent.trim();
+  const parameterContent = buildParameterContentJson(item.parameters);
+  return {
+    type: "multimediaObject",
+    attrs: {
+      infoEntityIdent: ident,
+      multimediaType: resolveMultimediaTypeForXml(item),
+      dataType: item.dataType ?? null,
+      fileType: item.fileType ?? null,
+      sceneSrc: resolveFileUrl(item.sceneSrc) || null,
+      previewImgSrc: resolveFileUrl(item.previewImgSrc) || null,
+      cnfPath: resolveFileUrl(item.cnfPath) || null,
+      mediaSrc: resolveFileUrl(item.mediaSrc) || null,
+    },
+    ...(parameterContent.length > 0 ? { content: parameterContent } : {}),
+  };
+}
+
+function buildMultimediaInnerContent(
+  items: InsertMultimediaPayload[],
+): JSONContent[] {
+  const content: JSONContent[] = [];
+  const title = items.find((item) => item.title?.trim())?.title?.trim();
+  if (title) {
+    content.push({
+      type: "title",
+      content: [{ type: "text", text: title }],
+    });
+  }
+  for (const item of items) {
+    const ident = item.infoEntityIdent.trim();
+    if (!ident) continue;
+    content.push(buildMultimediaObjectJson(item));
+  }
+  return content;
+}
+
+function insertContentIntoMultimedia(
+  editor: Editor,
+  multimediaPos: number,
+  multimedia: PMNode,
+  innerContent: JSONContent[],
+): boolean {
+  const innerFrom = multimediaPos + 1;
+  const innerTo = multimediaPos + multimedia.nodeSize - 1;
+  if (innerFrom >= innerTo) {
+    return editor.chain().focus().insertContentAt(innerFrom, innerContent).run();
+  }
+  return editor
+    .chain()
+    .focus()
+    .deleteRange({ from: innerFrom, to: innerTo })
+    .insertContentAt(innerFrom, innerContent)
+    .run();
+}
+
 /** 在光标处插入 S1000D `multimedia` / `multimediaObject` 块 */
 export function insertMultimediaIntoEditor(
   editor: Editor,
   items: InsertMultimediaPayload[],
 ): boolean {
   if (items.length === 0) return false;
+
+  const { selection } = editor.state;
+  if (selection instanceof NodeSelection) {
+    const selected = selection.node;
+    if (selected.type.name === "multimedia") {
+      const innerContent = buildMultimediaInnerContent(items);
+      if (innerContent.length === 0) return false;
+      return insertContentIntoMultimedia(
+        editor,
+        selection.from,
+        selected,
+        innerContent,
+      );
+    }
+  }
+
   const nodes: JSONContent[] = [];
   for (const item of items) {
     const ident = item.infoEntityIdent.trim();
@@ -101,22 +176,7 @@ export function insertMultimediaIntoEditor(
       });
     }
 
-    const parameterContent = buildParameterContentJson(item.parameters);
-    multimediaContent.push({
-      type: "multimediaObject",
-      attrs: {
-        infoEntityIdent: ident,
-        multimediaType: resolveMultimediaTypeForXml(item),
-        dataType: item.dataType ?? null,
-        fileType: item.fileType ?? null,
-        sceneSrc: resolveFileUrl(item.sceneSrc) || null,
-        previewImgSrc: resolveFileUrl(item.previewImgSrc) || null,
-        cnfPath: resolveFileUrl(item.cnfPath) || null,
-        mediaSrc: resolveFileUrl(item.mediaSrc) || null,
-      },
-      ...(parameterContent.length > 0 ? { content: parameterContent } : {}),
-    });
-
+    multimediaContent.push(buildMultimediaObjectJson(item));
     nodes.push({ type: "multimedia", content: multimediaContent });
   }
   if (nodes.length === 0) return false;

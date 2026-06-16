@@ -1,6 +1,10 @@
 import type { Editor } from "@tiptap/core";
 import { Fragment, Node as PMNode, type Schema } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, TextSelection } from "@tiptap/pm/state";
+
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { buildEmptyFmftBlockJson } from "../s1000d/buildEmptyFmftBlock";
+import { shouldReplenishEmptyFmftAfterDelete } from "../s1000d/schemaFmftReplenish";
 
 /** 支持整块删除的 `fmftElemGroup` 块（图片 / 多媒体）。 */
 export const DELETABLE_FMFT_BLOCK_TYPES = new Set(["figure", "multimedia"]);
@@ -22,6 +26,14 @@ function buildEmptyParaNode(schema: Schema): PMNode | null {
   if (!paraType) return null;
   try {
     return paraType.createAndFill() ?? paraType.create(null);
+  } catch {
+    return null;
+  }
+}
+
+function buildEmptyFmftBlockNode(schema: Schema, descriptionSchema: ReturnType<typeof getDescriptionSchema>): PMNode | null {
+  try {
+    return PMNode.fromJSON(schema, buildEmptyFmftBlockJson(descriptionSchema));
   } catch {
     return null;
   }
@@ -58,7 +70,10 @@ export function resolveFmftBlockAtPos(
   return null;
 }
 
-/** 描述类 `doc` 根若删后不满足内容规则则补空 `para`。 */
+/**
+ * 是否允许删除整块 `figure` / `multimedia`。
+ * 删后若 schema 要求至少一个 fmft，会在 {@link deleteFmftBlockAtPos} 中补空块（与清空内容同款占位）。
+ */
 export function canDeleteFmftBlock(doc: PMNode, blockPos: number): boolean {
   const resolved = resolveFmftBlockAtPos(doc, blockPos);
   if (!resolved) return false;
@@ -68,6 +83,18 @@ export function canDeleteFmftBlock(doc: PMNode, blockPos: number): boolean {
     const $pos = doc.resolve(actualPos);
     const parent = $pos.parent;
     const siblings = siblingsWithoutIndex(parent, $pos.index());
+    const descriptionSchema = getDescriptionSchema();
+
+    if (
+      shouldReplenishEmptyFmftAfterDelete(
+        parent.type.name,
+        siblings,
+        descriptionSchema,
+      ) &&
+      buildEmptyFmftBlockNode(parent.type.schema, descriptionSchema)
+    ) {
+      return true;
+    }
 
     if (parent.type.validContent(Fragment.from(siblings))) {
       return true;
@@ -85,7 +112,7 @@ export function canDeleteFmftBlock(doc: PMNode, blockPos: number): boolean {
   }
 }
 
-/** 删除整块 `figure` / `multimedia`。 */
+/** 删除整块 `figure` / `multimedia`；必要时在原位补空 figure/multimedia。 */
 export function deleteFmftBlockAtPos(
   editor: Editor,
   blockPos: number,
@@ -102,7 +129,17 @@ export function deleteFmftBlockAtPos(
   const $pos = doc.resolve(actualPos);
   const parent = $pos.parent;
   const siblings = siblingsWithoutIndex(parent, $pos.index());
+  const descriptionSchema = getDescriptionSchema();
+  const replenishFmft = shouldReplenishEmptyFmftAfterDelete(
+    parent.type.name,
+    siblings,
+    descriptionSchema,
+  );
+  const emptyFmftNode = replenishFmft
+    ? buildEmptyFmftBlockNode(parent.type.schema, descriptionSchema)
+    : null;
   const insertDefaultPara =
+    !replenishFmft &&
     parent.type.name === "doc" &&
     !parent.type.validContent(Fragment.from(siblings));
 
@@ -113,20 +150,19 @@ export function deleteFmftBlockAtPos(
       if (!dispatch) return true;
 
       tr.delete(actualPos, actualPos + block.nodeSize);
+      const insertPos = Math.min(tr.mapping.map(actualPos), tr.doc.content.size);
 
-      if (insertDefaultPara && !tr.doc.type.validContent(tr.doc.content)) {
+      if (emptyFmftNode) {
+        tr.insert(insertPos, emptyFmftNode);
+        tr.setSelection(NodeSelection.create(tr.doc, insertPos));
+      } else if (insertDefaultPara && !tr.doc.type.validContent(tr.doc.content)) {
         const emptyPara = buildEmptyParaNode(state.schema);
         if (emptyPara) {
-          const insertPos = Math.min(
-            tr.mapping.map(actualPos),
-            tr.doc.content.size,
-          );
           tr.insert(insertPos, emptyPara);
           tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos + 1), 1));
         }
       } else {
-        const nearPos = Math.min(tr.mapping.map(actualPos), tr.doc.content.size);
-        tr.setSelection(TextSelection.near(tr.doc.resolve(nearPos), -1));
+        tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos), -1));
       }
 
       dispatch(tr);

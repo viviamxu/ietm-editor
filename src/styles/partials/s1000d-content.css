@@ -397,6 +397,21 @@
   border-color: #cbd5e1;
 }
 
+.ietm-editor-surface .tiptap .s1000d-graphic-node--selected,
+.ietm-editor-surface .tiptap .s1000d-graphic-node.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-graphic-node--selected .s1000d-graphic-img,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-graphic-node.ProseMirror-selectednode
+  .s1000d-graphic-img {
+  outline: none;
+}
+
 .ietm-editor-surface .tiptap .s1000d-multimedia-node {
   position: relative;
   display: block;
