@@ -3,15 +3,19 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import type { FmftInsertIntent } from "../../store/insertPublicationModalStore";
-import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import type { InsertImagePayload } from "../../types/toolbar";
 import { resolveFileUrl } from "../ietm/fileUrl";
-import { isIpdDm } from "../s1000d/dmContentKind";
 import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
 import {
-  resolveIpdSiblingInsertPos,
-  resolveIpdTargetFmftBlockForSiblingInsert,
-} from "./ipdSiblingFmftInsert";
+  collectGraphicRefsFromFigureAppend,
+  collectGraphicRefsFromFiguresAt,
+  scheduleEnrichGraphicsWithSvgHotspots,
+  type InsertedGraphicRef,
+} from "./enrichGraphicHotspotsFromSvg";
+import {
+  resolveSiblingFigureInsertPos,
+  resolveTargetForSiblingFigureInsert,
+} from "./siblingFigureInsert";
 
 export type InsertImagesOptions = {
   fmftInsertIntent?: FmftInsertIntent;
@@ -77,14 +81,46 @@ function insertGraphicsIntoFigure(
   return editor.chain().focus().insertContentAt(insertPos, graphics).run();
 }
 
-function insertSiblingFiguresForIpd(
+function collectRefsAfterSiblingInsert(
+  editor: Editor,
+  insertPos: number | null,
+  images: InsertImagePayload[],
+): InsertedGraphicRef[] {
+  const doc = editor.state.doc;
+  if (insertPos != null) {
+    return collectGraphicRefsFromFiguresAt(doc, insertPos, images);
+  }
+  const target = resolveTargetForSiblingFigureInsert(editor);
+  const resolvedPos = resolveSiblingFigureInsertPos(editor, target);
+  if (resolvedPos != null) {
+    return collectGraphicRefsFromFiguresAt(doc, resolvedPos, images);
+  }
+  const from = editor.state.selection.from;
+  const $pos = doc.resolve(Math.min(from, doc.content.size));
+  for (let d = $pos.depth; d > 0; d--) {
+    if ($pos.node(d).type.name === "figure") {
+      return collectGraphicRefsFromFiguresAt(doc, $pos.before(d), images);
+    }
+  }
+  return collectGraphicRefsFromFiguresAt(doc, 1, images);
+}
+
+function insertSiblingFiguresFromToolbar(
   editor: Editor,
   images: InsertImagePayload[],
-): boolean {
-  const target = resolveIpdTargetFmftBlockForSiblingInsert(editor);
-  const insertPos = resolveIpdSiblingInsertPos(editor, target);
+): { ok: boolean; refs: InsertedGraphicRef[] } {
+  const target = resolveTargetForSiblingFigureInsert(editor);
+  const insertPos = resolveSiblingFigureInsertPos(editor, target);
   const figures = images.map(buildFigureJsonFromImagePayload);
-  return editor.chain().focus().insertContentAt(insertPos, figures).run();
+  const ok =
+    insertPos != null
+      ? editor.chain().focus().insertContentAt(insertPos, figures).run()
+      : editor.chain().focus().insertContent(figures).run();
+  if (!ok) return { ok: false, refs: [] };
+  return {
+    ok: true,
+    refs: collectRefsAfterSiblingInsert(editor, insertPos, images),
+  };
 }
 
 /** 在光标处插入一张或多张 S1000D `figure`（内含 `graphic`；兼容旧称 insertImages）。 */
@@ -96,54 +132,82 @@ export function insertImagesIntoEditor(
   if (images.length === 0) return false;
 
   const intent = options?.fmftInsertIntent ?? "sibling";
-  const schema = getDescriptionSchema();
 
-  if (isIpdDm(schema) && intent === "sibling") {
-    return insertSiblingFiguresForIpd(editor, images);
+  if (intent === "sibling") {
+    const { ok, refs } = insertSiblingFiguresFromToolbar(editor, images);
+    if (ok) scheduleEnrichGraphicsWithSvgHotspots(editor, refs);
+    return ok;
   }
 
   const { selection, doc } = editor.state;
   const graphics = images.map(buildGraphicJsonFromImagePayload);
+  let ok = false;
+  let refs: InsertedGraphicRef[] = [];
 
   if (selection instanceof NodeSelection) {
-    const selected = selection.node;
-
-    if (selected.type.name === "figure") {
-      return insertGraphicsIntoFigure(
+    if (selection.node.type.name === "figure") {
+      const figurePos = selection.from;
+      ok = insertGraphicsIntoFigure(
         editor,
-        selection.from,
-        selected,
+        figurePos,
+        selection.node,
         graphics,
       );
-    }
-
-    if (selected.type.name === "graphic") {
+      if (ok) {
+        refs = collectGraphicRefsFromFigureAppend(
+          editor.state.doc,
+          figurePos,
+          images,
+        );
+      }
+    } else if (selection.node.type.name === "graphic") {
       const enclosing = findEnclosingFigure(doc, selection.from);
       if (enclosing) {
-        return insertGraphicsIntoFigure(
+        ok = insertGraphicsIntoFigure(
           editor,
           enclosing.figurePos,
           enclosing.figure,
           graphics,
         );
+        if (ok) {
+          refs = collectGraphicRefsFromFigureAppend(
+            editor.state.doc,
+            enclosing.figurePos,
+            images,
+          );
+        }
       }
     }
-
-    const insertPos = selection.from + selected.nodeSize;
-    const figures = images.map(buildFigureJsonFromImagePayload);
-    return editor.chain().focus().insertContentAt(insertPos, figures).run();
   }
 
-  const enclosing = findEnclosingFigure(doc, selection.from);
-  if (enclosing) {
-    return insertGraphicsIntoFigure(
-      editor,
-      enclosing.figurePos,
-      enclosing.figure,
-      graphics,
-    );
+  if (!ok) {
+    const enclosing = findEnclosingFigure(doc, selection.from);
+    if (enclosing) {
+      ok = insertGraphicsIntoFigure(
+        editor,
+        enclosing.figurePos,
+        enclosing.figure,
+        graphics,
+      );
+      if (ok) {
+        refs = collectGraphicRefsFromFigureAppend(
+          editor.state.doc,
+          enclosing.figurePos,
+          images,
+        );
+      }
+    }
   }
 
-  const figures = images.map(buildFigureJsonFromImagePayload);
-  return editor.chain().focus().insertContent(figures).run();
+  if (!ok) {
+    ok = editor
+      .chain()
+      .focus()
+      .insertContent(images.map(buildFigureJsonFromImagePayload))
+      .run();
+    if (ok) refs = collectRefsAfterSiblingInsert(editor, null, images);
+  }
+
+  if (ok) scheduleEnrichGraphicsWithSvgHotspots(editor, refs);
+  return ok;
 }

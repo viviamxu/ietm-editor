@@ -7,12 +7,25 @@ import { isIpdDm } from "../s1000d/dmContentKind";
 
 const IPD_DOC_FMFT_TYPES = new Set(["figure", "multimedia"]);
 
-export type IpdFmftBlockRef = { blockPos: number; block: PMNode };
+export type FmftBlockRef = { blockPos: number; block: PMNode };
+
+function findEnclosingFigure(
+  doc: Editor["state"]["doc"],
+  pos: number,
+): FmftBlockRef | null {
+  const $pos = doc.resolve(pos);
+  for (let d = $pos.depth; d > 0; d--) {
+    if ($pos.node(d).type.name === "figure") {
+      return { blockPos: $pos.before(d), block: $pos.node(d) };
+    }
+  }
+  return null;
+}
 
 function findEnclosingDocFmftBlock(
   doc: Editor["state"]["doc"],
   pos: number,
-): IpdFmftBlockRef | null {
+): FmftBlockRef | null {
   const $pos = doc.resolve(pos);
   for (let d = $pos.depth; d > 0; d--) {
     const node = $pos.node(d);
@@ -28,9 +41,9 @@ function findEnclosingDocFmftBlock(
 
 function findLastDocFmftBlockBeforeCatalog(
   doc: Editor["state"]["doc"],
-): IpdFmftBlockRef | null {
+): FmftBlockRef | null {
   let childPos = 1;
-  let last: IpdFmftBlockRef | null = null;
+  let last: FmftBlockRef | null = null;
   for (let i = 0; i < doc.childCount; i++) {
     const child = doc.child(i);
     if (child.type.name === "catalogSeqNumberGroup") break;
@@ -45,9 +58,9 @@ function findLastDocFmftBlockBeforeCatalog(
 function findDocFmftBlockBeforePos(
   doc: Editor["state"]["doc"],
   pos: number,
-): IpdFmftBlockRef | null {
+): FmftBlockRef | null {
   let childPos = 1;
-  let last: IpdFmftBlockRef | null = null;
+  let last: FmftBlockRef | null = null;
   for (let i = 0; i < doc.childCount; i++) {
     const child = doc.child(i);
     if (child.type.name === "catalogSeqNumberGroup") break;
@@ -59,12 +72,9 @@ function findDocFmftBlockBeforePos(
   return last;
 }
 
-/** 图解类：解析 sibling 插入所参照的 `figure` / `multimedia`（工具栏插入用）。 */
-export function resolveIpdTargetFmftBlockForSiblingInsert(
+function resolveIpdTargetFmftBlockForSiblingInsert(
   editor: Editor,
-): IpdFmftBlockRef | null {
-  if (!isIpdDm(getDescriptionSchema())) return null;
-
+): FmftBlockRef | null {
   const { selection, doc } = editor.state;
 
   if (selection instanceof NodeSelection) {
@@ -72,7 +82,10 @@ export function resolveIpdTargetFmftBlockForSiblingInsert(
     if (IPD_DOC_FMFT_TYPES.has(selected.type.name)) {
       return { blockPos: selection.from, block: selected };
     }
-    if (selected.type.name === "graphic" || selected.type.name === "multimediaObject") {
+    if (
+      selected.type.name === "graphic" ||
+      selected.type.name === "multimediaObject"
+    ) {
       return findEnclosingDocFmftBlock(doc, selection.from);
     }
   }
@@ -88,10 +101,9 @@ export function resolveIpdTargetFmftBlockForSiblingInsert(
   return findLastDocFmftBlockBeforeCatalog(doc);
 }
 
-/** 图解类：在目标 fmft 块之后（或无目标时在 catalog 前）的插入位置。 */
-export function resolveIpdSiblingInsertPos(
+function resolveIpdSiblingInsertPos(
   editor: Editor,
-  target: IpdFmftBlockRef | null,
+  target: FmftBlockRef | null,
 ): number {
   if (target) return target.blockPos + target.block.nodeSize;
 
@@ -103,4 +115,50 @@ export function resolveIpdSiblingInsertPos(
     childPos += child.nodeSize;
   }
   return doc.content.size;
+}
+
+/** 描述/程序等：解析 sibling 插入所参照的 `figure`（工具栏插入用）。 */
+function resolveTargetFigureForSiblingInsert(
+  editor: Editor,
+): FmftBlockRef | null {
+  const { selection, doc } = editor.state;
+
+  if (selection instanceof NodeSelection) {
+    const selected = selection.node;
+    if (selected.type.name === "figure") {
+      return { blockPos: selection.from, block: selected };
+    }
+    if (selected.type.name === "graphic") {
+      return findEnclosingFigure(doc, selection.from);
+    }
+  }
+
+  return findEnclosingFigure(doc, selection.from);
+}
+
+/**
+ * 工具栏 sibling 插入：解析参照块。
+ * 图解类可参照 `figure` / `multimedia`；其它 DM 仅参照 `figure`。
+ */
+export function resolveTargetForSiblingFigureInsert(
+  editor: Editor,
+): FmftBlockRef | null {
+  if (isIpdDm(getDescriptionSchema())) {
+    return resolveIpdTargetFmftBlockForSiblingInsert(editor);
+  }
+  return resolveTargetFigureForSiblingInsert(editor);
+}
+
+/**
+ * sibling `figure` 插入位置；无参照块时返回 `null`（由调用方按当前选区插入）。
+ */
+export function resolveSiblingFigureInsertPos(
+  editor: Editor,
+  target: FmftBlockRef | null,
+): number | null {
+  if (target) return target.blockPos + target.block.nodeSize;
+  if (isIpdDm(getDescriptionSchema())) {
+    return resolveIpdSiblingInsertPos(editor, null);
+  }
+  return null;
 }

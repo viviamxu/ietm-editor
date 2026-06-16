@@ -14,7 +14,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
-import { DEMO_MULTIMEDIA_MP4 } from "../../lib/ietm/multimediaIcnHydrate";
+import { DEMO_IPD_HOTSPOT_SVG, DEMO_MULTIMEDIA_MP4 } from "../../lib/ietm/multimediaIcnHydrate";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import type { InsertPublicationMode } from "../../store/insertPublicationModalStore";
 
@@ -110,19 +110,32 @@ function makeMockRows(): PublicationRow[] {
   for (const menuId of LEAF_IDS) {
     for (let i = 1; i <= 24; i++) {
       n += 1;
-      const poster = `https://picsum.photos/seed/ietm${n}/300/200`;
       const isVideo = n % 3 === 0;
+      const isHotspotSvgDemo = n === 1;
+      const poster = isHotspotSvgDemo
+        ? DEMO_IPD_HOTSPOT_SVG
+        : `https://picsum.photos/seed/ietm${n}/300/200`;
       rows.push({
         id: `${menuId}-${i}`,
         menuId,
-        title: isVideo ? `演示视频 ${menuId}-${i}` : `插图标题 ${menuId}-${i}`,
-        code: `ICN-XXX-${String(n).padStart(6, "0")}-${String((n % 99999) + 10000).slice(0, 5)}`,
+        title: isVideo
+          ? `演示视频 ${menuId}-${i}`
+          : isHotspotSvgDemo
+            ? "图解热点 SVG（绘图.svg）"
+            : `插图标题 ${menuId}-${i}`,
+        code: isHotspotSvgDemo
+          ? "ICN-DEMO-HOTSPOT-SVG"
+          : `ICN-XXX-${String(n).padStart(6, "0")}-${String((n % 99999) + 10000).slice(0, 5)}`,
         version: String(1 + (n % 3)).padStart(3, "0"),
         security: String(1 + (n % 2)).padStart(2, "0"),
         preview: poster,
         dataType: null,
-        fileType: isVideo ? "mp4" : null,
-        filePath: isVideo ? DEMO_MULTIMEDIA_MP4 : undefined,
+        fileType: isVideo ? "mp4" : isHotspotSvgDemo ? "svg" : null,
+        filePath: isVideo
+          ? DEMO_MULTIMEDIA_MP4
+          : isHotspotSvgDemo
+            ? DEMO_IPD_HOTSPOT_SVG
+            : undefined,
         thPath: poster,
       });
     }
@@ -273,7 +286,10 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
         insertImagesIntoEditor(
           ed,
           rows.map((row) => ({
-            src: row.preview,
+            src:
+              row.fileType === "svg" && row.filePath?.trim()
+                ? row.filePath
+                : row.preview,
             alt: row.title,
             figureId: row.code,
           })),
