@@ -82,7 +82,7 @@ function extractLargestGridFromWordHtml(html: string): string[][] | null {
   return best;
 }
 
-function shouldHandleWordTablePaste(html: string, plain: string): boolean {
+export function shouldHandleWordTablePaste(html: string, plain: string): boolean {
   const tsv = parseTsvGrid(plain);
   if (tsv) {
     const cols = Math.max(1, ...tsv.map((row) => row.length), 1);

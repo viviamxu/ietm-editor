@@ -75,6 +75,7 @@ import {
   type IsolationFlowPayload,
 } from "../../lib/s1000d/isolationFlowBridge";
 import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableExtension";
+import { StripExternalPasteMarksExtension } from "../../extensions/s1000d/stripExternalPasteMarksExtension";
 import { S1000dTableCellSelectionExtension } from "../../extensions/s1000d/s1000dTableCellSelectionExtension";
 import { tableSelectionPluginKey } from "../../lib/editor/tableSelection";
 
@@ -331,6 +332,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000dSectionNumbersExtension,
         MigrateParagraphToParaExtension,
         PasteWordTableExtension,
+        StripExternalPasteMarksExtension,
         TextStyleKit.configure({
           lineHeight: false,
         }),
