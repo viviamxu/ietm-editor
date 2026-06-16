@@ -3,6 +3,11 @@ import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
 import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
+import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import {
+  figureHasDisplayableGraphic,
+} from "../../lib/editor/figureGraphic";
+import { openPublicationModalForFmftBlock } from "../../lib/editor/fmftPublicationPick";
 import {
   useCallback,
   useEffect,
@@ -40,6 +45,21 @@ function selectionOnThisFigure(props: NodeViewProps): {
       return { nodeSelected: false, caretInside: true };
     }
   }
+
+  if (sel instanceof NodeSelection && sel.node.type.name === "graphic") {
+    const figureNode = editor.state.doc.nodeAt(pos);
+    if (figureNode?.type.name === "figure") {
+      let offset = pos + 1;
+      for (let i = 0; i < figureNode.childCount; i++) {
+        const child = figureNode.child(i);
+        if (child.type.name === "graphic" && offset === sel.from) {
+          return { nodeSelected: false, caretInside: true };
+        }
+        offset += child.nodeSize;
+      }
+    }
+  }
+
   return { nodeSelected: false, caretInside: false };
 }
 
@@ -48,20 +68,38 @@ function selectionOnThisFigure(props: NodeViewProps): {
  * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块。
  */
 export function FigureNodeView(props: NodeViewProps) {
-  const { editor, getPos } = props;
+  const { editor, getPos, node } = props;
+  const { readOnly } = useNodeViewEditorState(editor);
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
     const bump = () => bumpFromSelection();
     editor.on("selectionUpdate", bump);
+    editor.on("update", bump);
     return () => {
       editor.off("selectionUpdate", bump);
+      editor.off("update", bump);
     };
   }, [editor]);
 
   const { nodeSelected, caretInside } = selectionOnThisFigure(props);
   const showChrome = hovered || caretInside || nodeSelected;
+  const showPickImagePlaceholder =
+    !readOnly && !figureHasDisplayableGraphic(node);
+  const showAddGraphicButton =
+    !readOnly && figureHasDisplayableGraphic(node);
+
+  const pickImage = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const p = getPos?.();
+      if (p == null) return;
+      openPublicationModalForFmftBlock(editor, p, "figure");
+    },
+    [editor, getPos],
+  );
 
   const selectWholeBlock = useCallback(
     (e: ReactMouseEvent<HTMLButtonElement>) => {
@@ -105,7 +143,35 @@ export function FigureNodeView(props: NodeViewProps) {
       >
         <Brackets size={14} strokeWidth={2} aria-hidden />
       </button>
-      <NodeViewContent className="s1000d-figure__content" />
+      <NodeViewContent
+        className={
+          showPickImagePlaceholder
+            ? "s1000d-figure__content s1000d-figure__content--pick-image"
+            : "s1000d-figure__content"
+        }
+      />
+      {showPickImagePlaceholder ? (
+        <button
+          type="button"
+          className="s1000d-figure__pick-image"
+          contentEditable={false}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={pickImage}
+        >
+          点击选择图片
+        </button>
+      ) : null}
+      {showAddGraphicButton ? (
+        <button
+          type="button"
+          className="s1000d-figure__add-image"
+          contentEditable={false}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={pickImage}
+        >
+          添加图片
+        </button>
+      ) : null}
     </NodeViewWrapper>
   );
 }

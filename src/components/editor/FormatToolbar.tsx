@@ -116,6 +116,7 @@ export function FormatToolbar({
   const isDescriptionDm = contentKind === "description";
   const isProcedureDm = contentKind === "procedure";
   const isFaultDm = contentKind === "faultIsolation";
+  const isIpdDm = contentKind === "ipd";
   const isRichTextDm = isDescriptionDm || isProcedureDm;
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
   const onInsertImageClick = useToolbarConfigStore((s) => s.onInsertImageClick);
@@ -239,6 +240,111 @@ export function FormatToolbar({
     }
     insertExternalRefFromSchema(editor, schema);
   };
+
+  if (isIpdDm) {
+    return (
+      <div className="ietm-format-toolbar" aria-label="格式工具栏">
+        <div className="ietm-format-toolbar__cluster">
+          {editable && isBuiltinVisible("lockReadonly") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              title={lockReadonlyButtonTitle}
+              aria-label="锁定，切换为只读"
+              onClick={() => onEditableChange(false)}
+            >
+              <LockKeyhole size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {!editable && isBuiltinVisible("editMode") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              title={editModeButtonTitle}
+              aria-label="编辑，切换为可编辑"
+              onClick={() => {
+                onEditableChange(true);
+                queueMicrotask(() => {
+                  editor.chain().focus().run();
+                });
+              }}
+            >
+              <LockKeyholeOpen size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          <ToolbarCustomItems placement="editToggle" ctx={toolbarCtx} />
+          {isBuiltinVisible("undo") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked || !editor.can().undo()}
+              onClick={() => editor.chain().focus().undo().run()}
+              title="撤销"
+            >
+              <Undo2 size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {isBuiltinVisible("redo") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked || !editor.can().redo()}
+              onClick={() => editor.chain().focus().redo().run()}
+              title="重做"
+            >
+              <Redo2 size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {isBuiltinVisible("save") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked || saveInFlight}
+              onClick={runHostOrDownloadSave}
+              title="保存"
+            >
+              <Save size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {isBuiltinVisible("clearContent") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={() => clearContent(editor, schema)}
+              title="清空内容"
+            >
+              <CircleX size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {isBuiltinVisible("insertImage") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={runInsertImage}
+              title="插入图片"
+              aria-label="插入图片"
+            >
+              <Image size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {isBuiltinVisible("insertFilm") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked}
+              onClick={runInsertFilm}
+              title="插入多媒体"
+              aria-label="插入多媒体"
+            >
+              <Film size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ietm-format-toolbar" aria-label="格式工具栏">

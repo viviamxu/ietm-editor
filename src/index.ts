@@ -5,6 +5,7 @@ import {
   getDescriptionInnerXmlFromDmXml,
   getFaultIsolationInnerXmlFromDmXml,
   getProcedureInnerXmlFromDmXml,
+  getIpdInnerXmlFromDmXml,
   getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
 } from "./extensions/S1000DNodes";
@@ -99,6 +100,7 @@ export {
   getDescriptionInnerXmlFromDmXml,
   getFaultIsolationInnerXmlFromDmXml,
   getProcedureInnerXmlFromDmXml,
+  getIpdInnerXmlFromDmXml,
   getDmInnerXmlFromDmXml,
   preprocessS1000dDescriptionHtmlFragment,
 };
@@ -107,6 +109,7 @@ export {
   isDescriptionDm,
   isFaultIsolationDm,
   isProcedureDm,
+  isIpdDm,
 } from "./lib/s1000d/dmContentKind";
 export type { DmContentKind } from "./lib/s1000d/dmContentKind";
 export {
@@ -122,6 +125,7 @@ export {
   buildMinimalProceduralStepJson,
   insertProceduralStepAtCursor,
 } from "./lib/s1000d/procedureInsert";
+export { buildEmptyIpdDocJson } from "./lib/s1000d/ipdInsert";
 export { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";
 export {
   buildEmptyDescriptionBodyFromSchema,

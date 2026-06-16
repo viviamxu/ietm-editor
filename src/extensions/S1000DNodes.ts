@@ -969,8 +969,8 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
  */
 export const S1000DGraphic = Node.create({
   name: "graphic",
-  atom: true,
   group: "block",
+  content: "hotspot*",
   selectable: true,
 
   addAttributes() {
@@ -1365,7 +1365,7 @@ export const S1000DMultimedia = Node.create({
 export const S1000DFigure = Node.create({
   name: "figure",
   group: "block fmftElemGroup",
-  content: "(title?) graphic+",
+  content: "(title?) graphic*",
   defining: true,
 
   addAttributes(): Record<keyof FigureAttrs, { default: string | null }> {
@@ -2178,6 +2178,54 @@ export function getProcedureInnerXmlFromDmXml(
   return preprocessS1000dDescriptionHtmlFragment(joined);
 }
 
+function normalizeIpdInnerXmlForEditor(ipcRoot: Element) {
+  for (const csn of Array.from(ipcRoot.children)) {
+    if (csn.localName?.toLowerCase() !== "catalogseqnumber") continue;
+    const ref = csn.querySelector("internalRef, internalref");
+    const refId =
+      ref?.getAttribute("internalRefId") ??
+      ref?.getAttribute("internalrefid");
+    if (refId?.trim()) {
+      csn.setAttribute("data-hotspot-ref-id", refId.trim());
+      ref?.remove();
+    }
+  }
+}
+
+/**
+ * 从 DM 中取出 `<content>/<illustratedPartsCatalog>` 的直接子节点 XML 片段。
+ * `catalogSeqNumber` 序列包装入编辑器专用 `catalogSeqNumberGroup`。
+ */
+export function getIpdInnerXmlFromDmXml(xmlString: string): string | null {
+  extractIdentAndStatusSection(xmlString);
+  const contentRoot = extractContentElementFromDmXml(xmlString);
+  if (!contentRoot) return null;
+  const ipc = Array.from(contentRoot.children).find(
+    (c) => c.localName?.toLowerCase() === "illustratedpartscatalog",
+  );
+  if (!ipc) return null;
+
+  normalizeIpdInnerXmlForEditor(ipc);
+
+  const serializer = new XMLSerializer();
+  const figureParts: string[] = [];
+  const catalogParts: string[] = [];
+
+  for (const child of Array.from(ipc.children)) {
+    const ln = child.localName?.toLowerCase();
+    if (ln === "figure" || ln === "multimedia") {
+      figureParts.push(serializer.serializeToString(child));
+    } else if (ln === "catalogseqnumber") {
+      catalogParts.push(serializer.serializeToString(child));
+    }
+  }
+
+  const groupHtml = `<div data-s1000d-node="catalogSeqNumberGroup">${catalogParts.join("")}</div>`;
+  const joined = `${figureParts.join("")}${groupHtml}`;
+  if (!joined.trim()) return null;
+  return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
 /**
  * 按 schema 正文类型从 DM 抽取可 `setContent` 的片段；类型不匹配时尝试其它根元素。
  */
@@ -2188,16 +2236,27 @@ export function getDmInnerXmlFromDmXml(
   const description = getDescriptionInnerXmlFromDmXml(xmlString);
   const fault = getFaultIsolationInnerXmlFromDmXml(xmlString);
   const procedure = getProcedureInnerXmlFromDmXml(xmlString);
+  const ipd = getIpdInnerXmlFromDmXml(xmlString);
 
-  let kind: "description" | "faultIsolation" | "procedure" = "description";
+  let kind: "description" | "faultIsolation" | "procedure" | "ipd" =
+    "description";
   if (typeof schemaOrPreferFault === "boolean") {
     kind = schemaOrPreferFault ? "faultIsolation" : "description";
   } else if (schemaOrPreferFault) {
     const contentRule = schemaOrPreferFault.content?.content ?? "";
-    if (/\bfaultIsolation\b/.test(contentRule)) kind = "faultIsolation";
+    if (/\billustratedPartsCatalog\b/.test(contentRule)) kind = "ipd";
+    else if (/\bfaultIsolation\b/.test(contentRule)) kind = "faultIsolation";
     else if (/\bprocedure\b/.test(contentRule)) kind = "procedure";
     else if (/\bdescription\b/.test(contentRule)) kind = "description";
     else if (
+      Object.prototype.hasOwnProperty.call(
+        schemaOrPreferFault,
+        "illustratedPartsCatalog",
+      ) &&
+      !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "description")
+    ) {
+      kind = "ipd";
+    } else if (
       Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "procedure") &&
       !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "description")
     ) {
@@ -2213,13 +2272,16 @@ export function getDmInnerXmlFromDmXml(
     }
   }
 
+  if (kind === "ipd") {
+    return ipd ?? description ?? procedure ?? fault;
+  }
   if (kind === "faultIsolation") {
-    return fault ?? procedure ?? description;
+    return fault ?? procedure ?? description ?? ipd;
   }
   if (kind === "procedure") {
-    return procedure ?? description ?? fault;
+    return procedure ?? description ?? fault ?? ipd;
   }
-  return description ?? procedure ?? fault;
+  return description ?? procedure ?? fault ?? ipd;
 }
 
 /**

@@ -3,6 +3,11 @@ import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
 import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
+import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import {
+  multimediaHasDisplayableObject,
+  openPublicationModalForFmftBlock,
+} from "../../lib/editor/fmftPublicationPick";
 import {
   useCallback,
   useEffect,
@@ -63,20 +68,36 @@ function selectionOnThisMultimedia(props: NodeViewProps): {
  * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块。
  */
 export function MultimediaNodeView(props: NodeViewProps) {
-  const { editor, getPos } = props;
+  const { editor, getPos, node } = props;
+  const { readOnly } = useNodeViewEditorState(editor);
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
     const bump = () => bumpFromSelection();
     editor.on("selectionUpdate", bump);
+    editor.on("update", bump);
     return () => {
       editor.off("selectionUpdate", bump);
+      editor.off("update", bump);
     };
   }, [editor]);
 
   const { nodeSelected, caretInside } = selectionOnThisMultimedia(props);
   const showChrome = hovered || caretInside || nodeSelected;
+  const showPickPlaceholder =
+    !readOnly && !multimediaHasDisplayableObject(node);
+
+  const pickMedia = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const p = getPos?.();
+      if (p == null) return;
+      openPublicationModalForFmftBlock(editor, p, "multimedia");
+    },
+    [editor, getPos],
+  );
 
   const selectWholeBlock = useCallback(
     (e: ReactMouseEvent<HTMLButtonElement>) => {
@@ -120,9 +141,26 @@ export function MultimediaNodeView(props: NodeViewProps) {
       >
         <Brackets size={14} strokeWidth={2} aria-hidden />
       </button>
-      <div className="s1000d-multimedia__content">
+      <div
+        className={
+          showPickPlaceholder
+            ? "s1000d-multimedia__content s1000d-multimedia__content--pick-media"
+            : "s1000d-multimedia__content"
+        }
+      >
         <NodeViewContent className="s1000d-multimedia__inner" />
       </div>
+      {showPickPlaceholder ? (
+        <button
+          type="button"
+          className="s1000d-multimedia-node__pick-media"
+          contentEditable={false}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={pickMedia}
+        >
+          点击选择图片
+        </button>
+      ) : null}
     </NodeViewWrapper>
   );
 }

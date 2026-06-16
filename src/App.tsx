@@ -12,16 +12,10 @@ import {
 // import bikeDmSampleXml from "./data/描述类.xml?raw";
 
 // import faultDmXml from "./data/故障类.XML?raw";
-import procedureDmXml from "./data/程序类.xml?raw";
-
-// import faultIsolationSchema from "./data/描述类Schema.json";
-
-// import faultIsolationSchema from "./data/故障隔离.json";
-import procedureSchema from "./data/程序类.json";
-import demoDerivativeBindingTree from "./data/derivativeBindingTree.json";
+import ipdDmXml from "./data/图解demo.XML?raw";
+import ipdSchema from "./data/图解类.json";
 
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
-import type { DerivativeBindingTreeNode } from "./types/procedureAnimationBinding";
 
 /** 本地 Demo：在 .env 中设置 VITE_API_BASE_URL 后走内置 PDF 预览 GET；未设置则在预览面板提示配置方式 */
 const demoApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? "";
@@ -47,19 +41,14 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: procedureDmXml,
+      dmXml: ipdDmXml,
 
-      dmDocumentName: "procedureDm.xml",
+      dmDocumentName: "图解demo.XML",
 
       theme: "auto",
       onThemeChange: setResolvedTheme,
 
-      // dmXml: faultDmXml,
-      // dmDocumentName: "故障类.XML",
-
-      descriptionSchema: procedureSchema as DescriptionSchema,
-      onFetchDerivativeBindingTree: async () =>
-        demoDerivativeBindingTree as DerivativeBindingTreeNode[],
+      descriptionSchema: ipdSchema as DescriptionSchema,
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {
