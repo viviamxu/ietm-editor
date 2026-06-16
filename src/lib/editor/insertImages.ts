@@ -2,9 +2,20 @@ import type { Editor, JSONContent } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
-import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
-import { resolveFileUrl } from "../ietm/fileUrl";
+import type { FmftInsertIntent } from "../../store/insertPublicationModalStore";
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import type { InsertImagePayload } from "../../types/toolbar";
+import { resolveFileUrl } from "../ietm/fileUrl";
+import { isIpdDm } from "../s1000d/dmContentKind";
+import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
+import {
+  resolveIpdSiblingInsertPos,
+  resolveIpdTargetFmftBlockForSiblingInsert,
+} from "./ipdSiblingFmftInsert";
+
+export type InsertImagesOptions = {
+  fmftInsertIntent?: FmftInsertIntent;
+};
 
 /** 将插入参数转为 S1000D `graphic`（`figure` 子节点）。 */
 export function buildGraphicJsonFromImagePayload(
@@ -66,12 +77,30 @@ function insertGraphicsIntoFigure(
   return editor.chain().focus().insertContentAt(insertPos, graphics).run();
 }
 
+function insertSiblingFiguresForIpd(
+  editor: Editor,
+  images: InsertImagePayload[],
+): boolean {
+  const target = resolveIpdTargetFmftBlockForSiblingInsert(editor);
+  const insertPos = resolveIpdSiblingInsertPos(editor, target);
+  const figures = images.map(buildFigureJsonFromImagePayload);
+  return editor.chain().focus().insertContentAt(insertPos, figures).run();
+}
+
 /** 在光标处插入一张或多张 S1000D `figure`（内含 `graphic`；兼容旧称 insertImages）。 */
 export function insertImagesIntoEditor(
   editor: Editor,
   images: InsertImagePayload[],
+  options?: InsertImagesOptions,
 ): boolean {
   if (images.length === 0) return false;
+
+  const intent = options?.fmftInsertIntent ?? "sibling";
+  const schema = getDescriptionSchema();
+
+  if (isIpdDm(schema) && intent === "sibling") {
+    return insertSiblingFiguresForIpd(editor, images);
+  }
 
   const { selection, doc } = editor.state;
   const graphics = images.map(buildGraphicJsonFromImagePayload);

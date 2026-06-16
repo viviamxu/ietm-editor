@@ -241,6 +241,8 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
 
   const handleConfirm = () => {
     const ed = editor;
+    const fmftInsertIntent =
+      useInsertPublicationModalStore.getState().fmftInsertIntent;
     if (!ed) {
       closeInsertPublication();
       return;
@@ -275,6 +277,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
             alt: row.title,
             figureId: row.code,
           })),
+          { fmftInsertIntent },
         );
       }
     });

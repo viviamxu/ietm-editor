@@ -23,7 +23,6 @@ import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
-import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
 import { getDmContentKind } from "./dmContentKind";
 import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
 import { resolvePreferredFmftBlockType } from "./resolveFmftPublicationMode";

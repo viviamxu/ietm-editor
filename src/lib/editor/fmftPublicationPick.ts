@@ -72,5 +72,7 @@ export function openPublicationModalForFmftBlock(
   }
 
   editor.chain().focus().setNodeSelection(blockPos).run();
-  useInsertPublicationModalStore.getState().openInsertPublication(editor, mode);
+  useInsertPublicationModalStore
+    .getState()
+    .openInsertPublication(editor, mode, { fmftInsertIntent: "intoBlock" });
 }
