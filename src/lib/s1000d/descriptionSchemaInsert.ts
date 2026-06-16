@@ -23,6 +23,7 @@ import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
+import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
 import { getDmContentKind } from "./dmContentKind";
 import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
@@ -1235,14 +1236,24 @@ function serializeNodeToXml(node: JSONContent): string {
   }
 
   if (node.type === "doc") {
-    const kind = getDmContentKind(getDescriptionSchema());
+    const schema = getDescriptionSchema();
+    const kind = getDmContentKind(schema);
+    const docChildren = filterDocChildrenForSchemaExport(
+      node.content || [],
+      schema,
+    )
+      .map(serializeNodeToXml)
+      .join("\n");
     if (kind === "faultIsolation") {
-      return `<content>\n  <faultIsolation>\n${children}\n  </faultIsolation>\n</content>`;
+      return `<content>\n  <faultIsolation>\n${docChildren}\n  </faultIsolation>\n</content>`;
     }
     if (kind === "procedure") {
-      return `<content>\n  <procedure>\n${children}\n  </procedure>\n</content>`;
+      return `<content>\n  <procedure>\n${docChildren}\n  </procedure>\n</content>`;
     }
-    return `<content>\n  <description>\n${children}\n  </description>\n</content>`;
+    if (kind === "ipd") {
+      return `<content>\n  <illustratedPartsCatalog>\n${docChildren}\n  </illustratedPartsCatalog>\n</content>`;
+    }
+    return `<content>\n  <description>\n${docChildren}\n  </description>\n</content>`;
   }
 
   if (xmlTag === "tgroup") {

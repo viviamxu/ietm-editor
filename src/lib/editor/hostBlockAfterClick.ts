@@ -2,8 +2,9 @@ import type { Editor } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
 
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { containerAllowsTrailingPara } from "../s1000d/schemaContentRuleValidate";
 import {
-  FMFT_PARA_CONTAINER_TYPES,
   HOST_BLOCK_TYPES_NEEDING_PARA_AFTER,
   insertParaAfterHostBlock,
 } from "./insertParaAfterFmftBlock";
@@ -75,7 +76,11 @@ function resolveHostBlockBeforeParaEl(
     const $para = view.state.doc.resolve(paraPos);
     for (let d = $para.depth; d > 0; d--) {
       const parent = $para.node(d);
-      if (!FMFT_PARA_CONTAINER_TYPES.has(parent.type.name)) continue;
+      if (
+        !containerAllowsTrailingPara(parent.type.name, getDescriptionSchema())
+      ) {
+        continue;
+      }
       const index = $para.index(d);
       if (index === 0) return null;
       const prev = parent.child(index - 1);

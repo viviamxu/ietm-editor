@@ -27,6 +27,7 @@ import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
 import { S1000DFmftBlockEnterKeymap } from "../../extensions/s1000d/s1000dFmftBlockEnterKeymap";
 import { S1000DHostBlockAfterClickExtension } from "../../extensions/s1000d/s1000dHostBlockAfterClickExtension";
+import { S1000DSchemaContentGuardExtension } from "../../extensions/s1000d/s1000dSchemaContentGuardExtension";
 import { S1000DHostBlockTrailingParaBackspaceKeymap } from "../../extensions/s1000d/s1000dHostBlockTrailingParaBackspaceKeymap";
 import { RepairOrphanTgroupExtension } from "../../extensions/s1000d/repairOrphanTgroupExtension";
 import { S1000dAttentionParaKeymap } from "../../extensions/s1000d/s1000dAttentionParaKeymap";
@@ -319,6 +320,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000DListExitKeymap,
         S1000DFmftBlockEnterKeymap,
         S1000DHostBlockAfterClickExtension,
+        S1000DSchemaContentGuardExtension,
         S1000DHostBlockTrailingParaBackspaceKeymap,
         RepairOrphanTgroupExtension,
         S1000dAttentionParaKeymap,

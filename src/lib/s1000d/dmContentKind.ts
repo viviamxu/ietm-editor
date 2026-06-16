@@ -1,7 +1,11 @@
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 
 /** DM 正文根类型：由 schema 的 `content.content`（及 XML `<content>` 子元素）决定。 */
-export type DmContentKind = "description" | "faultIsolation" | "procedure";
+export type DmContentKind =
+  | "description"
+  | "faultIsolation"
+  | "procedure"
+  | "ipd";
 
 /**
  * 根据描述类 / 故障隔离 / 程序类 schema 判定编辑器模式。
@@ -9,6 +13,9 @@ export type DmContentKind = "description" | "faultIsolation" | "procedure";
  */
 export function getDmContentKind(schema: DescriptionSchema): DmContentKind {
   const contentRule = schema.content?.content ?? "";
+  if (/\billustratedPartsCatalog\b/.test(contentRule)) {
+    return "ipd";
+  }
   if (/\bfaultIsolation\b/.test(contentRule)) {
     return "faultIsolation";
   }
@@ -44,4 +51,8 @@ export function isFaultIsolationDm(schema: DescriptionSchema): boolean {
 
 export function isProcedureDm(schema: DescriptionSchema): boolean {
   return getDmContentKind(schema) === "procedure";
+}
+
+export function isIpdDm(schema: DescriptionSchema): boolean {
+  return getDmContentKind(schema) === "ipd";
 }
