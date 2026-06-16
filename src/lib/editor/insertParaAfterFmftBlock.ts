@@ -2,6 +2,9 @@ import type { Editor } from "@tiptap/core";
 import { Fragment, type Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { NodeSelection, TextSelection, type Transaction } from "@tiptap/pm/state";
 
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { containerAllowsTrailingPara } from "../s1000d/schemaContentRuleValidate";
+
 /** `fmftElemGroup` 块：其后可接 S1000D `para`。 */
 export const FMFT_BLOCK_TYPES = new Set(["multimedia", "figure", "table"]);
 
@@ -18,12 +21,16 @@ export const HOST_BLOCK_TYPES_NEEDING_PARA_AFTER = new Set([
   ...ATTENTION_SHELL_BLOCK_TYPES,
 ]);
 
-/** 允许 `para` 跟在上述块后的容器（含描述类根 `doc`）。 */
+/** @deprecated 使用 {@link containerAllowsTrailingPara}（按 schema `content` 判定）。 */
 export const FMFT_PARA_CONTAINER_TYPES = new Set([
   "doc",
   "proceduralStep",
   "levelledPara",
 ]);
+
+function parentAllowsTrailingPara(parentTypeName: string): boolean {
+  return containerAllowsTrailingPara(parentTypeName, getDescriptionSchema());
+}
 
 /** 宿主块后可接的 trailing 段类型（含 StarterKit `paragraph` 误落）。 */
 const TRAILING_BLOCK_TYPES = new Set(["para", "paragraph"]);
@@ -110,7 +117,7 @@ export function insertParaAfterHostBlock(
   const insertPos = blockPos + block.nodeSize;
   const $insert = editor.state.doc.resolve(insertPos);
   const parent = $insert.parent;
-  if (!FMFT_PARA_CONTAINER_TYPES.has(parent.type.name)) return false;
+  if (!parentAllowsTrailingPara(parent.type.name)) return false;
 
   const nextIndex = $insert.index();
   if (nextIndex < parent.childCount) {
@@ -236,7 +243,7 @@ export function findHostBlockBeforeSelection(
   const $from = selection.$from;
   for (let d = $from.depth; d > 0; d--) {
     const parent = $from.node(d);
-    if (!FMFT_PARA_CONTAINER_TYPES.has(parent.type.name)) continue;
+    if (!parentAllowsTrailingPara(parent.type.name)) continue;
 
     const index = $from.index(d);
     if (index === 0) continue;
@@ -321,7 +328,7 @@ export function resolveHostBlockPosNear(
   const $pos = doc.resolve(safePos);
   for (let d = $pos.depth; d > 0; d--) {
     const parent = $pos.node(d);
-    if (!FMFT_PARA_CONTAINER_TYPES.has(parent.type.name)) continue;
+    if (!parentAllowsTrailingPara(parent.type.name)) continue;
     const last = findLastHostBlockInParent($pos.before(d), parent);
     if (last) return last.pos;
   }
@@ -366,7 +373,7 @@ export function ensureParaAfterHostNearSelection(editor: Editor): boolean {
 
   for (let d = $pos.depth; d > 0; d--) {
     const parent = $pos.node(d);
-    if (!FMFT_PARA_CONTAINER_TYPES.has(parent.type.name)) continue;
+    if (!parentAllowsTrailingPara(parent.type.name)) continue;
 
     const last = findLastHostBlockNeedingParaInParent(
       doc,

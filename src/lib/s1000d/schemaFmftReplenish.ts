@@ -1,7 +1,7 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
 
 import type { DescriptionSchema } from "../../types/descriptionSchema";
-import { getDmContentKind } from "./dmContentKind";
+import { resolveSchemaContentRuleForEditorParent } from "./schemaContentRuleValidate";
 
 const ATTENTION_BLOCK_TYPES = new Set(["warning", "caution", "note"]);
 
@@ -11,36 +11,7 @@ export function countFmftBlocksInSiblings(siblings: PMNode[]): number {
   ).length;
 }
 
-/** 编辑器内父容器 → 对应 DescriptionSchema `content` 规则字符串。 */
-export function resolveSchemaContentRuleForEditorParent(
-  parentTypeName: string,
-  schema: DescriptionSchema,
-): string {
-  const kind = getDmContentKind(schema);
-  switch (parentTypeName) {
-    case "levelledPara":
-      return schema.levelledPara?.content ?? "";
-    case "proceduralStep":
-      return (
-        schema.proceduralStep?.content ??
-        schema.mainProcedure?.content ??
-        ""
-      );
-    case "doc":
-      switch (kind) {
-        case "ipd":
-          return schema.illustratedPartsCatalog?.content ?? "";
-        case "procedure":
-          return schema.procedure?.content ?? "";
-        case "faultIsolation":
-          return schema.faultIsolation?.content ?? "";
-        default:
-          return schema.description?.content ?? "";
-      }
-    default:
-      return "";
-  }
-}
+export { resolveSchemaContentRuleForEditorParent } from "./schemaContentRuleValidate";
 
 function siblingsSatisfyMixedAlternationPlus(
   alternates: string[],
