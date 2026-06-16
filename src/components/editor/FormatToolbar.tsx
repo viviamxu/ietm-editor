@@ -119,8 +119,6 @@ export function FormatToolbar({
   const isIpdDm = contentKind === "ipd";
   const isRichTextDm = isDescriptionDm || isProcedureDm;
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
-  const onInsertImageClick = useToolbarConfigStore((s) => s.onInsertImageClick);
-  const onInsertFilmClick = useToolbarConfigStore((s) => s.onInsertFilmClick);
   const onInsertExternalRefClick = useToolbarConfigStore(
     (s) => s.onInsertExternalRefClick,
   );
@@ -218,18 +216,10 @@ export function FormatToolbar({
     !hideBuiltinItems?.includes(id);
 
   const runInsertImage = () => {
-    if (onInsertImageClick) {
-      onInsertImageClick(toolbarCtx);
-      return;
-    }
     insertImageFromSchema(editor, schema);
   };
 
   const runInsertFilm = () => {
-    if (onInsertFilmClick) {
-      onInsertFilmClick(toolbarCtx);
-      return;
-    }
     insertFilmFromSchema(editor, schema);
   };
 

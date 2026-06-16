@@ -13,6 +13,10 @@ import {
   insertParaAfterHostBlock,
   resolveHostBlockPosFromSelection,
 } from "../editor/insertParaAfterFmftBlock";
+import {
+  tryDelegateInsertFilm,
+  tryDelegateInsertImage,
+} from "../editor/fmftPublicationPick";
 import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
 import {
   canInsertAttentionNodeIntoEditor,
@@ -423,6 +427,7 @@ export function insertFilmFromSchema(
   schema: DescriptionSchema,
 ): void {
   void schema;
+  if (tryDelegateInsertFilm(editor, { fmftInsertIntent: "sibling" })) return;
   useInsertPublicationModalStore.getState().openInsertPublication(
     editor,
     "multimedia",
@@ -434,6 +439,7 @@ export function insertImageFromSchema(
   schema: DescriptionSchema,
 ): void {
   void schema;
+  if (tryDelegateInsertImage(editor, { fmftInsertIntent: "sibling" })) return;
   useInsertPublicationModalStore
     .getState()
     .openInsertPublication(editor, "image");

@@ -20,6 +20,7 @@ import {
 import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
+import type { InsertImagesOptions } from "../../lib/editor/insertImages";
 import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
 import type {
   InsertDmRefPayload,
@@ -53,7 +54,10 @@ export interface IETMEditorRootHandle {
   addTableColumnBefore: () => boolean;
   addTableColumnAfter: () => boolean;
   setFooterStatus: (status: IETMEditorFooterStatus | null) => void;
-  insertImages: (images: InsertImagePayload[]) => boolean;
+  insertImages: (
+    images: InsertImagePayload[],
+    options?: InsertImagesOptions,
+  ) => boolean;
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
   refreshDmPdfPreview: () => void;
@@ -184,8 +188,8 @@ export const IETMEditorRoot = forwardRef<
       addTableColumnAfter: () =>
         editorRef.current?.addTableColumnAfter() ?? false,
       setFooterStatus: (status) => setFooterStatusOverride(status),
-      insertImages: (images) =>
-        editorRef.current?.insertImages(images) ?? false,
+      insertImages: (images, options) =>
+        editorRef.current?.insertImages(images, options) ?? false,
       insertDmRefs: (items) => editorRef.current?.insertDmRefs(items) ?? false,
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,

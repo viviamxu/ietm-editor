@@ -80,7 +80,10 @@ import { S1000dTableCellSelectionExtension } from "../../extensions/s1000d/s1000
 import { tableSelectionPluginKey } from "../../lib/editor/tableSelection";
 
 import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
-import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
+import {
+  insertImagesIntoEditor,
+  type InsertImagesOptions,
+} from "../../lib/editor/insertImages";
 import {
   insertMultimediaIntoEditor,
   type InsertMultimediaPayload,
@@ -149,7 +152,10 @@ export interface IETMEditorRefValue {
   addTableColumnBefore: () => boolean;
   addTableColumnAfter: () => boolean;
   /** 在光标处插入一张或多张 S1000D 图片节点 */
-  insertImages: (images: InsertImagePayload[]) => boolean;
+  insertImages: (
+    images: InsertImagePayload[],
+    options?: InsertImagesOptions,
+  ) => boolean;
   /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用 */
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
@@ -585,9 +591,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           };
           return chain.addColumnAfter().run();
         },
-        insertImages: (images) => {
+        insertImages: (images, options) => {
           if (!editor) return false;
-          return insertImagesIntoEditor(editor, images);
+          return insertImagesIntoEditor(editor, images, options);
         },
         insertDmRefs: (items) => {
           if (!editor) return false;

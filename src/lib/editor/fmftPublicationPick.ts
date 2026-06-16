@@ -1,9 +1,12 @@
 import type { Editor } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 
-import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
-import { resolveFmftPublicationMode } from "../s1000d/resolveFmftPublicationMode";
+import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
+import type {
+  FmftInsertIntent,
+  ToolbarItemContext,
+} from "../../types/toolbar";
 import { removeEmptyGraphicsFromFigure } from "./figureGraphic";
 
 /** `multimedia` 是否已有可展示的 `multimediaObject`。 */
@@ -52,8 +55,59 @@ export function removeEmptyObjectsFromMultimedia(
   editor.view.dispatch(tr);
 }
 
+export function buildFmftToolbarContext(
+  editor: Editor,
+  options: {
+    fmftInsertIntent?: FmftInsertIntent;
+    fmftBlockPos?: number;
+    fmftBlockType?: "figure" | "multimedia";
+  } = {},
+): ToolbarItemContext {
+  return {
+    editor,
+    editable: editor.isEditable,
+    activeTabKey: "insert",
+    formatBarLocked: !editor.isEditable,
+    fmftInsertIntent: options.fmftInsertIntent ?? "sibling",
+    fmftBlockPos: options.fmftBlockPos,
+    fmftBlockType: options.fmftBlockType,
+  };
+}
+
+/** 若宿主配置了 `onInsertImageClick` 则委托宿主，返回 `true`。 */
+export function tryDelegateInsertImage(
+  editor: Editor,
+  options: {
+    fmftInsertIntent?: FmftInsertIntent;
+    fmftBlockPos?: number;
+    fmftBlockType?: "figure" | "multimedia";
+  } = {},
+): boolean {
+  const onInsertImageClick =
+    useToolbarConfigStore.getState().onInsertImageClick;
+  if (!onInsertImageClick) return false;
+  onInsertImageClick(buildFmftToolbarContext(editor, options));
+  return true;
+}
+
+/** 若宿主配置了 `onInsertFilmClick` 则委托宿主，返回 `true`。 */
+export function tryDelegateInsertFilm(
+  editor: Editor,
+  options: {
+    fmftInsertIntent?: FmftInsertIntent;
+    fmftBlockPos?: number;
+    fmftBlockType?: "figure" | "multimedia";
+  } = {},
+): boolean {
+  const onInsertFilmClick = useToolbarConfigStore.getState().onInsertFilmClick;
+  if (!onInsertFilmClick) return false;
+  onInsertFilmClick(buildFmftToolbarContext(editor, options));
+  return true;
+}
+
 /**
  * 按 schema 规则打开「插入图片」或「插入多媒体」弹框，并选中目标 fmft 块以便回填。
+ * 若宿主已配置 `onInsertImageClick` / `onInsertFilmClick` 则委托宿主。
  */
 export function openPublicationModalForFmftBlock(
   editor: Editor,
@@ -62,9 +116,6 @@ export function openPublicationModalForFmftBlock(
 ): void {
   if (!editor.isEditable) return;
 
-  const schema = getDescriptionSchema();
-  const mode = resolveFmftPublicationMode(schema);
-
   if (blockType === "figure") {
     removeEmptyGraphicsFromFigure(editor, blockPos);
   } else {
@@ -72,6 +123,20 @@ export function openPublicationModalForFmftBlock(
   }
 
   editor.chain().focus().setNodeSelection(blockPos).run();
+
+  const delegateOptions = {
+    fmftInsertIntent: "intoBlock" as const,
+    fmftBlockPos: blockPos,
+    fmftBlockType: blockType,
+  };
+
+  if (blockType === "figure") {
+    if (tryDelegateInsertImage(editor, delegateOptions)) return;
+  } else if (tryDelegateInsertFilm(editor, delegateOptions)) {
+    return;
+  }
+
+  const mode = blockType === "multimedia" ? "multimedia" : "image";
   useInsertPublicationModalStore
     .getState()
     .openInsertPublication(editor, mode, { fmftInsertIntent: "intoBlock" });

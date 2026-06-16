@@ -43,6 +43,7 @@ import type {
 import type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
+  FmftInsertIntent,
   InsertDmRefPayload,
   OpenExternalRefContext,
   InsertImagePayload,
@@ -51,6 +52,7 @@ import type {
   ToolbarItemPlacement,
   ToolbarTab,
 } from "./types/toolbar";
+import type { InsertImagesOptions } from "./lib/editor/insertImages";
 import type {
   DescriptionSchema,
   DescriptionSchemaRule,
@@ -200,11 +202,13 @@ export { bindProceduralStepDerivativeRef } from "./lib/s1000d/bindProceduralStep
 export type {
   BuiltinToolbarItemId,
   CustomToolbarItem,
+  FmftInsertIntent,
   InsertDmRefPayload,
   OpenExternalRefContext,
   InsertImagePayload,
   InsertMultimediaPayload,
   InsertMultimediaParameterPayload,
+  InsertImagesOptions,
   ToolbarConfig,
   ToolbarItemContext,
   ToolbarItemPlacement,
@@ -354,8 +358,11 @@ export interface IETMEditorInstance {
   setToolbarConfig(config: ToolbarConfig | null): void;
   /** 更新程序步骤「绑定动画」宿主配置；传 `null` 恢复默认 */
   setProcedureBindingConfig(config: ProcedureBindingConfig | null): void;
-  /** 在光标处插入一张或多张 S1000D `image` 节点（宿主选图后调用） */
-  insertImages(images: InsertImagePayload[]): boolean;
+  /** 在光标处插入一张或多张 S1000D `figure`（宿主选图后调用） */
+  insertImages(
+    images: InsertImagePayload[],
+    options?: InsertImagesOptions,
+  ): boolean;
   /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用（宿主选 DM 后调用） */
   insertDmRefs(items: InsertDmRefPayload[]): boolean;
   /** 在光标处插入 `multimedia` / `multimediaObject`（`infoEntityIdent`） */
@@ -569,9 +576,9 @@ export function createIETMEditor(
     setProcedureBindingConfig: (config) => {
       useProcedureBindingStore.getState().setProcedureBindingConfig(config);
     },
-    insertImages: (images) => {
+    insertImages: (images, options) => {
       if (disposed || !handleRef.current) return false;
-      return handleRef.current.insertImages(images);
+      return handleRef.current.insertImages(images, options);
     },
     insertDmRefs: (items) => {
       if (disposed || !handleRef.current) return false;

@@ -4,12 +4,24 @@ import type { ReactNode } from "react";
 /** 与顶栏「文件 / 编辑 / 插入」选项卡一致 */
 export type ToolbarTab = "file" | "edit" | "insert";
 
+/** 图解类 fmft 插入意图（工具栏 vs NodeView 块内回填） */
+export type FmftInsertIntent = "sibling" | "intoBlock";
+
 export type ToolbarItemContext = {
   editor: Editor;
   editable: boolean;
   activeTabKey: ToolbarTab;
   /** 只读时为 `true`，与格式栏禁用逻辑一致 */
   formatBarLocked: boolean;
+  /**
+   * `sibling`：工具栏插入，在当前 figure/multimedia 后新增同级块（默认）。
+   * `intoBlock`：figure/multimedia NodeView「选择图片」等，写入当前块内部。
+   */
+  fmftInsertIntent?: FmftInsertIntent;
+  /** `intoBlock` 时目标块在文档中的位置 */
+  fmftBlockPos?: number;
+  /** `intoBlock` 时目标块类型 */
+  fmftBlockType?: "figure" | "multimedia";
 };
 
 /** 格式工具栏内置按钮 id（用于 `hideBuiltinItems`） */
@@ -69,11 +81,13 @@ export type ToolbarConfig = {
   /**
    * 宿主接管「插入图片」点击（仍显示内置按钮，除非同时在 `hideBuiltinItems` 中含 `insertImage`）。
    * 未传时打开 SDK 内置出版物弹框。
+   * `intoBlock` 时请根据 `ctx.fmftInsertIntent` 调用 `insertImages(..., { fmftInsertIntent: 'intoBlock' })`。
    */
   onInsertImageClick?: (ctx: ToolbarItemContext) => void;
   /**
    * 宿主接管「插入多媒体」点击。
    * 未传时与插入图片共用内置出版物弹框。
+   * `intoBlock` 时编辑器已选中目标 `multimedia`，确认后调用 `insertMultimedia` 即可写入块内。
    */
   onInsertFilmClick?: (ctx: ToolbarItemContext) => void;
   /**
