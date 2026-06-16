@@ -49,9 +49,7 @@ export const StripExternalPasteMarksExtension = Extension.create({
             const sanitized = sanitizeExternalPasteSlice(slice, view.state.schema);
             if (sanitized.content.size === 0) return true;
 
-            const preferPlain =
-              view.input.shiftKey && view.input.lastKeyCode !== 45;
-            dispatchPastedSlice(view, sanitized, preferPlain);
+            dispatchPastedSlice(view, sanitized, false);
             return true;
           },
         },
