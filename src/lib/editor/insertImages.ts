@@ -3,15 +3,13 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import type { FmftInsertIntent } from "../../store/insertPublicationModalStore";
-import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import type { InsertImagePayload } from "../../types/toolbar";
 import { resolveFileUrl } from "../ietm/fileUrl";
-import { isIpdDm } from "../s1000d/dmContentKind";
 import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
 import {
-  resolveIpdSiblingInsertPos,
-  resolveIpdTargetFmftBlockForSiblingInsert,
-} from "./ipdSiblingFmftInsert";
+  resolveSiblingFigureInsertPos,
+  resolveTargetForSiblingFigureInsert,
+} from "./siblingFigureInsert";
 
 export type InsertImagesOptions = {
   fmftInsertIntent?: FmftInsertIntent;
@@ -77,14 +75,17 @@ function insertGraphicsIntoFigure(
   return editor.chain().focus().insertContentAt(insertPos, graphics).run();
 }
 
-function insertSiblingFiguresForIpd(
+function insertSiblingFiguresFromToolbar(
   editor: Editor,
   images: InsertImagePayload[],
 ): boolean {
-  const target = resolveIpdTargetFmftBlockForSiblingInsert(editor);
-  const insertPos = resolveIpdSiblingInsertPos(editor, target);
+  const target = resolveTargetForSiblingFigureInsert(editor);
+  const insertPos = resolveSiblingFigureInsertPos(editor, target);
   const figures = images.map(buildFigureJsonFromImagePayload);
-  return editor.chain().focus().insertContentAt(insertPos, figures).run();
+  if (insertPos != null) {
+    return editor.chain().focus().insertContentAt(insertPos, figures).run();
+  }
+  return editor.chain().focus().insertContent(figures).run();
 }
 
 /** 在光标处插入一张或多张 S1000D `figure`（内含 `graphic`；兼容旧称 insertImages）。 */
@@ -96,28 +97,25 @@ export function insertImagesIntoEditor(
   if (images.length === 0) return false;
 
   const intent = options?.fmftInsertIntent ?? "sibling";
-  const schema = getDescriptionSchema();
 
-  if (isIpdDm(schema) && intent === "sibling") {
-    return insertSiblingFiguresForIpd(editor, images);
+  if (intent === "sibling") {
+    return insertSiblingFiguresFromToolbar(editor, images);
   }
 
   const { selection, doc } = editor.state;
   const graphics = images.map(buildGraphicJsonFromImagePayload);
 
   if (selection instanceof NodeSelection) {
-    const selected = selection.node;
-
-    if (selected.type.name === "figure") {
+    if (selection.node.type.name === "figure") {
       return insertGraphicsIntoFigure(
         editor,
         selection.from,
-        selected,
+        selection.node,
         graphics,
       );
     }
 
-    if (selected.type.name === "graphic") {
+    if (selection.node.type.name === "graphic") {
       const enclosing = findEnclosingFigure(doc, selection.from);
       if (enclosing) {
         return insertGraphicsIntoFigure(
@@ -128,10 +126,6 @@ export function insertImagesIntoEditor(
         );
       }
     }
-
-    const insertPos = selection.from + selected.nodeSize;
-    const figures = images.map(buildFigureJsonFromImagePayload);
-    return editor.chain().focus().insertContentAt(insertPos, figures).run();
   }
 
   const enclosing = findEnclosingFigure(doc, selection.from);
