@@ -9,11 +9,14 @@ import {
   type IETMEditorInstance,
   type IETMResolvedTheme,
 } from "./index";
-// import bikeDmSampleXml from "./data/描述类.xml?raw";
+import bikeDmSampleXml from "./data/描述类.xml?raw";
+import bikeSchema from "./data/描述类Schema.json";
 
 // import faultDmXml from "./data/故障类.XML?raw";
 import ipdDmXml from "./data/图解demo.XML?raw";
 import ipdSchema from "./data/图解类.json";
+import procedureSchema from "./data/程序类.json";
+import procedureDmXml from "./data/程序类.xml?raw";
 
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 
@@ -41,14 +44,14 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: ipdDmXml,
+      dmXml: bikeDmSampleXml,
 
       dmDocumentName: "图解demo.XML",
 
       theme: "auto",
       onThemeChange: setResolvedTheme,
 
-      descriptionSchema: ipdSchema as DescriptionSchema,
+      descriptionSchema: bikeSchema as DescriptionSchema,
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {

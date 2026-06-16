@@ -7,6 +7,12 @@ import type { InsertImagePayload } from "../../types/toolbar";
 import { resolveFileUrl } from "../ietm/fileUrl";
 import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
 import {
+  collectGraphicRefsFromFigureAppend,
+  collectGraphicRefsFromFiguresAt,
+  scheduleEnrichGraphicsWithSvgHotspots,
+  type InsertedGraphicRef,
+} from "./enrichGraphicHotspotsFromSvg";
+import {
   resolveSiblingFigureInsertPos,
   resolveTargetForSiblingFigureInsert,
 } from "./siblingFigureInsert";
@@ -75,17 +81,46 @@ function insertGraphicsIntoFigure(
   return editor.chain().focus().insertContentAt(insertPos, graphics).run();
 }
 
+function collectRefsAfterSiblingInsert(
+  editor: Editor,
+  insertPos: number | null,
+  images: InsertImagePayload[],
+): InsertedGraphicRef[] {
+  const doc = editor.state.doc;
+  if (insertPos != null) {
+    return collectGraphicRefsFromFiguresAt(doc, insertPos, images);
+  }
+  const target = resolveTargetForSiblingFigureInsert(editor);
+  const resolvedPos = resolveSiblingFigureInsertPos(editor, target);
+  if (resolvedPos != null) {
+    return collectGraphicRefsFromFiguresAt(doc, resolvedPos, images);
+  }
+  const from = editor.state.selection.from;
+  const $pos = doc.resolve(Math.min(from, doc.content.size));
+  for (let d = $pos.depth; d > 0; d--) {
+    if ($pos.node(d).type.name === "figure") {
+      return collectGraphicRefsFromFiguresAt(doc, $pos.before(d), images);
+    }
+  }
+  return collectGraphicRefsFromFiguresAt(doc, 1, images);
+}
+
 function insertSiblingFiguresFromToolbar(
   editor: Editor,
   images: InsertImagePayload[],
-): boolean {
+): { ok: boolean; refs: InsertedGraphicRef[] } {
   const target = resolveTargetForSiblingFigureInsert(editor);
   const insertPos = resolveSiblingFigureInsertPos(editor, target);
   const figures = images.map(buildFigureJsonFromImagePayload);
-  if (insertPos != null) {
-    return editor.chain().focus().insertContentAt(insertPos, figures).run();
-  }
-  return editor.chain().focus().insertContent(figures).run();
+  const ok =
+    insertPos != null
+      ? editor.chain().focus().insertContentAt(insertPos, figures).run()
+      : editor.chain().focus().insertContent(figures).run();
+  if (!ok) return { ok: false, refs: [] };
+  return {
+    ok: true,
+    refs: collectRefsAfterSiblingInsert(editor, insertPos, images),
+  };
 }
 
 /** 在光标处插入一张或多张 S1000D `figure`（内含 `graphic`；兼容旧称 insertImages）。 */
@@ -99,45 +134,80 @@ export function insertImagesIntoEditor(
   const intent = options?.fmftInsertIntent ?? "sibling";
 
   if (intent === "sibling") {
-    return insertSiblingFiguresFromToolbar(editor, images);
+    const { ok, refs } = insertSiblingFiguresFromToolbar(editor, images);
+    if (ok) scheduleEnrichGraphicsWithSvgHotspots(editor, refs);
+    return ok;
   }
 
   const { selection, doc } = editor.state;
   const graphics = images.map(buildGraphicJsonFromImagePayload);
+  let ok = false;
+  let refs: InsertedGraphicRef[] = [];
 
   if (selection instanceof NodeSelection) {
     if (selection.node.type.name === "figure") {
-      return insertGraphicsIntoFigure(
+      const figurePos = selection.from;
+      ok = insertGraphicsIntoFigure(
         editor,
-        selection.from,
+        figurePos,
         selection.node,
         graphics,
       );
-    }
-
-    if (selection.node.type.name === "graphic") {
+      if (ok) {
+        refs = collectGraphicRefsFromFigureAppend(
+          editor.state.doc,
+          figurePos,
+          images,
+        );
+      }
+    } else if (selection.node.type.name === "graphic") {
       const enclosing = findEnclosingFigure(doc, selection.from);
       if (enclosing) {
-        return insertGraphicsIntoFigure(
+        ok = insertGraphicsIntoFigure(
           editor,
           enclosing.figurePos,
           enclosing.figure,
           graphics,
         );
+        if (ok) {
+          refs = collectGraphicRefsFromFigureAppend(
+            editor.state.doc,
+            enclosing.figurePos,
+            images,
+          );
+        }
       }
     }
   }
 
-  const enclosing = findEnclosingFigure(doc, selection.from);
-  if (enclosing) {
-    return insertGraphicsIntoFigure(
-      editor,
-      enclosing.figurePos,
-      enclosing.figure,
-      graphics,
-    );
+  if (!ok) {
+    const enclosing = findEnclosingFigure(doc, selection.from);
+    if (enclosing) {
+      ok = insertGraphicsIntoFigure(
+        editor,
+        enclosing.figurePos,
+        enclosing.figure,
+        graphics,
+      );
+      if (ok) {
+        refs = collectGraphicRefsFromFigureAppend(
+          editor.state.doc,
+          enclosing.figurePos,
+          images,
+        );
+      }
+    }
   }
 
-  const figures = images.map(buildFigureJsonFromImagePayload);
-  return editor.chain().focus().insertContent(figures).run();
+  if (!ok) {
+    ok = editor
+      .chain()
+      .focus()
+      .insertContent(images.map(buildFigureJsonFromImagePayload))
+      .run();
+    if (ok) refs = collectRefsAfterSiblingInsert(editor, null, images);
+  }
+
+  if (ok) scheduleEnrichGraphicsWithSvgHotspots(editor, refs);
+  return ok;
 }

@@ -11,6 +11,9 @@ import { useIcnInfoStore } from "../../store/icnInfoStore";
 export const DEMO_MULTIMEDIA_MP4 =
   "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
+/** 本地 Demo：图解类热点测试 SVG（`public/demo/绘图.svg`） */
+export const DEMO_IPD_HOTSPOT_SVG = "/demo/绘图.svg";
+
 /** 本地无 API 时，已知样本 ICN 的演示媒体（与 ReferencePublicationModal mock 第 3 条一致） */
 const DEMO_ICN_BY_CODE: Record<
   string,
