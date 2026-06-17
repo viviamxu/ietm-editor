@@ -159,3 +159,47 @@ export function handleAttentionParaEnter(editor: Editor): boolean {
   if (insertAttentionListItemOnEnter(editor)) return true;
   return false;
 }
+
+function isInAttentionInlineHost($from: ResolvedPos): boolean {
+  if (!INLINE_HOST_TYPES.has($from.parent.type.name)) return false;
+  return resolveAttentionParaContext($from) != null;
+}
+
+/**
+ * Delete：位于 attention 内联宿主末尾且无后续同级节点时拦截，
+ * 避免默认 `joinForward` 删除空 `warningAndCautionLead` 并跳出 isolating 块。
+ */
+export function handleAttentionInlineDelete(editor: Editor): boolean {
+  if (!editor.isEditable) return false;
+  if (!editor.state.selection.empty) return false;
+
+  const { $from } = editor.state.selection;
+  if (!isInAttentionInlineHost($from)) return false;
+
+  const atEnd = $from.parentOffset >= $from.parent.content.size;
+  if (!atEnd) return false;
+
+  const grandParent = $from.node($from.depth - 1);
+  const indexInGrandParent = $from.index($from.depth - 1);
+  if (indexInGrandParent + 1 < grandParent.childCount) return false;
+
+  return true;
+}
+
+/**
+ * Backspace：位于 attention 内联宿主行首且无前置同级节点时拦截，
+ * 避免默认行为选中或跳出 isolating 的 warning/caution/note 块。
+ */
+export function handleAttentionInlineBackspace(editor: Editor): boolean {
+  if (!editor.isEditable) return false;
+  if (!editor.state.selection.empty) return false;
+
+  const { $from } = editor.state.selection;
+  if (!isInAttentionInlineHost($from)) return false;
+  if ($from.parentOffset > 0) return false;
+
+  const indexInGrandParent = $from.index($from.depth - 1);
+  if (indexInGrandParent > 0) return false;
+
+  return true;
+}

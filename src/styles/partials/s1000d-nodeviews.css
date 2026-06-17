@@ -498,6 +498,7 @@
 .ietm-editor-surface .tiptap .s1000d-attention-lead__text {
   display: block;
   outline: none;
+  min-height: 1.35em;
   font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.35;
