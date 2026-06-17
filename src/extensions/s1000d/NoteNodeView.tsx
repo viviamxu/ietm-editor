@@ -118,13 +118,11 @@ export function NoteNodeView(props: NodeViewProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {showChrome ? (
-        <AttentionBlockDeleteButton
-          editor={editor}
-          getPos={getPos}
-          blockLabel="note"
-        />
-      ) : null}
+      <AttentionBlockDeleteButton
+        editor={editor}
+        getPos={getPos}
+        blockLabel="note"
+      />
       <button
         type="button"
         className="s1000d-attention-block__block-handle"

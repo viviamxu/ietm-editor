@@ -50,6 +50,7 @@ import {
 } from "../lib/s1000d/dmRefXml";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
+import { propagateEntryAlignToParasInFragment } from "../lib/s1000d/tableEntryAlign";
 
 export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
 export { S1000DEmphasis };
@@ -2001,7 +2002,7 @@ export function preprocessS1000dDescriptionHtmlFragment(
       renameS1000dTitleTagsForHtmlImport(stripped),
     ),
   );
-  return body;
+  return propagateEntryAlignToParasInFragment(body);
 }
 
 /**

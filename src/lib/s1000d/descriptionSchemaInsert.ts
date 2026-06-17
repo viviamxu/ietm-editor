@@ -29,6 +29,9 @@ import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { getDmContentKind } from "./dmContentKind";
 import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
+import {
+  resolveEntryAttrsForExport,
+} from "./tableEntryAlign";
 import { resolvePreferredFmftBlockType } from "./resolveFmftPublicationMode";
 import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
@@ -1205,7 +1208,10 @@ function serializeNodeToXml(node: JSONContent): string {
   const xmlTag = tagMap[node.type || ""] || node.type || "unknown";
 
   // 5. 过滤不需要导出的内部属性
-  let attrsStr = buildAttrsString(node.attrs);
+  let attrsStr =
+    node.type === "entry"
+      ? buildAttrsString(resolveEntryAttrsForExport(node.attrs, node))
+      : buildAttrsString(node.attrs);
 
   // 🌟 核心防线 2: 自动补齐 S1000D 表格强制要求的 cols 属性
   if (xmlTag === "tgroup" && !attrsStr.includes("cols=")) {
