@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { JSONContent } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import {
   resetDescriptionSchema,
   setDescriptionSchema,
@@ -47,6 +47,7 @@ export interface IETMEditorRootHandle {
   setDmDocumentName: (name: string) => void;
   fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
+  getEditor: () => Editor | null;
   focus: () => void;
   insertTable: (options?: InsertTableOptions) => boolean;
   addTableRowBefore: () => boolean;
@@ -178,6 +179,7 @@ export const IETMEditorRoot = forwardRef<
         editorRef.current?.fillEmptyContentFromSchema() ?? false,
       getJSON: () =>
         editorRef.current?.getJSON() ?? { type: "doc", content: [] },
+      getEditor: () => editorRef.current?.getEditor() ?? null,
       focus: () => editorRef.current?.focus(),
       insertTable: (options) =>
         editorRef.current?.insertTable(options) ?? false,

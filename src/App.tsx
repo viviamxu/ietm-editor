@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import "./App.css";
 
+import type { Editor } from "@tiptap/core";
+
 import {
   createIETMEditor,
   getDescriptionSchema,
@@ -44,14 +46,14 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: bikeDmSampleXml,
+      dmXml: procedureDmXml,
 
       dmDocumentName: "图解demo.XML",
 
       theme: "auto",
       onThemeChange: setResolvedTheme,
 
-      descriptionSchema: bikeSchema as DescriptionSchema,
+      descriptionSchema: procedureSchema as DescriptionSchema,
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {
@@ -64,6 +66,18 @@ function App() {
     });
 
     instanceRef.current = instance;
+
+    let offDevReady: (() => void) | undefined;
+    if (import.meta.env.DEV) {
+      const win = window as Window & {
+        __editor?: IETMEditorInstance;
+        __tiptapEditor?: Editor | null;
+      };
+      win.__editor = instance;
+      offDevReady = instance.on("ready", () => {
+        win.__tiptapEditor = instance.getEditor();
+      });
+    }
 
     setResolvedTheme(instance.getTheme());
     const offUpdate = instance.on("update", ({ json }) => {
@@ -83,11 +97,25 @@ function App() {
 
       console.log("[ietm] content rule:", schema.content?.content);
     });
+    
 
     return () => {
       offUpdate();
 
       offReady();
+
+      offDevReady?.();
+
+      if (import.meta.env.DEV) {
+        const win = window as Window & {
+          __editor?: IETMEditorInstance;
+          __tiptapEditor?: Editor | null;
+        };
+        if (win.__editor === instance) {
+          win.__editor = undefined;
+        }
+        win.__tiptapEditor = undefined;
+      }
 
       instance.destroy();
 

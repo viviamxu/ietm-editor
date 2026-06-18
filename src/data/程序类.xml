@@ -329,6 +329,23 @@
                   <para>此处省略...</para>
                </proceduralStep>
             </proceduralStep>
+            <proceduralStep>
+               <title>表格2</title>
+               <table>
+                  <title/>   
+                  <tgroup cols="1">
+                    <tbody>
+                      <row>
+                        <entry>
+                          <para>
+                            最小
+                          </para>
+                        </entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </table>
+            </proceduralStep>
          </mainProcedure>
          <closeRqmts>
             <reqCondGroup>

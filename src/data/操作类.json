@@ -1,0 +1,2310 @@
+{
+  "SITA": {
+    "content": "text*"
+  },
+  "accessPointRef": {
+    "content": "name? shortName? refs?",
+    "attributes": [
+      "applicRefId",
+      "accessPointNumber",
+      "accessPointTypeValue",
+      "id",
+      "lsarData",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "acronym": {
+    "content": "acronymTerm acronymDefinition",
+    "group": "inline",
+    "attributes": [
+      "acronymType",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "acronymDefinition": {
+    "content": "(text | subScript | superScript)*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "acronymTerm": {
+    "content": "(text | subScript | superScript)*",
+    "group": "inline",
+    "attributes": [
+      "internalRefId"
+    ]
+  },
+  "additionalModification": {
+    "content": "text*"
+  },
+  "applic": {
+    "content": "(displayText (assert | evaluate)?) | assert | evaluate",
+    "attributes": [
+      "applicConfiguration",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "applicCrossRefTableRef": {
+    "content": "dmRef"
+  },
+  "applicRef": {
+    "content": "dmRef?",
+    "attributes": [
+      "applicIdentValue",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "arc": {
+    "attributes": [
+      "type",
+      "xlink:from",
+      "xlink:to",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "assert": {
+    "content": "text*",
+    "attributes": [
+      "applicPropertyIdent",
+      "applicPropertyType",
+      "applicPropertyValues",
+      "applicDisplayClass"
+    ]
+  },
+  "attentionListItemPara": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | zoneRef | accessPointRef | identNumber | internalRef | changeInline | emphasis | symbol | subScript | superScript | dmRef | pmRef | externalPubRef | acronym | acronymTerm | caption | verbatimText)*",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "attentionRandomList": {
+    "content": "attentionRandomListItem+",
+    "group": "block",
+    "attributes": [
+      "listItemPrefix",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "attentionRandomListItem": {
+    "content": "attentionListItemPara",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "attentionSequentialList": {
+    "content": "title? attentionSequentialListItem+",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "attentionSequentialListItem": {
+    "content": "attentionListItemPara? | attentionRandomList?",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "authorityExceptions": {
+    "content": "productConfiguration? retrofit?"
+  },
+  "authorityInfo": {
+    "content": "text*"
+  },
+  "authorityInfoAndTp": {
+    "content": "authorityInfo techPubBase"
+  },
+  "authorityNotes": {
+    "content": "text*"
+  },
+  "behavior": {
+    "attributes": [
+      "linkShow",
+      "linkActuate"
+    ]
+  },
+  "brexDmRef": {
+    "content": "dmRef"
+  },
+  "building": {
+    "content": "text*"
+  },
+  "businessUnit": {
+    "content": "businessUnitName businessUnitAddress? contactPerson*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "businessUnitAddress": {
+    "content": "department? street? postOfficeBox? postalZipCode? city country state? province? building? room? phoneNumber* faxNumber* email* internet* SITA?",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "businessUnitName": {
+    "content": "text*"
+  },
+  "caption": {
+    "content": "captionLine+",
+    "attributes": [
+      "color",
+      "captionWidth",
+      "captionHeight",
+      "systemIdentCode",
+      "alignCaption",
+      "tableOfContentType",
+      "captionType",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "captionBody": {
+    "content": "captionRow+",
+    "attributes": [
+      "valign",
+      "applicRefId"
+    ]
+  },
+  "captionEntry": {
+    "content": "caption | captionText",
+    "attributes": [
+      "colname",
+      "namest",
+      "nameend",
+      "spanname",
+      "morerows",
+      "colsep",
+      "rowsep",
+      "valign",
+      "alignCaptionEntry",
+      "applicRefId"
+    ]
+  },
+  "captionGroup": {
+    "content": "colspec* spanspec* captionBody",
+    "attributes": [
+      "cols",
+      "alignCaption",
+      "tableOfContentType",
+      "colsep",
+      "rowsep",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "captionLine": {
+    "content": "(text | acronymTerm*)*"
+  },
+  "captionRow": {
+    "content": "captionEntry+",
+    "attributes": [
+      "rowsep",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "captionText": {
+    "content": "(text | internalRef | indexFlag | changeInline | emphasis | subScript | superScript | dmRef | pmRef | externalPubRef | acronym | acronymTerm)*",
+    "attributes": [
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "case": {
+    "content": "caseCond (crewDrillStep | (if elseIf*) | case)+",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "caseCond": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "attributes": [
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "catalogSeqNumberRef": {
+    "content": "refs?",
+    "group": "inline",
+    "attributes": [
+      "modelIdentCode",
+      "systemDiffCode",
+      "systemCode",
+      "subSystemCode",
+      "subSubSystemCode",
+      "assyCode",
+      "figureNumber",
+      "figureNumberVariant",
+      "itemLocationCode",
+      "item",
+      "itemVariant",
+      "itemSeqNumberValue",
+      "initialProvisioningProjectNumber",
+      "responsiblePartnerCompanyCode",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "caution": {
+    "content": "symbol* warningAndCautionPara+",
+    "group": "block",
+    "attributes": [
+      "cautionType",
+      "internalRefId",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "cautionRef": {
+    "content": "dmRef?",
+    "group": "block",
+    "attributes": [
+      "id",
+      "cautionIdentNumber",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "challenge": {
+    "content": "para | (figure | figureAlts | multimedia | multimediaAlts | foldout | table)",
+    "attributes": [
+      "applicRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "challengeAndResponse": {
+    "content": "challenge (crewMemberGroup* response)+"
+  },
+  "changeInline": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "group": "inline",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "circuitBreakerRef": {
+    "content": "name? shortName? refs?",
+    "group": "inline",
+    "attributes": [
+      "circuitBreakerNumber",
+      "circuitBreakerType",
+      "circuitBreakerAction",
+      "checkSum",
+      "id",
+      "installationIdent",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument",
+      "contextIdent",
+      "manufacturerCodeValue",
+      "itemOriginator"
+    ]
+  },
+  "city": {
+    "content": "text*"
+  },
+  "classificationAction": {
+    "content": "valueAfterAction? businessUnit derivativeSource",
+    "attributes": [
+      "actionIdentType",
+      "year",
+      "month",
+      "day"
+    ]
+  },
+  "classificationActionGroup": {
+    "content": "classificationAction+",
+    "attributes": [
+      "id"
+    ]
+  },
+  "colspec": {
+    "attributes": [
+      "colnum",
+      "colname",
+      "align",
+      "charoff",
+      "char",
+      "colwidth",
+      "colsep",
+      "rowsep"
+    ]
+  },
+  "contactPerson": {
+    "content": "lastName middleName? firstName? jobTitle? contactPersonAddress?",
+    "attributes": [
+      "id",
+      "personPrefix",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "contactPersonAddress": {
+    "content": "department? street? postOfficeBox? postalZipCode? city country state? province? building? room? phoneNumber* faxNumber* email* internet* SITA?",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "content": {
+    "content": "refs? crew (referencedApplicGroup | referencedApplicGroupRef)? (warningsAndCautions | warningsAndCautionsRef)?",
+    "attributes": [
+      "id"
+    ]
+  },
+  "contributor": {
+    "content": "text*"
+  },
+  "controlIndicatorRef": {
+    "content": "name? shortName? refs?",
+    "group": "inline",
+    "attributes": [
+      "controlIndicatorNumber",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "copyright": {
+    "content": "copyrightPara+",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "copyrightPara": {
+    "content": "(text | emphasis | subScript | superScript | dmRef | randomList)*",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "country": {
+    "content": "text*"
+  },
+  "creator": {
+    "content": "text*"
+  },
+  "crew": {
+    "content": "crewRefCard | descrCrew",
+    "attributes": [
+      "id",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "crewDrill": {
+    "content": "(title? thumbTabText? crewMemberGroup* warning* caution* note* (para | (figure | figureAlts | multimedia | multimediaAlts | foldout | table))*) ((crewDrillStep | (if elseIf*) | case) | subCrewDrill)* endMatter?",
+    "attributes": [
+      "drillType",
+      "orderedStepsFlag",
+      "applicRefId",
+      "crewStepCondition",
+      "warningRefs",
+      "cautionRefs",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "independentCheck",
+      "skillLevelCode"
+    ]
+  },
+  "crewDrillStep": {
+    "content": "title? warning* caution* (((note | para) | (figure | figureAlts | multimedia | multimediaAlts | foldout | table) | caption)* | (crewMemberGroup* crewProcedureName) | challengeAndResponse)* (crewDrillStep | (if elseIf*) | case)*",
+    "attributes": [
+      "stepLabel",
+      "keepWithNext",
+      "memorizeStepsFlag",
+      "separatorStyle",
+      "orderedStepsFlag",
+      "applicRefId",
+      "crewStepCondition",
+      "warningRefs",
+      "cautionRefs",
+      "id",
+      "independentCheck",
+      "skillLevelCode",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "crewMember": {
+    "attributes": [
+      "crewMemberType",
+      "applicRefId"
+    ]
+  },
+  "crewMemberGroup": {
+    "content": "crewMember+",
+    "attributes": [
+      "actionResponsibility",
+      "applicRefId"
+    ]
+  },
+  "crewProcedureName": {
+    "content": "para | (figure | figureAlts | multimedia | multimediaAlts | foldout | table)",
+    "attributes": [
+      "applicRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "crewRefCard": {
+    "content": "(title? para* crewDrill+ (warning* caution* note*)?) | (figure | figureAlts | multimedia | multimediaAlts | foldout | table)?",
+    "attributes": [
+      "warningRefs",
+      "cautionRefs",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "dataConds": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "dataDestruction": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "dataDisclosure": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "dataDistribution": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "dataHandling": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "dataRestrictions": {
+    "content": "restrictionInstructions restrictionInfo?",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "date": {
+    "content": "text*"
+  },
+  "dc:contributor": {
+    "content": "text*"
+  },
+  "dc:creator": {
+    "content": "text*"
+  },
+  "dc:date": {
+    "content": "text*"
+  },
+  "dc:format": {
+    "content": "text*"
+  },
+  "dc:identifier": {
+    "content": "text*"
+  },
+  "dc:publisher": {
+    "content": "text*"
+  },
+  "dc:source": {
+    "content": "text*"
+  },
+  "dc:subject": {
+    "content": "text*"
+  },
+  "dc:title": {
+    "content": "text*"
+  },
+  "dc:type": {
+    "content": "text*"
+  },
+  "definitionList": {
+    "content": "title? definitionListHeader? definitionListItem+",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "definitionListHeader": {
+    "content": "termTitle definitionTitle"
+  },
+  "definitionListItem": {
+    "content": "listItemTerm listItemDefinition",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "definitionTitle": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "attributes": [
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "department": {
+    "content": "text*"
+  },
+  "derivativeClassification": {
+    "content": "classificationActionGroup+"
+  },
+  "derivativeSource": {
+    "content": "text*"
+  },
+  "descrCrew": {
+    "content": "(warning* caution* note* levelledPara*) | (figure | figureAlts | multimedia | multimediaAlts | foldout | table)",
+    "attributes": [
+      "warningRefs",
+      "cautionRefs",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "displayText": {
+    "content": "simplePara*"
+  },
+  "dmAddress": {
+    "content": "dmIdent dmAddressItems"
+  },
+  "dmAddressItems": {
+    "content": "issueDate dmTitle"
+  },
+  "dmCode": {
+    "attributes": [
+      "modelIdentCode",
+      "systemDiffCode",
+      "systemCode",
+      "subSystemCode",
+      "subSubSystemCode",
+      "assyCode",
+      "disassyCode",
+      "disassyCodeVariant",
+      "infoCode",
+      "infoCodeVariant",
+      "itemLocationCode",
+      "learnCode",
+      "learnEventCode"
+    ]
+  },
+  "dmIdent": {
+    "content": "identExtension? dmCode language issueInfo"
+  },
+  "dmRef": {
+    "content": "dmRefIdent dmRefAddressItems? behavior?",
+    "group": "inline",
+    "attributes": [
+      "referredFragment",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "dmRefAddressItems": {
+    "content": "dmTitle? issueDate?"
+  },
+  "dmRefIdent": {
+    "content": "identExtension? dmCode issueInfo? language?"
+  },
+  "dmStatus": {
+    "content": "sourceDmIdent? repositorySourceDmIdent* security derivativeClassification? dataRestrictions* logo? responsiblePartnerCompany originator applicCrossRefTableRef? techStandard? brexDmRef qualityAssurance+ skillLevel? reasonForUpdate* productSafety? remarks* (applic | applicRef) (systemBreakdownCode | functionalItemCode | functionalItemRef)*",
+    "attributes": [
+      "id",
+      "issueType"
+    ]
+  },
+  "dmTitle": {
+    "content": "techName infoName?"
+  },
+  "dmodule": {
+    "content": "rdf:Description? identAndStatusSection content",
+    "attributes": [
+      "id"
+    ]
+  },
+  "elseIf": {
+    "content": "caseCond (crewDrillStep | (if elseIf*) | case)+",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "email": {
+    "content": "text*",
+    "attributes": [
+      "contactRole"
+    ]
+  },
+  "emphasis": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "group": "inline",
+    "attributes": [
+      "emphasisType"
+    ]
+  },
+  "endMatter": {
+    "content": "para | (figure | figureAlts | multimedia | multimediaAlts | foldout | table)",
+    "attributes": [
+      "applicRefId"
+    ]
+  },
+  "enterpriseName": {
+    "content": "text*"
+  },
+  "entry": {
+    "content": "para | warning | caution | note | legend",
+    "attributes": [
+      "applicRefId",
+      "colname",
+      "namest",
+      "nameend",
+      "spanname",
+      "morerows",
+      "colsep",
+      "rowsep",
+      "rotate",
+      "valign",
+      "align",
+      "charoff",
+      "char",
+      "id",
+      "warningRefs",
+      "cautionRefs"
+    ]
+  },
+  "evaluate": {
+    "content": "evaluate | assert",
+    "attributes": [
+      "andOr",
+      "applicDisplayClass"
+    ]
+  },
+  "excludedModification": {
+    "content": "text*"
+  },
+  "exportControl": {
+    "content": "exportRegistrationStmt+ exportRegistrationCode*",
+    "attributes": [
+      "id",
+      "exportRegulationType",
+      "governmentAuthority",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "exportRegistrationCode": {
+    "content": "text*",
+    "attributes": [
+      "exportRegulationCodeType"
+    ]
+  },
+  "exportRegistrationStmt": {
+    "content": "simplePara | dmRef",
+    "attributes": [
+      "exportRole"
+    ]
+  },
+  "externalPubCode": {
+    "content": "(text | indexFlag | subScript | superScript | acronym | acronymTerm | verbatimText)*",
+    "attributes": [
+      "pubCodingScheme"
+    ]
+  },
+  "externalPubIssue": {
+    "content": "(text | indexFlag | subScript | superScript | acronym | acronymTerm | verbatimText)*"
+  },
+  "externalPubIssueDate": {
+    "content": "text*",
+    "attributes": [
+      "year",
+      "month",
+      "day"
+    ]
+  },
+  "externalPubIssueInfo": {
+    "content": "(text | externalPubIssue)*"
+  },
+  "externalPubRef": {
+    "content": "externalPubRefIdent externalPubRefAddressItems? behavior?",
+    "group": "inline",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "externalPubRefAddressItems": {
+    "content": "externalPubIssueDate? security? responsiblePartnerCompany? pubMedia* shortExternalPubTitle?"
+  },
+  "externalPubRefIdent": {
+    "content": "externalPubCode? externalPubTitle? externalPubIssueInfo?"
+  },
+  "externalPubTitle": {
+    "content": "(text | indexFlag | subScript | superScript | acronym | acronymTerm | verbatimText)*"
+  },
+  "faxNumber": {
+    "content": "text*",
+    "attributes": [
+      "contactRole"
+    ]
+  },
+  "figure": {
+    "content": "title graphic+ legend?",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "figureAlts": {
+    "content": "figure+",
+    "group": "figureContent",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "firstName": {
+    "content": "text*"
+  },
+  "firstVerification": {
+    "attributes": [
+      "verificationType"
+    ]
+  },
+  "foldout": {
+    "content": "((figure | figureAlts)+) | table",
+    "group": "block"
+  },
+  "footnote": {
+    "content": "para+",
+    "attributes": [
+      "footnoteMark",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "footnoteRef": {
+    "group": "inline",
+    "attributes": [
+      "internalRefId",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "format": {
+    "content": "text*"
+  },
+  "functionalItemCode": {
+    "content": "text*"
+  },
+  "functionalItemRef": {
+    "content": "name? shortName? refs?",
+    "group": "inline",
+    "attributes": [
+      "functionalItemNumber",
+      "functionalItemType",
+      "id",
+      "installationIdent",
+      "applicRefId",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument",
+      "contextIdent",
+      "manufacturerCodeValue",
+      "itemOriginator"
+    ]
+  },
+  "graphic": {
+    "content": "hotspot* reasonForAmendment*",
+    "attributes": [
+      "applicRefId",
+      "infoEntityIdent",
+      "reproductionWidth",
+      "reproductionHeight",
+      "reproductionScale",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "hotspot": {
+    "content": "hotspot | internalRef | dmRef | catalogSeqNumberRef",
+    "attributes": [
+      "applicationStructureIdent",
+      "applicationStructureName",
+      "hotspotType",
+      "hotspotTitle",
+      "objectDescr",
+      "objectCoordinates",
+      "visibility",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "identAndStatusSection": {
+    "content": "dmAddress dmStatus"
+  },
+  "identExtension": {
+    "attributes": [
+      "extensionProducer",
+      "extensionCode"
+    ]
+  },
+  "identNumber": {
+    "content": "manufacturerCode partAndSerialNumber* refs?",
+    "group": "inline",
+    "attributes": [
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "identifier": {
+    "content": "text*"
+  },
+  "if": {
+    "content": "caseCond (crewDrillStep | (if elseIf*) | case)+",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "indexFlag": {
+    "group": "inline",
+    "attributes": [
+      "indexLevelOne",
+      "indexLevelTwo",
+      "indexLevelThree",
+      "indexLevelFour"
+    ]
+  },
+  "infoName": {
+    "content": "text*",
+    "attributes": [
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "inlineSignificantData": {
+    "content": "text*",
+    "group": "inline",
+    "attributes": [
+      "significantParaDataType",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "internalRef": {
+    "content": "(text | subScript | superScript)*",
+    "group": "inline",
+    "attributes": [
+      "internalRefId",
+      "internalRefTargetType",
+      "referredFragment",
+      "targetTitle",
+      "applicRefId",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "internet": {
+    "content": "text*",
+    "attributes": [
+      "contactRole"
+    ]
+  },
+  "issueDate": {
+    "attributes": [
+      "year",
+      "month",
+      "day"
+    ]
+  },
+  "issueInfo": {
+    "attributes": [
+      "issueNumber",
+      "inWork"
+    ]
+  },
+  "jobTitle": {
+    "content": "text*"
+  },
+  "language": {
+    "attributes": [
+      "languageIsoCode",
+      "countryIsoCode"
+    ]
+  },
+  "lastName": {
+    "content": "text*"
+  },
+  "legend": {
+    "content": "definitionList",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "levelledPara": {
+    "content": "((title?)? (warning* caution* ((note | para) | (figure | figureAlts | multimedia | multimediaAlts | foldout | table) | caption)* crewDrill?)?)? (levelledPara | levelledParaAlts)*",
+    "attributes": [
+      "applicRefId",
+      "warningRefs",
+      "cautionRefs",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "levelledParaAlts": {
+    "content": "levelledPara+",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "listItem": {
+    "content": "note | para",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "listItemDefinition": {
+    "content": "para+",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "listItemTerm": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "locator": {
+    "attributes": [
+      "type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:label"
+    ]
+  },
+  "logo": {
+    "content": "symbol+"
+  },
+  "manufacturerCode": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "middleName": {
+    "content": "text*"
+  },
+  "modification": {
+    "content": "modificationTitle?",
+    "attributes": [
+      "authorizationIdent",
+      "id",
+      "modificationType",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "modificationTitle": {
+    "content": "text*"
+  },
+  "multimedia": {
+    "content": "title? multimediaObject+",
+    "group": "mediaContent",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "multimediaAlts": {
+    "content": "multimedia+",
+    "group": "mediaContent",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "multimediaObject": {
+    "content": "parameter* reasonForAmendment*",
+    "group": "mediaContent",
+    "attributes": [
+      "applicRefId",
+      "autoPlay",
+      "fullScreen",
+      "id",
+      "infoEntityIdent",
+      "multimediaObjectHeight",
+      "multimediaObjectWidth",
+      "multimediaType",
+      "runTimeDuration",
+      "showPluginControls",
+      "authorityName",
+      "authorityDocument",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "name": {
+    "content": "text*",
+    "attributes": [
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "note": {
+    "content": "symbol* (notePara | attentionSequentialList | attentionRandomList)+",
+    "group": "block",
+    "attributes": [
+      "noteType",
+      "applicRefId",
+      "internalRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "notePara": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | zoneRef | accessPointRef | identNumber | internalRef | changeInline | emphasis | symbol | subScript | superScript | dmRef | pmRef | externalPubRef | acronym | acronymTerm | caption | verbatimText | attentionSequentialList | attentionRandomList)*",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "originator": {
+    "content": "enterpriseName?",
+    "attributes": [
+      "enterpriseCode",
+      "id"
+    ]
+  },
+  "para": {
+    "content": "(text | (functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption) | (sequentialList | randomList | definitionList))*",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "parameter": {
+    "attributes": [
+      "id",
+      "parameterIdent",
+      "parameterValue",
+      "parameterName"
+    ]
+  },
+  "partAndSerialNumber": {
+    "content": "partNumber serialNumber*"
+  },
+  "partNumber": {
+    "content": "text*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "phoneNumber": {
+    "content": "text*",
+    "attributes": [
+      "contactRole"
+    ]
+  },
+  "pmCode": {
+    "attributes": [
+      "modelIdentCode",
+      "pmIssuer",
+      "pmNumber",
+      "pmVolume"
+    ]
+  },
+  "pmRef": {
+    "content": "(pmRefIdent pmRefAddressItems? behavior?)",
+    "group": "inline",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "pmRefAddressItems": {
+    "content": "pmTitle? issueDate? security? responsiblePartnerCompany? pubMedia* shortPmTitle?",
+    "attributes": [
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "pmRefIdent": {
+    "content": "identExtension? pmCode issueInfo? language?"
+  },
+  "pmTitle": {
+    "content": "text*"
+  },
+  "policyStatement": {
+    "content": "text*",
+    "group": "block",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "postOfficeBox": {
+    "content": "text*"
+  },
+  "postalZipCode": {
+    "content": "text*"
+  },
+  "productConfiguration": {
+    "content": "excludedModification* additionalModification*"
+  },
+  "productSafety": {
+    "content": "text*",
+    "attributes": [
+      "safetyLabel"
+    ]
+  },
+  "province": {
+    "content": "text*"
+  },
+  "pubMedia": {
+    "attributes": [
+      "pubMediaType",
+      "pubMediaCode",
+      "volumeNumber",
+      "mediaLocation"
+    ]
+  },
+  "publisher": {
+    "content": "text*"
+  },
+  "qualityAssurance": {
+    "content": "unverified | (firstVerification secondVerification?)",
+    "attributes": [
+      "applicRefId"
+    ]
+  },
+  "quantity": {
+    "content": "(text | quantityGroup*)*",
+    "group": "inline",
+    "attributes": [
+      "quantityType",
+      "quantityTypeSpecifics",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "quantityGroup": {
+    "content": "(quantityValue+ quantityTolerance{0,2}) | quantityTolerance{1,2}",
+    "group": "inline",
+    "attributes": [
+      "quantityGroupType",
+      "quantityUnitOfMeasure"
+    ]
+  },
+  "quantityTolerance": {
+    "content": "text*",
+    "group": "inline"
+  },
+  "quantityValue": {
+    "content": "text*",
+    "group": "inline"
+  },
+  "randomList": {
+    "content": "title? listItem+",
+    "group": "block",
+    "attributes": [
+      "listItemPrefix",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "rdf:Description": {
+    "content": "(dc:title | dc:creator | dc:subject | dc:publisher | dc:contributor | dc:source | dc:date | dc:type | dc:format | dc:identifier | dc:language | dc:rights)*"
+  },
+  "reasonForAmendment": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "attributes": [
+      "applicRefId"
+    ]
+  },
+  "reasonForUpdate": {
+    "content": "simplePara* | simpleRefPara*",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "updateReasonType",
+      "updateHighlight"
+    ]
+  },
+  "referencedApplicGroup": {
+    "content": "applic+"
+  },
+  "referencedApplicGroupRef": {
+    "content": "applicRef+"
+  },
+  "refs": {
+    "content": "dmRef | pmRef | externalPubRef"
+  },
+  "remarks": {
+    "content": "simplePara*",
+    "attributes": [
+      "applicRefId"
+    ]
+  },
+  "repositorySourceDmIdent": {
+    "content": "identExtension? dmCode language issueInfo"
+  },
+  "resource": {
+    "attributes": [
+      "type",
+      "xlink:title",
+      "xlink:label"
+    ]
+  },
+  "response": {
+    "content": "para | (figure | figureAlts | multimedia | multimediaAlts | foldout | table)",
+    "attributes": [
+      "applicRefId"
+    ]
+  },
+  "responsiblePartnerCompany": {
+    "content": "enterpriseName?",
+    "attributes": [
+      "enterpriseCode",
+      "id"
+    ]
+  },
+  "restrictionInfo": {
+    "content": "copyright? policyStatement? dataConds?",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "restrictionInstructions": {
+    "content": "dataDistribution exportControl? dataHandling? dataDestruction? dataDisclosure? supersedure?",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "retrofit": {
+    "content": "modification+"
+  },
+  "room": {
+    "content": "text*"
+  },
+  "row": {
+    "content": "entry+",
+    "attributes": [
+      "applicRefId",
+      "rowsep",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "secondVerification": {
+    "attributes": [
+      "verificationType"
+    ]
+  },
+  "security": {
+    "attributes": [
+      "securityClassification",
+      "derivativeClassificationRefId",
+      "commercialClassification",
+      "caveat"
+    ]
+  },
+  "sequentialList": {
+    "content": "title? listItem+",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "serialNumber": {
+    "attributes": [
+      "serialNumberForm",
+      "serialNumberValue"
+    ]
+  },
+  "shortExternalPubTitle": {
+    "content": "(text | indexFlag | subScript | superScript | acronym | acronymTerm | verbatimText)*"
+  },
+  "shortName": {
+    "content": "text*",
+    "attributes": [
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "shortPmTitle": {
+    "content": "text*"
+  },
+  "simplePara": {
+    "content": "(text | subScript | superScript)*",
+    "group": "block",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "simpleRefPara": {
+    "content": "(text | subScript | superScript | dmRef | pmRef | externalPubRef)*",
+    "group": "block",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "skillLevel": {
+    "attributes": [
+      "skillLevelCode"
+    ]
+  },
+  "source": {
+    "content": "text*"
+  },
+  "sourceDmIdent": {
+    "content": "identExtension? dmCode language issueInfo"
+  },
+  "spanspec": {
+    "attributes": [
+      "namest",
+      "nameend",
+      "spanname",
+      "align",
+      "charoff",
+      "char",
+      "colsep",
+      "rowsep"
+    ]
+  },
+  "state": {
+    "content": "text*"
+  },
+  "street": {
+    "content": "text*"
+  },
+  "subCrewDrill": {
+    "content": "(title? thumbTabText? crewMemberGroup* warning* caution* note* (para | (figure | figureAlts | multimedia | multimediaAlts | foldout | table))*) (crewDrillStep | (if elseIf*) | case)*",
+    "attributes": [
+      "orderedStepsFlag",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "independentCheck",
+      "skillLevelCode",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "subScript": {
+    "content": "text*"
+  },
+  "subject": {
+    "content": "text*"
+  },
+  "superScript": {
+    "content": "text*"
+  },
+  "supersedure": {
+    "content": "(text | subScript | superScript)*",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "symbol": {
+    "group": "inline",
+    "attributes": [
+      "infoEntityIdent",
+      "id",
+      "reproductionWidth",
+      "reproductionHeight",
+      "reproductionScale",
+      "applicRefId",
+      "authorityName",
+      "authorityDocument",
+      "xlink:type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "systemBreakdownCode": {
+    "content": "text*",
+    "attributes": [
+      "id"
+    ]
+  },
+  "table": {
+    "content": "title? (tgroup+ | graphic+)",
+    "group": "block",
+    "attributes": [
+      "tabstyle",
+      "tocentry",
+      "frame",
+      "colsep",
+      "rowsep",
+      "orient",
+      "pgwide",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "authorityName",
+      "authorityDocument",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "tbody": {
+    "content": "row+",
+    "attributes": [
+      "valign"
+    ]
+  },
+  "techName": {
+    "content": "text*",
+    "attributes": [
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "techPubBase": {
+    "content": "text*"
+  },
+  "techStandard": {
+    "content": "(authorityInfoAndTp | authorityInfo | techPubBase) authorityExceptions authorityNotes"
+  },
+  "termTitle": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "attributes": [
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "tfoot": {
+    "content": "colspec* row+",
+    "attributes": [
+      "valign"
+    ]
+  },
+  "tgroup": {
+    "content": "colspec* spanspec* thead? tfoot? tbody",
+    "attributes": [
+      "applicRefId",
+      "cols",
+      "tgstyle",
+      "colsep",
+      "rowsep",
+      "align",
+      "charoff",
+      "char"
+    ]
+  },
+  "thead": {
+    "content": "colspec* row+",
+    "attributes": [
+      "valign"
+    ]
+  },
+  "thumbTabText": {
+    "content": "(text | inline)*",
+    "attributes": [
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "title": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | internalRef | indexFlag | changeInline | emphasis | symbol | subScript | superScript | dmRef | externalPubRef | footnote | footnoteRef | acronym | acronymTerm | captionGroup | caption)*",
+    "group": "block",
+    "attributes": [
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds"
+    ]
+  },
+  "type": {
+    "content": "text*"
+  },
+  "valueAfterAction": {
+    "attributes": [
+      "actionIdentType",
+      "year",
+      "month",
+      "day"
+    ]
+  },
+  "verbatimText": {
+    "content": "text*",
+    "attributes": [
+      "verbatimStyle",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "warning": {
+    "content": "symbol* warningAndCautionPara+",
+    "group": "block",
+    "attributes": [
+      "warningType",
+      "internalRefId",
+      "vitalWarningFlag",
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "warningAndCautionPara": {
+    "content": "(text | functionalItemRef | circuitBreakerRef | controlIndicatorRef | inlineSignificantData | quantity | zoneRef | accessPointRef | identNumber | internalRef | changeInline | emphasis | symbol | subScript | superScript | dmRef | pmRef | externalPubRef | acronym | acronymTerm | caption | verbatimText | attentionRandomList)*",
+    "group": "block",
+    "attributes": [
+      "applicRefId",
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  },
+  "warningRef": {
+    "content": "dmRef?",
+    "group": "block",
+    "attributes": [
+      "id",
+      "warningIdentNumber",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "warningsAndCautions": {
+    "content": "(warning+ caution*) | caution+",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "warningsAndCautionsRef": {
+    "content": "(warningRef+ cautionRef*) | cautionRef+",
+    "group": "block",
+    "attributes": [
+      "id",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId"
+    ]
+  },
+  "xlink:arc": {
+    "attributes": [
+      "type",
+      "xlink:from",
+      "xlink:to",
+      "xlink:show",
+      "xlink:actuate"
+    ]
+  },
+  "xlink:locator": {
+    "attributes": [
+      "type",
+      "xlink:href",
+      "xlink:title",
+      "xlink:label"
+    ]
+  },
+  "xlink:resource": {
+    "attributes": [
+      "type",
+      "xlink:title",
+      "xlink:label"
+    ]
+  },
+  "zoneRef": {
+    "content": "name? shortName? refs?",
+    "attributes": [
+      "applicRefId",
+      "zoneNumber",
+      "id",
+      "lsarData",
+      "changeType",
+      "changeMark",
+      "reasonForUpdateRefIds",
+      "securityClassification",
+      "commercialClassification",
+      "caveat",
+      "derivativeClassificationRefId",
+      "authorityName",
+      "authorityDocument"
+    ]
+  }
+}

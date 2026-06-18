@@ -18,7 +18,7 @@ import { Strikethrough } from "../../extensions/s1000d/strikethroughMark";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
-import type { JSONContent } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
 import { ProcedureBlockIdExtension } from "../../extensions/s1000d/procedureBlockIdExtension";
@@ -78,6 +78,10 @@ import { PasteWordTableExtension } from "../../extensions/s1000d/pasteWordTableE
 import { StripExternalPasteMarksExtension } from "../../extensions/s1000d/stripExternalPasteMarksExtension";
 import { S1000dTableCellSelectionExtension } from "../../extensions/s1000d/s1000dTableCellSelectionExtension";
 import { tableSelectionPluginKey } from "../../lib/editor/tableSelection";
+import {
+  docJsonHasTable,
+  normalizeImportedTablesInEditor,
+} from "../../lib/editor/normalizeImportedTables";
 
 import { insertDmRefsIntoEditor } from "../../lib/editor/insertDmRefs";
 import {
@@ -145,6 +149,8 @@ export interface IETMEditorRefValue {
    */
   fillEmptyContentFromSchema: () => boolean;
   getJSON: () => JSONContent;
+  /** 底层 TipTap Editor；未就绪时为 `null` */
+  getEditor: () => Editor | null;
   focus: () => void;
   insertTable: (options?: InsertTableOptions) => boolean;
   addTableRowBefore: () => boolean;
@@ -279,6 +285,13 @@ function normalizeEditorContentInput(
   return migrateParagraphInJson(content);
 }
 
+function runPostHtmlContentNormalize(editor: Editor): void {
+  queueMicrotask(() => {
+    normalizeImportedTablesInEditor(editor, { focusMainProcedure: true });
+    dispatchSectionNumbersSync(editor);
+  });
+}
+
 export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
   function IETMEditor(props, ref) {
     const readyFiredRef = useRef(false);
@@ -301,6 +314,9 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
     const pdfPreviewRevokeRef = useRef(false);
     const pdfPreviewSeqRef = useRef(0);
     const initialPreviewLoadRef = useRef(true);
+    const initialContentWasHtmlRef = useRef(
+      typeof props.initialContent === "string" && props.initialContent.length > 0,
+    );
     /** 强制在选区变化时重渲染，否则 `resolveInspectable` 可能停留在上一节点（Tiptap 未必触发父组件更新） */
     const [selectionBump, bumpSelectionUi] = useReducer(
       (n: number) => n + 1,
@@ -400,6 +416,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         if (transaction.getMeta(tableSelectionPluginKey) !== undefined) {
           bumpSelectionUi();
         }
+      },
+      onCreate: ({ editor }) => {
+        if (!initialContentWasHtmlRef.current) return;
+        runPostHtmlContentNormalize(editor);
       },
     });
 
@@ -511,9 +531,12 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       ref,
       () => ({
         setContent: (content) => {
-          editor?.commands.setContent(
-            normalizeEditorContentInput(content) ?? "",
-          );
+          if (!editor) return;
+          const normalized = normalizeEditorContentInput(content) ?? "";
+          editor.commands.setContent(normalized);
+          if (typeof content === "string" && docJsonHasTable(editor.getJSON())) {
+            runPostHtmlContentNormalize(editor);
+          }
         },
         loadDmXml: (dmXml, documentName) => {
           if (!editor) return false;
@@ -529,7 +552,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           }
           editor.commands.setContent(normalizeEditorContentInput(inner) ?? "");
           void hydrateMultimediaObjectsInEditor(editor);
-          queueMicrotask(() => dispatchSectionNumbersSync(editor));
+          runPostHtmlContentNormalize(editor);
           return true;
         },
         setDmDocumentName: (name) => {
@@ -545,6 +568,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           );
         },
         getJSON: () => editor?.getJSON() ?? { type: "doc", content: [] },
+        getEditor: () => editor ?? null,
         focus: () => {
           editor?.commands.focus();
         },

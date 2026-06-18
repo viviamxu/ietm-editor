@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { JSONContent } from "@tiptap/core";
+import type { Editor, JSONContent } from "@tiptap/core";
 import {
   getDescriptionInnerXmlFromDmXml,
   getFaultIsolationInnerXmlFromDmXml,
@@ -339,6 +339,8 @@ export interface IETMEditorInstance {
   fillEmptyContentFromSchema(): boolean;
   setEditable(value: boolean): void;
   getJSON(): JSONContent;
+  /** 底层 TipTap Editor；未就绪时为 `null` */
+  getEditor(): Editor | null;
   focus(): void;
   /** 光标处插入表格；默认 3×3 且带表头。须在编辑器就绪后调用，否则返回 false。 */
   insertTable(options?: InsertTableOptions): boolean;
@@ -548,6 +550,7 @@ export function createIETMEditor(
         : handleRef.current.fillEmptyContentFromSchema(),
     setEditable: (value) => withHandle((h) => h.setEditable(value)),
     getJSON: () => handleRef.current?.getJSON() ?? { type: "doc", content: [] },
+    getEditor: () => handleRef.current?.getEditor() ?? null,
     focus: () => withHandle((h) => h.focus()),
     insertTable: (options) =>
       disposed || !handleRef.current
