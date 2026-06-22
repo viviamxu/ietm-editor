@@ -17,6 +17,7 @@ export const useToolbarConfigStore = create<ToolbarConfigState>((set) => ({
       hideBuiltinItems: config?.hideBuiltinItems,
       onInsertImageClick: config?.onInsertImageClick,
       onInsertFilmClick: config?.onInsertFilmClick,
+      onInsertSymbolClick: config?.onInsertSymbolClick,
       onInsertExternalRefClick: config?.onInsertExternalRefClick,
       onOpenExternalRefTarget: config?.onOpenExternalRefTarget,
     }),

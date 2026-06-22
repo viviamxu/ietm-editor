@@ -21,6 +21,7 @@ import type { OpenDmPdfPreviewHandler } from "../../types/dmPdfPreviewHandler";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import type { IETMEditorFooterStatus } from "../../types/ietmEditorFooter";
 import type { InsertImagesOptions } from "../../lib/editor/insertImages";
+import type { InsertSymbolOptions } from "../../lib/editor/insertSymbols";
 import type { InsertMultimediaPayload } from "../../lib/editor/insertMultimedia";
 import type {
   InsertDmRefPayload,
@@ -61,6 +62,10 @@ export interface IETMEditorRootHandle {
   ) => boolean;
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
+  insertSymbol: (
+    payload: InsertImagePayload,
+    options?: InsertSymbolOptions,
+  ) => boolean;
   refreshDmPdfPreview: () => void;
   applyIsolationFlow: (payload: IsolationFlowPayload) => boolean;
 }
@@ -195,6 +200,8 @@ export const IETMEditorRoot = forwardRef<
       insertDmRefs: (items) => editorRef.current?.insertDmRefs(items) ?? false,
       insertMultimedia: (items) =>
         editorRef.current?.insertMultimedia(items) ?? false,
+      insertSymbol: (payload, options) =>
+        editorRef.current?.insertSymbol(payload, options) ?? false,
       refreshDmPdfPreview: () => editorRef.current?.refreshDmPdfPreview(),
       applyIsolationFlow: (payload) =>
         editorRef.current?.applyIsolationFlow(payload) ?? false,

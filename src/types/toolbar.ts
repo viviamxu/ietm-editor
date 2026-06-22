@@ -22,6 +22,10 @@ export type ToolbarItemContext = {
   fmftBlockPos?: number;
   /** `intoBlock` 时目标块类型 */
   fmftBlockType?: "figure" | "multimedia";
+  /** warning/caution/note 默认图标打开「插入符号」时目标块位置 */
+  attentionBlockPos?: number;
+  /** 与 `attentionBlockPos` 对应的 attention 块类型 */
+  attentionBlockType?: "warning" | "caution" | "note";
 };
 
 /** 格式工具栏内置按钮 id（用于 `hideBuiltinItems`） */
@@ -91,6 +95,12 @@ export type ToolbarConfig = {
    * `intoBlock` 时编辑器已选中目标 `multimedia`，确认后调用 `insertMultimedia` 即可写入块内。
    */
   onInsertFilmClick?: (ctx: ToolbarItemContext) => void;
+  /**
+   * 宿主接管「插入符号」点击（工具栏或 warning/caution/note 默认图标）。
+   * 未传时打开 SDK 内置出版物弹框（配置了 `apiBaseUrl` 时走 ICN 接口）。
+   * 若 `ctx.attentionBlockPos` 有值，确认后调用 `insertSymbol(payload, { attentionBlockPos })` 写入块级符号。
+   */
+  onInsertSymbolClick?: (ctx: ToolbarItemContext) => void;
   /**
    * 宿主接管「插入外部引用」：打开 DM 选择弹框，确认后调用 `insertDmRefs` 写入编辑器。
    * 未传时打开 SDK 内置「引用出版物」弹框（mock 数据）。

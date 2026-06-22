@@ -9,14 +9,21 @@ import {
   Table,
   Tree,
 } from "@arco-design/web-react";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
 import { insertSymbolIntoEditor } from "../../lib/editor/insertSymbols";
+import { fetchIcnInfoList } from "../../lib/ietm/icnInfo";
+import {
+  icnInfoRowToPublicationRow,
+  publicationRowMatchesMode,
+  type PublicationRow,
+} from "../../lib/ietm/icnPublicationRow";
 import { DEMO_IPD_HOTSPOT_SVG, DEMO_MULTIMEDIA_MP4 } from "../../lib/ietm/multimediaIcnHydrate";
 import { mockPublicationPreviewDataUrl } from "../../lib/ietm/mockPublicationPreview";
+import { useIcnInfoStore } from "../../store/icnInfoStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import type { InsertPublicationMode } from "../../store/insertPublicationModalStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
@@ -29,26 +36,7 @@ type MenuItem = {
   children?: MenuItem[];
 };
 
-/** 弹框列表 mock 行（插图与多媒体共用 UI） */
-type PublicationRow = {
-  id: string;
-  menuId: string;
-  title: string;
-  code: string;
-  version: string;
-  security: string;
-  /** 弹框预览缩略图 */
-  preview: string;
-  /** 业务类型（后端 dataType）；mock 视频为 null */
-  dataType?: string | null;
-  /** 文件后缀，如 mp4 */
-  fileType?: string | null;
-  /** 主文件 URL（视频 mp4 等） */
-  filePath?: string;
-  /** 封面/缩略图 */
-  thPath?: string;
-};
-
+/** 弹框列表 mock 行（未配置 `apiBaseUrl` 时使用） */
 const MENU_TREE: MenuItem[] = [
   {
     id: "product",
@@ -155,6 +143,10 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
   const isMultimedia = mode === "multimedia";
   const isSymbol = mode === "symbol";
 
+  const apiBaseUrl = useIcnInfoStore((s) => s.apiBaseUrl);
+  const icnInfoPath = useIcnInfoStore((s) => s.icnInfoPath);
+  const useRemoteIcn = !!apiBaseUrl.trim();
+
   const editor = useInsertPublicationModalStore((s) => s.editor);
   const closeInsertPublication = useInsertPublicationModalStore(
     (s) => s.closeInsertPublication,
@@ -168,6 +160,11 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<PublicationRow[]>([]);
+  const [remoteRows, setRemoteRows] = useState<PublicationRow[]>([]);
+  const [remoteTotal, setRemoteTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const tableWrapRef = useRef<HTMLDivElement>(null);
   const [tableBodyScrollY, setTableBodyScrollY] = useState(400);
@@ -186,7 +183,46 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
     return () => ro.disconnect();
   }, []);
 
-  const filteredRows = useMemo(() => {
+  useEffect(() => {
+    if (!useRemoteIcn) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    setFetchError(null);
+    void fetchIcnInfoList({
+      apiBaseUrl,
+      path: icnInfoPath,
+      page,
+      pageSize,
+      keyword: search.trim() || undefined,
+    })
+      .then(({ list, total }) => {
+        if (cancelled) return;
+        const rows = list
+          .map(icnInfoRowToPublicationRow)
+          .filter((row) => publicationRowMatchesMode(row, mode));
+        setRemoteRows(rows);
+        setRemoteTotal(total);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setFetchError(err instanceof Error ? err.message : String(err));
+        setRemoteRows([]);
+        setRemoteTotal(0);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [useRemoteIcn, apiBaseUrl, icnInfoPath, page, pageSize, search, mode]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectedRows([]);
+  }, [page, pageSize, search, activeMenuId, mode, useRemoteIcn]);
+
+  const mockFilteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return ALL_ROWS.filter((r) => {
       if (r.menuId !== activeMenuId) return false;
@@ -197,13 +233,15 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
     });
   }, [activeMenuId, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const listTotal = useRemoteIcn ? remoteTotal : mockFilteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(listTotal / pageSize));
   const displayPage = Math.min(Math.max(1, page), totalPages);
 
   const pageRows = useMemo(() => {
+    if (useRemoteIcn) return remoteRows;
     const start = (displayPage - 1) * pageSize;
-    return filteredRows.slice(start, start + pageSize);
-  }, [filteredRows, displayPage, pageSize]);
+    return mockFilteredRows.slice(start, start + pageSize);
+  }, [useRemoteIcn, remoteRows, mockFilteredRows, displayPage, pageSize]);
 
   const columns: TableColumnProps<PublicationRow>[] = useMemo(
     () => [
@@ -266,9 +304,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
       closeInsertPublication();
       return;
     }
-    const rows = selectedIds
-      .map((id) => ALL_ROWS.find((r) => r.id === id))
-      .filter((r): r is PublicationRow => r != null);
+    const rows = selectedRows;
 
     closeInsertPublication();
 
@@ -353,7 +389,13 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
       }
     >
       <div className="ietm-ref-pub-arco-body">
-        <div className="ietm-ref-pub-arco-sidebar">
+        <div
+          className={
+            useRemoteIcn
+              ? "ietm-ref-pub-arco-sidebar ietm-ref-pub-arco-sidebar--remote"
+              : "ietm-ref-pub-arco-sidebar"
+          }
+        >
           <div className="ietm-ref-pub-arco-search">
             <Input.Search
               allowClear
@@ -366,23 +408,29 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
               onSearch={() => setPage(1)}
             />
           </div>
-          <div className="ietm-ref-pub-arco-tree-wrap">
-            <Tree
-              treeData={TREE_DATA}
-              selectedKeys={[activeMenuId]}
-              expandedKeys={expandedKeys}
-              onExpand={(keys) => setExpandedKeys(keys as string[])}
-              onSelect={onTreeSelect}
-              blockNode
-            />
-          </div>
+          {!useRemoteIcn ? (
+            <div className="ietm-ref-pub-arco-tree-wrap">
+              <Tree
+                treeData={TREE_DATA}
+                selectedKeys={[activeMenuId]}
+                expandedKeys={expandedKeys}
+                onExpand={(keys) => setExpandedKeys(keys as string[])}
+                onSelect={onTreeSelect}
+                blockNode
+              />
+            </div>
+          ) : null}
         </div>
         <div className="ietm-ref-pub-arco-main">
+          {fetchError ? (
+            <div className="ietm-ref-pub-arco-error">{fetchError}</div>
+          ) : null}
           <div className="ietm-ref-pub-arco-table-wrap" ref={tableWrapRef}>
             <Table<PublicationRow>
               rowKey="id"
               columns={columns}
               data={pageRows}
+              loading={useRemoteIcn && loading}
               pagination={false}
               border
               tableLayoutFixed
@@ -392,7 +440,14 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
                 type: isSymbol ? "radio" : "checkbox",
                 selectedRowKeys: selectedIds,
                 onChange: (keys) => {
-                  setSelectedIds(keys as string[]);
+                  const nextIds = keys as string[];
+                  setSelectedIds(nextIds);
+                  const lookup = useRemoteIcn ? remoteRows : ALL_ROWS;
+                  setSelectedRows(
+                    nextIds
+                      .map((id) => lookup.find((r) => r.id === id))
+                      .filter((r): r is PublicationRow => r != null),
+                  );
                 },
               }}
             />
@@ -402,7 +457,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
               showTotal
               sizeCanChange
               sizeOptions={[10, 20, 50]}
-              total={filteredRows.length}
+              total={listTotal}
               current={displayPage}
               pageSize={pageSize}
               onChange={(p, ps) => {

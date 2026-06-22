@@ -89,6 +89,10 @@ import {
   type InsertImagesOptions,
 } from "../../lib/editor/insertImages";
 import {
+  insertSymbolIntoEditor,
+  type InsertSymbolOptions,
+} from "../../lib/editor/insertSymbols";
+import {
   insertMultimediaIntoEditor,
   type InsertMultimediaPayload,
 } from "../../lib/editor/insertMultimedia";
@@ -165,6 +169,10 @@ export interface IETMEditorRefValue {
   /** 在光标处插入一条或多条 S1000D `dmRef` 外部引用 */
   insertDmRefs: (items: InsertDmRefPayload[]) => boolean;
   insertMultimedia: (items: InsertMultimediaPayload[]) => boolean;
+  insertSymbol: (
+    payload: InsertImagePayload,
+    options?: InsertSymbolOptions,
+  ) => boolean;
   /**
    * 重新加载 PDF 预览：会重新调用 `onOpenDmPdfPreview`（若配置）并更新预览窗格。
    * 若预览窗格当前关闭，则会自动打开并加载。
@@ -626,6 +634,10 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         insertMultimedia: (items) => {
           if (!editor) return false;
           return insertMultimediaIntoEditor(editor, items);
+        },
+        insertSymbol: (payload, options) => {
+          if (!editor) return false;
+          return insertSymbolIntoEditor(editor, payload, options);
         },
         refreshDmPdfPreview: () => {
           runOpenPdfPreview();

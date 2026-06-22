@@ -53,6 +53,7 @@ import type {
   ToolbarTab,
 } from "./types/toolbar";
 import type { InsertImagesOptions } from "./lib/editor/insertImages";
+import type { InsertSymbolOptions } from "./lib/editor/insertSymbols";
 import type {
   DescriptionSchema,
   DescriptionSchemaRule,
@@ -178,6 +179,7 @@ export {
   type InsertPublicationMode,
 } from "./store/insertPublicationModalStore";
 export { insertMultimediaIntoEditor } from "./lib/editor/insertMultimedia";
+export { insertSymbolIntoEditor } from "./lib/editor/insertSymbols";
 export {
   buildDmRefJsonFromPayload,
   canInsertDmRefIntoEditor,
@@ -209,6 +211,7 @@ export type {
   InsertMultimediaPayload,
   InsertMultimediaParameterPayload,
   InsertImagesOptions,
+  InsertSymbolOptions,
   ToolbarConfig,
   ToolbarItemContext,
   ToolbarItemPlacement,
@@ -369,6 +372,11 @@ export interface IETMEditorInstance {
   insertDmRefs(items: InsertDmRefPayload[]): boolean;
   /** 在光标处插入 `multimedia` / `multimediaObject`（`infoEntityIdent`） */
   insertMultimedia(items: InsertMultimediaPayload[]): boolean;
+  /** 在光标处插入 S1000D `symbol`（行内或 warning/caution/note 块级） */
+  insertSymbol(
+    payload: InsertImagePayload,
+    options?: InsertSymbolOptions,
+  ): boolean;
   /**
    * 重新加载 PDF 预览：会重新调用 `onOpenDmPdfPreview`（若配置）并更新预览窗格。
    * 若预览窗格当前关闭，则会自动打开并加载。
@@ -590,6 +598,10 @@ export function createIETMEditor(
     insertMultimedia: (items) => {
       if (disposed || !handleRef.current) return false;
       return handleRef.current.insertMultimedia(items);
+    },
+    insertSymbol: (payload, options) => {
+      if (disposed || !handleRef.current) return false;
+      return handleRef.current.insertSymbol(payload, options);
     },
     refreshDmPdfPreview: () => withHandle((h) => h.refreshDmPdfPreview()),
     applyIsolationFlow: (payload) => {

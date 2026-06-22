@@ -10,6 +10,7 @@ import { SOURCE_XML_ATTR_KEYS } from "../s1000d/sourceXmlAttrKeys";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import type { InsertImagePayload } from "../../types/toolbar";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
+import { tryDelegateInsertSymbol } from "./symbolPublicationPick";
 
 const PLACEHOLDER_PAYLOAD: InsertImagePayload = {
   src: "",
@@ -222,6 +223,15 @@ export function openInsertSymbolModalForAttentionBlock(
   if (!blockNode || !ATTENTION_BLOCK_TYPES.has(blockNode.type.name)) return;
 
   editor.chain().focus().setNodeSelection(blockPos).run();
+  const blockType = blockNode.type.name as "warning" | "caution" | "note";
+  if (
+    tryDelegateInsertSymbol(editor, {
+      attentionBlockPos: blockPos,
+      attentionBlockType: blockType,
+    })
+  ) {
+    return;
+  }
   useInsertPublicationModalStore.getState().openInsertPublication(editor, "symbol", {
     attentionBlockPos: blockPos,
   });

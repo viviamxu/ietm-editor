@@ -17,6 +17,7 @@ import {
   tryDelegateInsertFilm,
   tryDelegateInsertImage,
 } from "../editor/fmftPublicationPick";
+import { tryDelegateInsertSymbol } from "../editor/symbolPublicationPick";
 import { insertFmftNodesIntoEditor } from "../editor/resolveProcedureFmftInsertPos";
 import {
   canInsertAttentionNodeIntoEditor,
@@ -456,6 +457,7 @@ export function insertSymbolFromSchema(
   schema: DescriptionSchema,
 ): void {
   void schema;
+  if (tryDelegateInsertSymbol(editor)) return;
   useInsertPublicationModalStore
     .getState()
     .openInsertPublication(editor, "symbol");
