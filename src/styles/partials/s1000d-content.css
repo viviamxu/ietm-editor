@@ -324,7 +324,7 @@
  */
 .ietm-editor-surface .tiptap[contenteditable="true"]
   :is(
-    aside.s1000d-attention-block,
+    .s1000d-attention-block-wrap,
     .s1000d-table-wrap,
     figure.s1000d-figure,
     section.s1000d-multimedia-node
@@ -333,20 +333,18 @@
   min-height: 1.5em;
 }
 
-/* .ietm-editor-surface .tiptap[contenteditable="true"]
+.ietm-editor-surface .tiptap[contenteditable="true"]
   :is(
-    aside.s1000d-attention-block,
     .s1000d-table-wrap,
     figure.s1000d-figure,
     section.s1000d-multimedia-node
-  ):is(
+  ):not(:has(+ para)):is(
     :hover,
     .ProseMirror-selectednode,
-    .s1000d-attention-block--chrome,
     .s1000d-figure--chrome,
     .s1000d-multimedia-node--chrome
   )::after {
-  content: "点击下方继续输入";
+  content: "点击此处继续输入";
   display: block;
   margin-top: 8px;
   padding-top: 6px;
@@ -356,7 +354,22 @@
   color: #94a3b8;
   pointer-events: none;
   user-select: none;
-} */
+}
+
+/* warning / caution / note：提示在色块外下方（wrap 流式布局，hover 不断） */
+.ietm-editor-surface .tiptap[contenteditable="true"] .s1000d-attention-continue-hint {
+  display: block;
+  flex-shrink: 0;
+  padding-top: 6px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  background: transparent;
+}
 
 .ietm-editor-surface .tiptap warningAndCautionPara {
   display: block;

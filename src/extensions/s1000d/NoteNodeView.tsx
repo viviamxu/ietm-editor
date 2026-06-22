@@ -2,6 +2,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
+import { AttentionBlockContinueHint } from "./AttentionBlockContinueHint";
 import { AttentionBlockDeleteButton } from "./AttentionBlockDeleteButton";
 import {
   useCallback,
@@ -79,7 +80,7 @@ export function NoteLeadNodeView(props: NodeViewProps) {
 
 /** `note` 块级外壳：与 warning/caution 共用左右布局与 attention 样式类。 */
 export function NoteNodeView(props: NodeViewProps) {
-  const { editor, getPos } = props;
+  const { editor, getPos, node } = props;
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
 
@@ -105,19 +106,26 @@ export function NoteNodeView(props: NodeViewProps) {
     [editor, getPos],
   );
 
+  const wrapClass = showChrome
+    ? "s1000d-attention-block-wrap s1000d-attention-block-wrap--chrome"
+    : "s1000d-attention-block-wrap";
+  const asideClass = showChrome
+    ? "s1000d-attention-block s1000d-attention-block--note s1000d-attention-block--chrome"
+    : "s1000d-attention-block s1000d-attention-block--note";
+
   return (
     <NodeViewWrapper
-      as="aside"
-      className={
-        showChrome
-          ? "s1000d-attention-block s1000d-attention-block--note s1000d-attention-block--chrome"
-          : "s1000d-attention-block s1000d-attention-block--note"
-      }
+      as="div"
+      className={wrapClass}
       data-s1000d-node="note"
-      role="note"
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={(e) => {
+        const next = e.relatedTarget;
+        if (next instanceof Node && e.currentTarget.contains(next)) return;
+        setHovered(false);
+      }}
     >
+      <aside className={asideClass} role="note">
       <AttentionBlockDeleteButton
         editor={editor}
         getPos={getPos}
@@ -146,6 +154,13 @@ export function NoteNodeView(props: NodeViewProps) {
         </div>
         <NodeViewContent className="s1000d-attention-block__content-col" />
       </div>
+      </aside>
+      <AttentionBlockContinueHint
+        editor={editor}
+        getPos={getPos}
+        node={node}
+        visible={showChrome}
+      />
     </NodeViewWrapper>
   );
 }

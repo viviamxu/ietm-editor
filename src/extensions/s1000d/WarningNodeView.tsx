@@ -2,6 +2,7 @@ import { NodeSelection } from '@tiptap/pm/state'
 import type { NodeViewProps } from '@tiptap/react'
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react'
 import { Brackets } from 'lucide-react'
+import { AttentionBlockContinueHint } from './AttentionBlockContinueHint'
 import { AttentionBlockDeleteButton } from './AttentionBlockDeleteButton'
 import {
   useCallback,
@@ -138,7 +139,7 @@ export function WarningAndCautionLeadNodeView(props: NodeViewProps) {
  * 右上角句柄：hover 或选区在本块内时显示，点击后 `NodeSelection` 选中整块（与 `levelledPara` 一致）。
  */
 export function WarningNodeView(props: NodeViewProps) {
-  const { editor, getPos } = props
+  const { editor, getPos, node } = props
   const kind = props.node.type.name === 'caution' ? 'caution' : 'warning'
   const [hovered, setHovered] = useState(false)
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0)
@@ -166,20 +167,26 @@ export function WarningNodeView(props: NodeViewProps) {
   )
 
   const blockLabel = kind === 'caution' ? 'caution' : 'warning'
+  const wrapClass = showChrome
+    ? 's1000d-attention-block-wrap s1000d-attention-block-wrap--chrome'
+    : 's1000d-attention-block-wrap'
+  const asideClass = showChrome
+    ? `s1000d-attention-block s1000d-attention-block--${kind} s1000d-attention-block--chrome`
+    : `s1000d-attention-block s1000d-attention-block--${kind}`
 
   return (
     <NodeViewWrapper
-      as="aside"
-      className={
-        showChrome
-          ? `s1000d-attention-block s1000d-attention-block--${kind} s1000d-attention-block--chrome`
-          : `s1000d-attention-block s1000d-attention-block--${kind}`
-      }
+      as="div"
+      className={wrapClass}
       data-s1000d-node={kind}
-      role="note"
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={(e) => {
+        const next = e.relatedTarget
+        if (next instanceof Node && e.currentTarget.contains(next)) return
+        setHovered(false)
+      }}
     >
+      <aside className={asideClass} role="note">
       <AttentionBlockDeleteButton
         editor={editor}
         getPos={getPos}
@@ -208,6 +215,13 @@ export function WarningNodeView(props: NodeViewProps) {
         </div>
         <NodeViewContent className="s1000d-attention-block__content-col" />
       </div>
+      </aside>
+      <AttentionBlockContinueHint
+        editor={editor}
+        getPos={getPos}
+        node={node}
+        visible={showChrome}
+      />
     </NodeViewWrapper>
   )
 }

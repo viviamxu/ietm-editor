@@ -1,5 +1,5 @@
 import { Extension, type Editor } from '@tiptap/core'
-import { Plugin, TextSelection, type EditorState } from '@tiptap/pm/state'
+import { Plugin, TextSelection, NodeSelection, type EditorState, type Selection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 import {
@@ -110,6 +110,26 @@ function buildTableCellDecorations(state: EditorState): DecorationSet {
     ...buildActiveCellDecorationList(state),
   ]
   return DecorationSet.create(state.doc, decorations)
+}
+
+function resolveTextSelectionFromCellClick(
+  view: {
+    state: EditorState
+    posAtCoords: (coords: { left: number; top: number }) => { pos: number } | null
+  },
+  anchor: TableCellAddress,
+  e: Pick<MouseEvent, 'clientX' | 'clientY'>,
+): Selection | null {
+  const coords = view.posAtCoords({ left: e.clientX, top: e.clientY })
+  if (coords) {
+    const $pos = view.state.doc.resolve(coords.pos)
+    if ($pos.parent.isTextblock) {
+      return TextSelection.create(view.state.doc, coords.pos)
+    }
+  }
+  const collapsePos = resolveSelectionPosInCell(view.state.doc, anchor)
+  if (collapsePos == null) return null
+  return TextSelection.near(view.state.doc.resolve(collapsePos))
 }
 
 function dispatchCellDragState(
@@ -229,8 +249,22 @@ export const S1000dTableCellSelectionExtension = Extension.create({
                   cellSelectMode = next.cellSelectMode
                   dispatchCellDragState(view, anchor, head, cellSelectMode)
                 } else {
-                  // 简单点击时，只清除可能的拖拽选区状态，不强制设置光标位置
-                  view.dispatch(view.state.tr.setMeta(tableSelectionPluginKey, null))
+                  let tr = view.state.tr.setMeta(tableSelectionPluginKey, null)
+                  const { selection } = view.state
+                  if (
+                    selection instanceof NodeSelection &&
+                    selection.node.type.name === 'table'
+                  ) {
+                    const textSel = resolveTextSelectionFromCellClick(
+                      view,
+                      anchor,
+                      e,
+                    )
+                    if (textSel) {
+                      tr = tr.setSelection(textSel)
+                    }
+                  }
+                  view.dispatch(tr)
                   view.focus()
                 }
               }

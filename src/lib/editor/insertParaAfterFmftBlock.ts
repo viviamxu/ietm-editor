@@ -49,7 +49,12 @@ function childPos(parentPos: number, parent: PMNode, childIndex: number): number
 
 function focusParaAt(editor: Editor, paraPos: number): boolean {
   const cursorPos = Math.min(paraPos + 1, editor.state.doc.content.size);
-  return editor.chain().focus().setTextSelection(cursorPos).run();
+  const tr = editor.state.tr.setSelection(
+    TextSelection.create(editor.state.doc, cursorPos),
+  );
+  editor.view.dispatch(tr.scrollIntoView());
+  editor.view.focus();
+  return true;
 }
 
 function isHostBlockType(typeName: string): boolean {
@@ -137,11 +142,12 @@ export function insertParaAfterHostBlock(
     return true;
   }
 
-  return editor
-    .chain()
-    .focus()
-    .insertContentAt(insertPos, { type: "para", content: [] })
-    .run();
+  const tr = editor.state.tr.insert(insertPos, para);
+  const cursorPos = Math.min(insertPos + 1, tr.doc.content.size);
+  tr.setSelection(TextSelection.create(tr.doc, cursorPos));
+  editor.view.dispatch(tr.scrollIntoView());
+  editor.view.focus();
+  return true;
 }
 
 /** @deprecated 名称保留；现亦支持 `warning` / `caution` / `note`。 */
@@ -413,9 +419,6 @@ function selectionAfterHostBlock(
   tr: Transaction,
   found: { pos: number; node: PMNode },
 ) {
-  if (found.node.type.name === "table") {
-    return tr.setSelection(NodeSelection.create(tr.doc, found.pos));
-  }
   const afterHost = Math.min(found.pos + found.node.nodeSize, tr.doc.content.size);
   return tr.setSelection(TextSelection.near(tr.doc.resolve(afterHost), -1));
 }

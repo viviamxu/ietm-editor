@@ -261,6 +261,14 @@
   outline-offset: 2px;
 }
 
+/* `warning` / `caution` / `note` NodeView：外层 wrap 承接 hover 与块间距 */
+.ietm-editor-surface .tiptap .s1000d-attention-block-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
 /* `warning` / `caution` NodeView 共用 */
 .ietm-editor-surface .tiptap .s1000d-attention-block {
   position: relative;
@@ -271,7 +279,7 @@
   /* attention 列表正文：比标题略浅，仍带警示色相 */
   --s1000d-attn-list-text: #9e2629;
 
-  margin: 16px 0;
+  margin: 0;
   padding: 18px 20px;
   border: 1px solid var(--s1000d-attn-border);
   border-left-width: 5px;
@@ -353,19 +361,19 @@
 
 .ietm-editor-surface
   .tiptap
-  .s1000d-attention-block:hover
+  .s1000d-attention-block-wrap:hover
   .s1000d-attention-block__block-handle,
 .ietm-editor-surface
   .tiptap
-  .s1000d-attention-block--chrome
+  .s1000d-attention-block-wrap--chrome
   .s1000d-attention-block__block-handle,
 .ietm-editor-surface
   .tiptap
-  .s1000d-attention-block:hover
+  .s1000d-attention-block-wrap:hover
   .s1000d-attention-block__delete,
 .ietm-editor-surface
   .tiptap
-  .s1000d-attention-block--chrome
+  .s1000d-attention-block-wrap--chrome
   .s1000d-attention-block__delete {
   opacity: 1;
   pointer-events: auto;

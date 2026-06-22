@@ -11,7 +11,8 @@ const hostBlockAfterClickPluginKey = new PluginKey("s1000dHostBlockAfterClick");
  */
 export const S1000DHostBlockAfterClickExtension = Extension.create({
   name: "s1000dHostBlockAfterClick",
-  priority: 1010,
+  /** 高于 s1000dSchemaContentGuard(1040)：hint 区点击常无 posAtCoords，须先插入 para */
+  priority: 1050,
 
   addProseMirrorPlugins() {
     const editor = this.editor;

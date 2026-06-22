@@ -299,6 +299,7 @@
             <proceduralStep>
                <title>操作步骤（一级）</title>
                <warning>
+                  <symbol infoEntityIdent="infoEntityIdent" />
                   <warningAndCautionPara>注文本 <attentionRandomList>
                         <attentionRandomListItem>
                            <attentionListItemPara>注无序列表：推荐在网络环境稳定的情况下进行大文件上传，以避免超时。</attentionListItemPara>
