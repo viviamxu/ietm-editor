@@ -63,7 +63,7 @@ export function insertAttentionAfterBlock(
     .chain()
     .focus()
     .insertContentAt(insertPos, node)
-    .command(({ state, tr, dispatch }) => {
+    .command(({ tr, dispatch }) => {
       const mapped = tr.mapping.map(insertPos);
       const sel = selectionAtLeadInInsertedBlock(tr.doc, mapped);
       if (!sel) return true;
