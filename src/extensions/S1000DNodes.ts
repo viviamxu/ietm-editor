@@ -21,6 +21,7 @@ import {
   NoteNodeView,
   NoteParaNodeView,
 } from "./s1000d/NoteNodeView";
+import { AttentionSymbolNodeView } from "./s1000d/AttentionSymbolNodeView";
 import {
   WarningAndCautionLeadNodeView,
   WarningAndCautionParaNodeView,
@@ -374,7 +375,7 @@ export const WarningAndCautionPara = Node.create({
 export const S1000DWarning = Node.create({
   name: "warning",
   group: "block attentionElemGroup warningAndCautionElemGroup",
-  content: "warningAndCautionPara+",
+  content: "attentionSymbol* warningAndCautionPara+",
   defining: true,
   isolating: true,
 
@@ -422,7 +423,7 @@ export const S1000DWarning = Node.create({
 export const S1000DCaution = Node.create({
   name: "caution",
   group: "block attentionElemGroup warningAndCautionElemGroup",
-  content: "warningAndCautionPara+",
+  content: "attentionSymbol* warningAndCautionPara+",
   defining: true,
   isolating: true,
 
@@ -529,7 +530,7 @@ export const NotePara = Node.create({
 export const S1000DNote = Node.create({
   name: "note",
   group: "block attentionElemGroup",
-  content: "notePara+",
+  content: "attentionSymbol* notePara+",
   defining: true,
   isolating: true,
 
@@ -963,6 +964,220 @@ function readGraphicSourceXmlAttrKeys(el: Element): string[] {
   if (readGraphicSrcFromElement(el)) keys.push("src");
   return keys;
 }
+
+function readSymbolSourceXmlAttrKeys(el: Element): string[] {
+  return readGraphicSourceXmlAttrKeys(el);
+}
+
+function readSymbolAttrsFromElement(el: Element) {
+  const src = resolveFileUrl(readGraphicSrcFromElement(el));
+  return {
+    id: el.getAttribute("id"),
+    infoEntityIdent:
+      el.getAttribute("infoEntityIdent") ??
+      el.getAttribute("infoentityident"),
+    src,
+    [SOURCE_XML_ATTR_KEYS]: readSymbolSourceXmlAttrKeys(el),
+  };
+}
+
+function isAttentionBlockParent(el: Element): boolean {
+  const ln = el.parentElement?.localName?.toLowerCase();
+  return ln === "warning" || ln === "caution" || ln === "note";
+}
+
+/**
+ * S1000D `symbol`：行内符号图（para / lead 等）；导出为 `<symbol/>`。
+ */
+export const S1000DSymbol = Node.create({
+  name: "symbol",
+  group: "inline textElemGroup attentionTextGroup",
+  inline: true,
+  atom: true,
+  draggable: false,
+
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+      infoEntityIdent: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? (el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident") ??
+              el.getAttribute("data-info-entity-ident"))
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { infoEntityIdent?: string | null })
+            .infoEntityIdent;
+          return v ? { "data-info-entity-ident": String(v) } : {};
+        },
+      },
+      src: {
+        default: "",
+        parseHTML: (el) =>
+          el instanceof Element
+            ? resolveFileUrl(readGraphicSrcFromElement(el))
+            : "",
+        renderHTML: (attrs) => {
+          const s = (attrs as { src?: string | null }).src;
+          const t = typeof s === "string" ? s.trim() : "";
+          return { src: t || "" };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "symbol",
+        priority: 50,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (isAttentionBlockParent(el)) return false;
+          return readSymbolAttrsFromElement(el);
+        },
+      },
+      {
+        tag: "img",
+        priority: 50,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (el.getAttribute("data-s1000d-node") !== "symbol") return false;
+          return readSymbolAttrsFromElement(el);
+        },
+      },
+    ];
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    const raw = node.attrs.src;
+    const src =
+      typeof raw === "string"
+        ? raw.trim()
+        : raw == null
+          ? ""
+          : String(raw).trim();
+    const ident = node.attrs.infoEntityIdent
+      ? String(node.attrs.infoEntityIdent)
+      : "";
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, {
+        class: "s1000d-symbol-img",
+        "data-s1000d-node": "symbol",
+        draggable: "false",
+        src: src || "",
+        alt: ident || "",
+        ...(ident ? { "data-info-entity-ident": ident } : {}),
+        ...(node.attrs.id ? { "data-symbol-id": String(node.attrs.id) } : {}),
+      }),
+    ];
+  },
+});
+
+/**
+ * S1000D `symbol`：`warning` / `caution` / `note` 下直接子节点；导出为 `<symbol/>`。
+ */
+export const S1000DAttentionSymbol = Node.create({
+  name: "attentionSymbol",
+  group: "block",
+  atom: true,
+  selectable: true,
+  draggable: false,
+
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("id") : null,
+        renderHTML: (attrs) =>
+          (attrs as { id?: string | null }).id
+            ? { id: (attrs as { id: string }).id }
+            : {},
+      },
+      infoEntityIdent: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? (el.getAttribute("infoEntityIdent") ??
+              el.getAttribute("infoentityident") ??
+              el.getAttribute("data-info-entity-ident"))
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { infoEntityIdent?: string | null })
+            .infoEntityIdent;
+          return v ? { "data-info-entity-ident": String(v) } : {};
+        },
+      },
+      src: {
+        default: "",
+        parseHTML: (el) =>
+          el instanceof Element
+            ? resolveFileUrl(readGraphicSrcFromElement(el))
+            : "",
+        renderHTML: (attrs) => {
+          const s = (attrs as { src?: string | null }).src;
+          const t = typeof s === "string" ? s.trim() : "";
+          return { src: t || "" };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "symbol",
+        priority: 60,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (!isAttentionBlockParent(el)) return false;
+          return readSymbolAttrsFromElement(el);
+        },
+      },
+    ];
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    const raw = node.attrs.src;
+    const src =
+      typeof raw === "string"
+        ? raw.trim()
+        : raw == null
+          ? ""
+          : String(raw).trim();
+    const ident = node.attrs.infoEntityIdent
+      ? String(node.attrs.infoEntityIdent)
+      : "";
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, {
+        class: "s1000d-symbol-img s1000d-symbol-img--block",
+        "data-s1000d-node": "attentionSymbol",
+        draggable: "false",
+        src: src || "",
+        alt: ident || "",
+        ...(ident ? { "data-info-entity-ident": ident } : {}),
+        ...(node.attrs.id ? { "data-symbol-id": String(node.attrs.id) } : {}),
+      }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(AttentionSymbolNodeView);
+  },
+});
 
 /**
  * S1000D `graphic`：`figure` 下的媒体引用占位（无文本子节点）。
@@ -1518,6 +1733,8 @@ export const s1000dPhase1Nodes = [
   S1000DPara,
   S1000DDmRef,
   S1000DInternalRef,
+  S1000DSymbol,
+  S1000DAttentionSymbol,
   S1000DGraphic,
   S1000DParameter,
   S1000DMultimediaObject,

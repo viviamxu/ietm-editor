@@ -14,9 +14,12 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { insertImagesIntoEditor } from "../../lib/editor/insertImages";
 import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { insertMultimediaIntoEditor } from "../../lib/editor/insertMultimedia";
+import { insertSymbolIntoEditor } from "../../lib/editor/insertSymbols";
 import { DEMO_IPD_HOTSPOT_SVG, DEMO_MULTIMEDIA_MP4 } from "../../lib/ietm/multimediaIcnHydrate";
+import { mockPublicationPreviewDataUrl } from "../../lib/ietm/mockPublicationPreview";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import type { InsertPublicationMode } from "../../store/insertPublicationModalStore";
+import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 
 type ArcoTreeDataNode = NonNullable<TreeProps["treeData"]>[number];
 
@@ -114,7 +117,7 @@ function makeMockRows(): PublicationRow[] {
       const isHotspotSvgDemo = n === 1;
       const poster = isHotspotSvgDemo
         ? DEMO_IPD_HOTSPOT_SVG
-        : `https://picsum.photos/seed/ietm${n}/300/200`;
+        : mockPublicationPreviewDataUrl(n);
       rows.push({
         id: `${menuId}-${i}`,
         menuId,
@@ -150,6 +153,7 @@ const ALL_ROWS = makeMockRows();
 function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
   const { mode } = props;
   const isMultimedia = mode === "multimedia";
+  const isSymbol = mode === "symbol";
 
   const editor = useInsertPublicationModalStore((s) => s.editor);
   const closeInsertPublication = useInsertPublicationModalStore(
@@ -256,6 +260,8 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
     const ed = editor;
     const fmftInsertIntent =
       useInsertPublicationModalStore.getState().fmftInsertIntent;
+    const attentionBlockPos =
+      useInsertPublicationModalStore.getState().attentionBlockPos;
     if (!ed) {
       closeInsertPublication();
       return;
@@ -282,6 +288,23 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
             previewImgSrc: row.thPath ?? row.preview,
           })),
         );
+      } else if (isSymbol) {
+        const row = rows[0];
+        insertSymbolIntoEditor(
+          ed,
+          {
+            src:
+              row.fileType === "svg" && row.filePath?.trim()
+                ? row.filePath
+                : row.preview,
+            alt: row.title,
+            figureId: row.code,
+          },
+          {
+            schema: getDescriptionSchema(),
+            attentionBlockPos: attentionBlockPos ?? undefined,
+          },
+        );
       } else {
         insertImagesIntoEditor(
           ed,
@@ -305,7 +328,9 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
 
   return (
     <Modal
-      title={isMultimedia ? "插入多媒体" : "插入图片"}
+      title={
+        isMultimedia ? "插入多媒体" : isSymbol ? "插入符号" : "插入图片"
+      }
       visible
       maskClosable={false}
       onCancel={closeInsertPublication}
@@ -364,7 +389,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
               scroll={{ y: tableBodyScrollY }}
               noDataElement={<Empty description="当前分类下无匹配数据" />}
               rowSelection={{
-                type: "checkbox",
+                type: isSymbol ? "radio" : "checkbox",
                 selectedRowKeys: selectedIds,
                 onChange: (keys) => {
                   setSelectedIds(keys as string[]);

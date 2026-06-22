@@ -425,6 +425,33 @@
   outline: none;
 }
 
+.ietm-editor-surface .tiptap .s1000d-symbol-img {
+  display: inline-block;
+  height: 2em;
+  width: auto;
+  vertical-align: baseline;
+  border: none;
+  background: transparent;
+}
+
+.ietm-editor-surface .tiptap .s1000d-symbol-img--block {
+  display: block;
+  max-width: 50px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-symbol-img--empty {
+  min-width: 1.5em;
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  border-radius: 2px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-symbol-node--selected {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .ietm-editor-surface .tiptap .s1000d-multimedia-node {
   position: relative;
   display: block;

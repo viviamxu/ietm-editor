@@ -3,22 +3,10 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
 import { useCallback, useEffect, useReducer, type MouseEvent } from "react";
 
-import { insertParaAfterHostBlock } from "../../lib/editor/insertParaAfterFmftBlock";
-
-const TRAILING_PARA_TYPES = new Set(["para", "paragraph"]);
-
-function lacksTrailingPara(
-  editor: Editor,
-  blockPos: number,
-  block: PMNode,
-): boolean {
-  const insertPos = blockPos + block.nodeSize;
-  const $insert = editor.state.doc.resolve(insertPos);
-  const nextIndex = $insert.index();
-  const parent = $insert.parent;
-  if (nextIndex >= parent.childCount) return true;
-  return !TRAILING_PARA_TYPES.has(parent.child(nextIndex).type.name);
-}
+import {
+  insertParaAfterHostBlock,
+  shouldShowHostBlockContinueHint,
+} from "../../lib/editor/insertParaAfterFmftBlock";
 
 /**
  * warning / caution / note 底缘「点击此处继续输入」：真实 DOM + 直接 insert，
@@ -48,7 +36,7 @@ export function AttentionBlockContinueHint(props: {
     visible &&
     editor.isEditable &&
     blockPos != null &&
-    lacksTrailingPara(editor, blockPos, node);
+    shouldShowHostBlockContinueHint(editor.state.doc, blockPos, node);
 
   const onHintMouseDown = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {

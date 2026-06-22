@@ -40,6 +40,7 @@ export type BuiltinToolbarItemId =
   | "insertTable"
   | "insertImage"
   | "insertFilm"
+  | "insertSymbol"
   | "internalRef"
   | "insertExternalRef";
 

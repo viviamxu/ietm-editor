@@ -40,6 +40,8 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   image: ["src", "alt", "title", "unitOfMeasure", "width", "height"],
   title: ["displayLevel"],
   graphic: ["infoEntityIdent", "src"],
+  symbol: ["infoEntityIdent", "src"],
+  attentionSymbol: ["infoEntityIdent", "src"],
   multimediaObject: ["infoEntityIdent", "multimediaType"],
   multimedia: [],
   tgroup: ["cols", "colsep", "rowsep"],

@@ -7,6 +7,7 @@ import { containerAllowsTrailingPara } from "../s1000d/schemaContentRuleValidate
 import {
   HOST_BLOCK_TYPES_NEEDING_PARA_AFTER,
   insertParaAfterHostBlock,
+  shouldShowHostBlockContinueHint,
 } from "./insertParaAfterFmftBlock";
 
 /** 宿主块根 DOM：与 NodeView 外壳 class 一致。 */
@@ -21,8 +22,6 @@ const ATTENTION_HINT_ZONE_PX = 52;
 
 /** 提示 `top:100%` 可能落在底 padding 内，向上扩展命中（≈ padding-bottom 18px）。 */
 const ATTENTION_BOTTOM_PAD_SLOP = 22;
-
-const TRAILING_PARA_TYPES = new Set(["para", "paragraph"]);
 
 function isHostBlockType(typeName: string): boolean {
   return HOST_BLOCK_TYPES_NEEDING_PARA_AFTER.has(typeName);
@@ -104,19 +103,6 @@ function resolveHostBlockBeforeParaEl(
   return null;
 }
 
-function hostBlockLacksTrailingPara(
-  doc: PMNode,
-  hostPos: number,
-  host: PMNode,
-): boolean {
-  const insertPos = hostPos + host.nodeSize;
-  const $insert = doc.resolve(insertPos);
-  const nextIndex = $insert.index();
-  const parent = $insert.parent;
-  if (nextIndex >= parent.childCount) return true;
-  return !TRAILING_PARA_TYPES.has(parent.child(nextIndex).type.name);
-}
-
 /** warning / caution / note：外侧「点击此处继续输入」提示区（绝对定位，不撑开 rect）。 */
 function hostBlockFromAttentionHintZone(
   view: EditorView,
@@ -135,7 +121,13 @@ function hostBlockFromAttentionHintZone(
     }
     const found = resolveHostBlockFromDom(view, el);
     if (!found) continue;
-    if (!hostBlockLacksTrailingPara(view.state.doc, found.pos, found.node)) {
+    if (
+      !shouldShowHostBlockContinueHint(
+        view.state.doc,
+        found.pos,
+        found.node,
+      )
+    ) {
       continue;
     }
     return found;

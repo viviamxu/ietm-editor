@@ -5,6 +5,12 @@ import { Brackets } from "lucide-react";
 import { AttentionBlockContinueHint } from "./AttentionBlockContinueHint";
 import { AttentionBlockDeleteButton } from "./AttentionBlockDeleteButton";
 import {
+  AttentionBlockSymbolIconButton,
+  readFirstAttentionSymbolFromBlock,
+} from "./attentionBlockSymbolIcon";
+import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import { openInsertSymbolModalForAttentionBlock } from "../../lib/editor/insertSymbols";
+import {
   useCallback,
   useEffect,
   useReducer,
@@ -81,14 +87,20 @@ export function NoteLeadNodeView(props: NodeViewProps) {
 /** `note` 块级外壳：与 warning/caution 共用左右布局与 attention 样式类。 */
 export function NoteNodeView(props: NodeViewProps) {
   const { editor, getPos, node } = props;
+  const { readOnly } = useNodeViewEditorState(editor);
   const [hovered, setHovered] = useState(false);
-  const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
+  const [, bumpFromDoc] = useReducer((n: number) => n + 1, 0);
+
+  const attentionSymbol = readFirstAttentionSymbolFromBlock(node);
+  const hasAttentionSymbol = attentionSymbol != null;
 
   useEffect(() => {
-    const bump = () => bumpFromSelection();
+    const bump = () => bumpFromDoc();
     editor.on("selectionUpdate", bump);
+    editor.on("transaction", bump);
     return () => {
       editor.off("selectionUpdate", bump);
+      editor.off("transaction", bump);
     };
   }, [editor]);
 
@@ -106,6 +118,18 @@ export function NoteNodeView(props: NodeViewProps) {
     [editor, getPos],
   );
 
+  const openInsertSymbolFromIcon = useCallback(
+    (e: ReactMouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (readOnly) return;
+      const p = getPos?.();
+      if (p == null) return;
+      openInsertSymbolModalForAttentionBlock(editor, p);
+    },
+    [editor, getPos, readOnly],
+  );
+
   const wrapClass = showChrome
     ? "s1000d-attention-block-wrap s1000d-attention-block-wrap--chrome"
     : "s1000d-attention-block-wrap";
@@ -119,9 +143,10 @@ export function NoteNodeView(props: NodeViewProps) {
       className={wrapClass}
       data-s1000d-node="note"
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={(e) => {
+      onMouseLeave={(e: ReactMouseEvent<HTMLDivElement>) => {
         const next = e.relatedTarget;
-        if (next instanceof Node && e.currentTarget.contains(next)) return;
+        if (next instanceof globalThis.Node && e.currentTarget.contains(next))
+          return;
         setHovered(false);
       }}
     >
@@ -143,16 +168,23 @@ export function NoteNodeView(props: NodeViewProps) {
         <Brackets size={14} strokeWidth={2} aria-hidden />
       </button>
       <div className="s1000d-attention-block__row">
-        <div
-          className="s1000d-attention-block__icon-col"
-          contentEditable={false}
-          aria-hidden
-        >
-          <span className="s1000d-attention-lead__icon">
-            <NoteInfoIcon />
-          </span>
+        <div className="s1000d-attention-block__icon-col">
+          <AttentionBlockSymbolIconButton
+            readOnly={readOnly}
+            symbol={attentionSymbol}
+            ariaLabelInsert="插入注释符号"
+            ariaLabelReplace="更换注释符号"
+            onPick={openInsertSymbolFromIcon}
+            defaultIcon={<NoteInfoIcon />}
+          />
         </div>
-        <NodeViewContent className="s1000d-attention-block__content-col" />
+        <NodeViewContent
+          className={
+            hasAttentionSymbol
+              ? "s1000d-attention-block__content-col s1000d-attention-block__content-col--hide-inline-symbol"
+              : "s1000d-attention-block__content-col"
+          }
+        />
       </div>
       </aside>
       <AttentionBlockContinueHint

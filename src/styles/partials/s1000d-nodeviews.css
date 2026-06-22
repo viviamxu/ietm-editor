@@ -422,7 +422,32 @@
   padding-top: 0.1em;
   color: var(--s1000d-attn-accent);
   user-select: none;
-  pointer-events: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn {
+  display: inline-flex;
+  margin: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--s1000d-attn-accent) 12%, transparent);
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .ietm-editor-surface
@@ -442,7 +467,6 @@
   height: 36px;
 }
 
-/* `warning`/`caution` 右侧正文：多块 `warningAndCautionPara` 纵向堆叠 */
 .ietm-editor-surface .tiptap .s1000d-attention-block__content-col {
   flex: 1 1 auto;
   min-width: 0;
@@ -454,6 +478,18 @@
   padding: 0;
   color: var(--s1000d-attn-body);
   line-height: 1.6;
+}
+
+/* symbol 在左侧图标列展示；文档内 attentionSymbol 节点仅保留结构 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-attention-block__content-col--hide-inline-symbol
+  > .s1000d-attention-symbol-node {
+  display: none !important;
+}
+
+.ietm-editor-surface .tiptap .s1000d-attention-symbol-node--doc-only {
+  display: none !important;
 }
 
 .ietm-editor-surface

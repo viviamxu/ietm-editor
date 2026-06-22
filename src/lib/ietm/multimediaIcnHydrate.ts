@@ -5,6 +5,7 @@ import {
 } from "./icnInfo";
 import { resolveFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
+import { mockPublicationPreviewDataUrl } from "./mockPublicationPreview";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
 
 /** 与插入多媒体 mock 共用的演示 MP4 */
@@ -30,7 +31,7 @@ const DEMO_ICN_BY_CODE: Record<
     dataType: null,
     fileType: "mp4",
     mediaSrc: DEMO_MULTIMEDIA_MP4,
-    previewImgSrc: "https://picsum.photos/seed/ietm3/300/200",
+    previewImgSrc: mockPublicationPreviewDataUrl(3),
     multimediaType: "video",
   },
 };

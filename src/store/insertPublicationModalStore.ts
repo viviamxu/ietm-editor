@@ -1,8 +1,8 @@
 import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
 
-/** 出版物弹框用途：插图 vs 多媒体 */
-export type InsertPublicationMode = 'image' | 'multimedia'
+/** 出版物弹框用途：插图 / 多媒体 / 符号 */
+export type InsertPublicationMode = 'image' | 'multimedia' | 'symbol'
 
 /**
  * 图解类 fmft 插入意图：
@@ -16,12 +16,17 @@ type InsertPublicationModalState = {
   editor: Editor | null
   mode: InsertPublicationMode
   fmftInsertIntent: FmftInsertIntent
+  /** warning/caution/note 默认图标打开「插入符号」时目标块位置 */
+  attentionBlockPos: number | null
   /** 每次打开递增，供弹窗 `key` 重置内部表单状态 */
   openNonce: number
   openInsertPublication: (
     editor: Editor,
     mode?: InsertPublicationMode,
-    options?: { fmftInsertIntent?: FmftInsertIntent },
+    options?: {
+      fmftInsertIntent?: FmftInsertIntent
+      attentionBlockPos?: number
+    },
   ) => void
   closeInsertPublication: () => void
 }
@@ -32,6 +37,7 @@ export const useInsertPublicationModalStore = create<InsertPublicationModalState
     editor: null,
     mode: 'image',
     fmftInsertIntent: 'sibling',
+    attentionBlockPos: null,
     openNonce: 0,
     openInsertPublication: (editor, mode = 'image', options) =>
       set((s) => ({
@@ -39,6 +45,7 @@ export const useInsertPublicationModalStore = create<InsertPublicationModalState
         editor,
         mode,
         fmftInsertIntent: options?.fmftInsertIntent ?? 'sibling',
+        attentionBlockPos: options?.attentionBlockPos ?? null,
         openNonce: s.openNonce + 1,
       })),
     closeInsertPublication: () =>
@@ -47,6 +54,7 @@ export const useInsertPublicationModalStore = create<InsertPublicationModalState
         editor: null,
         mode: 'image',
         fmftInsertIntent: 'sibling',
+        attentionBlockPos: null,
       }),
   }),
 )

@@ -4,6 +4,7 @@ import { useEffect, useReducer, useState } from "react";
 import {
   insertFilmFromSchema,
   insertImageFromSchema,
+  insertSymbolFromSchema,
   insertLevelledParaFromSchema,
   insertParagraphFromSchema,
   insertRandomOrAttentionListFromSchema,
@@ -14,6 +15,7 @@ import {
   canInsertWarningFromSchema,
   canInsertCautionFromSchema,
   canInsertNoteFromSchema,
+  canInsertSymbolFromSchema,
   exportEditorToDmXmlString,
   save,
   internalRef,
@@ -36,6 +38,7 @@ import {
   Redo2,
   Film,
   Image,
+  Omega,
   Pilcrow,
   TextAlignStart,
   TextAlignCenter,
@@ -154,6 +157,7 @@ export function FormatToolbar({
   const canInsertWarning = canInsertWarningFromSchema(editor, schema);
   const canInsertCaution = canInsertCautionFromSchema(editor, schema);
   const canInsertNote = canInsertNoteFromSchema(editor, schema);
+  const canInsertSymbol = canInsertSymbolFromSchema(editor, schema);
 
   const toggleSubscript = () => {
     const chain = editor.chain().focus().unsetMark("s1000dSup");
@@ -221,6 +225,10 @@ export function FormatToolbar({
 
   const runInsertFilm = () => {
     insertFilmFromSchema(editor, schema);
+  };
+
+  const runInsertSymbol = () => {
+    insertSymbolFromSchema(editor, schema);
   };
 
   const runInsertExternalRef = () => {
@@ -329,6 +337,19 @@ export function FormatToolbar({
               aria-label="插入多媒体"
             >
               <Film size={16} aria-hidden className="shrink-0" />
+            </button>
+          ) : null}
+          {isBuiltinVisible("insertSymbol") ? (
+            <button
+              type="button"
+              className="ietm-icon-btn"
+              disabled={formatBarLocked || !canInsertSymbol}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={runInsertSymbol}
+              title="插入符号"
+              aria-label="插入符号"
+            >
+              <Omega size={16} aria-hidden className="shrink-0" />
             </button>
           ) : null}
         </div>
@@ -557,6 +578,19 @@ export function FormatToolbar({
             aria-label="插入多媒体"
           >
             <Film size={16} aria-hidden className="shrink-0" />
+          </button>
+        ) : null}
+        {isBuiltinVisible("insertSymbol") ? (
+          <button
+            type="button"
+            className="ietm-icon-btn"
+            disabled={formatBarLocked || !canInsertSymbol}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={runInsertSymbol}
+            title="插入符号"
+            aria-label="插入符号"
+          >
+            <Omega size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
         {isRichTextDm ? (

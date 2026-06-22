@@ -103,7 +103,7 @@
     "content": "(text)*"
   },
   "para": {
-    "content": "(text|internalRef|dmRef|listElemGroup)*"
+    "content": "(text|internalRef|dmRef|listElemGroup|symbol)*"
   },
   "simplePara": {
     "content": "text*"

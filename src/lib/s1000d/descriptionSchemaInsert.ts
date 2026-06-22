@@ -27,6 +27,9 @@ import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
+import {
+  canInsertSymbolFromSchema as editorCanInsertSymbolFromSchema,
+} from "../editor/insertSymbols";
 import { getDmContentKind } from "./dmContentKind";
 import { filterDocChildrenForSchemaExport } from "./schemaContentRuleValidate";
 import {
@@ -446,6 +449,23 @@ export function insertImageFromSchema(
   useInsertPublicationModalStore
     .getState()
     .openInsertPublication(editor, "image");
+}
+
+export function insertSymbolFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): void {
+  void schema;
+  useInsertPublicationModalStore
+    .getState()
+    .openInsertPublication(editor, "symbol");
+}
+
+export function canInsertSymbolFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  return editorCanInsertSymbolFromSchema(editor, schema);
 }
 
 /** 打开 SDK 内置「引用出版物」弹框（mock），确认后插入 `dmRef`。 */
@@ -1077,6 +1097,34 @@ function serializeGraphicToXml(
   return `<graphic${id}${iei}${xlink} />`;
 }
 
+function serializeSymbolToXml(
+  attrs: JSONContent["attrs"],
+  innerXml = "",
+): string {
+  if (!attrs) return innerXml ? "<symbol></symbol>" : "<symbol />";
+  const id =
+    attrs.id != null && String(attrs.id).trim() !== ""
+      ? ` id="${escapeXml(String(attrs.id))}"`
+      : "";
+  const iei =
+    attrs.infoEntityIdent != null && String(attrs.infoEntityIdent).trim() !== ""
+      ? ` infoEntityIdent="${escapeXml(String(attrs.infoEntityIdent))}"`
+      : "";
+  const srcRaw = attrs.src;
+  const srcTrim =
+    typeof srcRaw === "string"
+      ? srcRaw.trim()
+      : srcRaw != null
+        ? String(srcRaw).trim()
+        : "";
+  const hrefRaw = srcTrim ? toRelativeFileUrl(srcTrim) : "";
+  const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
+  if (innerXml) {
+    return `<symbol${id}${iei}${xlink}>${innerXml}</symbol>`;
+  }
+  return `<symbol${id}${iei}${xlink} />`;
+}
+
 function serializeNodeToXml(node: JSONContent): string {
   // 1. 处理纯文本与行内样式 (Marks)
   if (node.type === "text") {
@@ -1141,6 +1189,10 @@ function serializeNodeToXml(node: JSONContent): string {
   if (node.type === "graphic") {
     const inner = (node.content || []).map(serializeNodeToXml).join("");
     return serializeGraphicToXml(node.attrs, inner);
+  }
+
+  if (node.type === "symbol" || node.type === "attentionSymbol") {
+    return serializeSymbolToXml(node.attrs);
   }
 
   if (node.type === "catalogSeqNumberGroup") {

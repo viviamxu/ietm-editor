@@ -10,6 +10,8 @@ const BASE_INSPECTABLE_NODE_TYPE_LIST = [
   'entry',
   'figure',
   'graphic',
+  'symbol',
+  'attentionSymbol',
   'image',
   'internalRef',
   'levelledPara',

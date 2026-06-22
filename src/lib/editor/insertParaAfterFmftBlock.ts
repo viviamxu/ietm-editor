@@ -219,6 +219,22 @@ function hostBlockNeedsParaAfter(
 }
 
 /**
+ * 是否展示「点击此处继续输入」：父容器 schema 允许 trailing `para`，且其后尚无 `para`。
+ * 例如 `safetyRqmts`（仅 `attentionElemGroup+`）下 warning/note 返回 false。
+ */
+export function shouldShowHostBlockContinueHint(
+  doc: PMNode,
+  blockPos: number,
+  block: PMNode,
+): boolean {
+  if (!isHostBlockType(block.type.name)) return false;
+  const insertPos = blockPos + block.nodeSize;
+  const parent = doc.resolve(insertPos).parent;
+  if (!parentAllowsTrailingPara(parent.type.name)) return false;
+  return hostBlockNeedsParaAfter(doc, blockPos, block);
+}
+
+/**
  * Enter：选中宿主块（表/图/warning 等），或光标位于块后间隙时，
  * 插入/聚焦 trailing `para`。已在块后 `para` 内编辑时不拦截。
  */
