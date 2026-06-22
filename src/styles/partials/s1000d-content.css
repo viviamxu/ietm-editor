@@ -326,7 +326,7 @@
   :is(
     .s1000d-attention-block-wrap,
     .s1000d-table-wrap,
-    figure.s1000d-figure,
+    .s1000d-figure-wrap,
     section.s1000d-multimedia-node
   )
   + para:is(:empty, :has(> br.ProseMirror-trailingBreak:only-child)) {
@@ -336,12 +336,10 @@
 .ietm-editor-surface .tiptap[contenteditable="true"]
   :is(
     .s1000d-table-wrap,
-    figure.s1000d-figure,
     section.s1000d-multimedia-node
   ):not(:has(+ para)):is(
     :hover,
     .ProseMirror-selectednode,
-    .s1000d-figure--chrome,
     .s1000d-multimedia-node--chrome
   )::after {
   content: "点击此处继续输入";
@@ -356,8 +354,9 @@
   user-select: none;
 }
 
-/* warning / caution / note：提示在色块外下方（wrap 流式布局，hover 不断） */
-.ietm-editor-surface .tiptap[contenteditable="true"] .s1000d-attention-continue-hint {
+/* 宿主块：提示在色块/边框外下方（wrap 流式布局，hover 不断） */
+.ietm-editor-surface .tiptap[contenteditable="true"]
+  :is(.s1000d-attention-continue-hint, .s1000d-host-block-continue-hint) {
   display: block;
   flex-shrink: 0;
   padding-top: 6px;
@@ -377,8 +376,15 @@
   line-height: 1.5;
 }
 
-.ietm-editor-surface .tiptap figure {
+.ietm-editor-surface .tiptap .s1000d-figure-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 12px 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-figure-wrap > figure.s1000d-figure {
+  margin: 0;
   padding: 10px 12px;
   border: 1px solid #dbeafe;
   border-radius: 6px;

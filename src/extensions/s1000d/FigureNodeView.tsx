@@ -3,6 +3,7 @@ import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
 import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
+import { HostBlockContinueHint } from "./HostBlockContinueHint";
 import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
 import {
   figureHasDisplayableGraphic,
@@ -114,64 +115,78 @@ export function FigureNodeView(props: NodeViewProps) {
 
   return (
     <NodeViewWrapper
-      as="figure"
+      as="div"
       className={
         showChrome
-          ? "s1000d-figure s1000d-figure--chrome"
-          : "s1000d-figure"
+          ? "s1000d-figure-wrap s1000d-figure-wrap--chrome"
+          : "s1000d-figure-wrap"
       }
       data-s1000d-node="figure"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {showChrome ? (
-        <FmftBlockDeleteButton
-          editor={editor}
-          getPos={getPos}
-          blockLabel="图片"
-          className="s1000d-figure__delete"
-        />
-      ) : null}
-      <button
-        type="button"
-        className="s1000d-figure__block-handle"
-        contentEditable={false}
-        tabIndex={-1}
-        aria-label="选中整块 figure"
-        title="选中整块"
-        onMouseDown={selectWholeBlock}
-      >
-        <Brackets size={14} strokeWidth={2} aria-hidden />
-      </button>
-      <NodeViewContent
+      <figure
         className={
-          showPickImagePlaceholder
-            ? "s1000d-figure__content s1000d-figure__content--pick-image"
-            : "s1000d-figure__content"
+          showChrome
+            ? "s1000d-figure s1000d-figure--chrome"
+            : "s1000d-figure"
         }
+      >
+        {showChrome ? (
+          <FmftBlockDeleteButton
+            editor={editor}
+            getPos={getPos}
+            blockLabel="图片"
+            className="s1000d-figure__delete"
+          />
+        ) : null}
+        <button
+          type="button"
+          className="s1000d-figure__block-handle"
+          contentEditable={false}
+          tabIndex={-1}
+          aria-label="选中整块 figure"
+          title="选中整块"
+          onMouseDown={selectWholeBlock}
+        >
+          <Brackets size={14} strokeWidth={2} aria-hidden />
+        </button>
+        <NodeViewContent
+          className={
+            showPickImagePlaceholder
+              ? "s1000d-figure__content s1000d-figure__content--pick-image"
+              : "s1000d-figure__content"
+          }
+        />
+        {showPickImagePlaceholder ? (
+          <button
+            type="button"
+            className="s1000d-figure__pick-image"
+            contentEditable={false}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={pickImage}
+          >
+            点击选择图片
+          </button>
+        ) : null}
+        {showAddGraphicButton ? (
+          <button
+            type="button"
+            className="s1000d-figure__add-image"
+            contentEditable={false}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={pickImage}
+          >
+            添加图片
+          </button>
+        ) : null}
+      </figure>
+      <HostBlockContinueHint
+        editor={editor}
+        getPos={getPos}
+        node={node}
+        visible={showChrome}
       />
-      {showPickImagePlaceholder ? (
-        <button
-          type="button"
-          className="s1000d-figure__pick-image"
-          contentEditable={false}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={pickImage}
-        >
-          点击选择图片
-        </button>
-      ) : null}
-      {showAddGraphicButton ? (
-        <button
-          type="button"
-          className="s1000d-figure__add-image"
-          contentEditable={false}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={pickImage}
-        >
-          添加图片
-        </button>
-      ) : null}
     </NodeViewWrapper>
   );
 }

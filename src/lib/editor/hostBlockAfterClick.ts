@@ -14,7 +14,7 @@ import { openInsertAttentionChoiceModal } from "../../store/insertAttentionChoic
 
 /** 宿主块根 DOM：与 NodeView 外壳 class 一致。 */
 const HOST_BLOCK_ROOT_SELECTOR =
-  "aside.s1000d-attention-block, .s1000d-table-wrap, figure.s1000d-figure, .s1000d-multimedia-node";
+  "aside.s1000d-attention-block, .s1000d-table-wrap, .s1000d-figure-wrap, .s1000d-multimedia-node";
 
 /** 块底缘下方可点击落光标的区域高度（px）。 */
 const CLICK_BELOW_BLOCK_PX = 28;
