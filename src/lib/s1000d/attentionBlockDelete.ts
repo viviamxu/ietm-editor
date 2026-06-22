@@ -39,13 +39,27 @@ function buildEmptyParaNode(schema: Schema): PMNode | null {
   }
 }
 
+function findAncestorNodePos(
+  $pos: ResolvedPos,
+  typeName: string,
+): number | null {
+  for (let d = $pos.depth; d >= 0; d--) {
+    if ($pos.node(d).type.name === typeName) {
+      return $pos.before(d);
+    }
+  }
+  return null;
+}
+
 function isUnderReqSafety($pos: ResolvedPos): boolean {
-  const safetyDepth = $pos.depth - 1;
-  if (safetyDepth < 0) return false;
-  if ($pos.node(safetyDepth).type.name !== "safetyRqmts") return false;
-  const reqDepth = safetyDepth - 1;
-  if (reqDepth < 0) return false;
-  return $pos.node(reqDepth).type.name === "reqSafety";
+  let hasSafetyRqmts = false;
+  let hasReqSafety = false;
+  for (let d = $pos.depth; d >= 0; d--) {
+    const name = $pos.node(d).type.name;
+    if (name === "safetyRqmts") hasSafetyRqmts = true;
+    if (name === "reqSafety") hasReqSafety = true;
+  }
+  return hasSafetyRqmts && hasReqSafety;
 }
 
 /** 解析 `warning` / `caution` / `note` 及其文档起始位置。 */
@@ -80,7 +94,7 @@ export function resolveAttentionBlockAtPos(
 }
 
 /**
- * `safetyRqmts` 内删至 0 时会在删除后回退为 `noSafety`；
+ * `safetyRqmts` 内删至最后一个 attention 块时整段回退为 `noSafety`（不补空 warning）；
  * 描述类 `doc` 根若删后不满足 `(para|attention|fmft)+` 则补空 `para`。
  */
 export function canDeleteAttentionBlock(doc: PMNode, blockPos: number): boolean {
@@ -139,7 +153,9 @@ export function deleteAttentionBlockAtPos(
     parent.type.name === "safetyRqmts" &&
     countAttentionBlocks(parent) <= 1 &&
     isUnderReqSafety($pos);
-  const safetyRqmtsPos = revertSafetyToNoSafety ? $pos.before($pos.depth) : null;
+  const safetyRqmtsPos = revertSafetyToNoSafety
+    ? findAncestorNodePos($pos, "safetyRqmts")
+    : null;
 
   const insertDefaultPara =
     parent.type.name === "doc" &&
@@ -151,20 +167,21 @@ export function deleteAttentionBlockAtPos(
     .command(({ state, tr, dispatch }) => {
       if (!dispatch) return true;
 
-      tr.delete(actualPos, actualPos + block.nodeSize);
-
-      if (safetyRqmtsPos != null) {
-        const mapped = tr.mapping.map(safetyRqmtsPos);
-        const safetyRqmts = tr.doc.nodeAt(mapped);
+      if (revertSafetyToNoSafety && safetyRqmtsPos != null) {
+        const safetyRqmts = doc.nodeAt(safetyRqmtsPos);
         const noSafetyType = state.schema.nodes.noSafety;
-        if (
-          safetyRqmts?.type.name === "safetyRqmts" &&
-          noSafetyType &&
-          countAttentionBlocks(safetyRqmts) === 0
-        ) {
-          tr.replaceWith(mapped, mapped + safetyRqmts.nodeSize, noSafetyType.create());
+        if (safetyRqmts?.type.name === "safetyRqmts" && noSafetyType) {
+          tr.replaceWith(
+            safetyRqmtsPos,
+            safetyRqmtsPos + safetyRqmts.nodeSize,
+            noSafetyType.create(),
+          );
+          dispatch(tr);
+          return true;
         }
       }
+
+      tr.delete(actualPos, actualPos + block.nodeSize);
 
       if (insertDefaultPara && !tr.doc.type.validContent(tr.doc.content)) {
         const emptyPara = buildEmptyParaNode(state.schema);

@@ -26,8 +26,8 @@ import {
 import {
   canDeleteProceduralStep,
   deleteProceduralStepAtPos,
-  insertSafetyRqmtsFromNoPlaceholder,
 } from "../../lib/s1000d/procedureInsert";
+import { openInsertAttentionChoiceModal } from "../../store/insertAttentionChoiceModalStore";
 import {
   insertFirstEquipDescrGroupAtReq,
   type EquipReqContainerType,
@@ -435,7 +435,10 @@ export function ReqGroupNodeView(props: NodeViewProps) {
       const pos = typeof getPos === "function" ? getPos() : null;
       if (pos == null) return;
       if (nodeName === "reqSafety") {
-        insertSafetyRqmtsFromNoPlaceholder(editor, pos);
+        openInsertAttentionChoiceModal(editor, {
+          mode: "fromNoSafety",
+          reqSafetyPos: pos,
+        });
       } else if (
         nodeName === "reqSupportEquips" ||
         nodeName === "reqSupplies" ||
@@ -503,6 +506,20 @@ export function ReqGroupNodeView(props: NodeViewProps) {
           ) : null}
         </div>
       ) : null}
+    </NodeViewWrapper>
+  );
+}
+
+/** `safetyRqmts` 容器：子块 hover 提示由各自 attention NodeView 承担。 */
+export function SafetyRqmtsNodeView(props: NodeViewProps) {
+  void props;
+  return (
+    <NodeViewWrapper
+      as="div"
+      className="s1000d-procedure-safety-rqmts"
+      data-s1000d-node="safetyRqmts"
+    >
+      <NodeViewContent className="s1000d-procedure-safety-rqmts__content" />
     </NodeViewWrapper>
   );
 }

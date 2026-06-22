@@ -9,6 +9,7 @@ import {
   ProceduralStepNodeView,
   ReqCondNoRefNodeView,
   ReqGroupNodeView,
+  SafetyRqmtsNodeView,
 } from "./ProcedureNodeViews";
 import { PersonnelNodeView, ReqPersonsNodeView } from "./ReqPersonsNodeViews";
 import {
@@ -432,6 +433,9 @@ export const S1000DSafetyRqmts = Node.create({
   parseHTML: () => blockTagParseRules("safetyRqmts"),
   renderHTML({ HTMLAttributes }) {
     return ["safetyRqmts", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(SafetyRqmtsNodeView);
   },
 });
 

@@ -8,7 +8,7 @@
    <content>
    <crew>
          <crewRefCard>
-            <title>Pre-ride inspection</title>
+            <title>操作卡片标题</title>
             <warning>
                <warningAndCautionPara>省略...</warningAndCautionPara>
             </warning>
@@ -19,7 +19,20 @@
                <warning>
                   <warningAndCautionPara>省略...</warningAndCautionPara>
                </warning>
-               <table>省略...</table>
+                 <table>
+                  <title/>   
+                  <tgroup cols="1">
+                    <tbody>
+                      <row>
+                        <entry>
+                          <para>
+                            最小
+                          </para>
+                        </entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </table>
                <crewDrillStep>
                   <title>操作步骤标题</title>
                   <para>使用备份验证工具检查最近一次的备份文件是否完整，确保没有损坏或缺失的数据块。</para>
@@ -47,7 +60,20 @@
                   <warning>
                      <warningAndCautionPara>省略...</warningAndCautionPara>
                   </warning>
-                  <table>省略...</table>
+                  <table>
+                  <title/>   
+                  <tgroup cols="1">
+                    <tbody>
+                      <row>
+                        <entry>
+                          <para>
+                            最小
+                          </para>
+                        </entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </table>
                   <if>
                      <caseCond>如果的条件输入</caseCond>
                      <crewDrillStep><title>省略...</title></crewDrillStep>
@@ -63,7 +89,20 @@
                   <warning>
                      <warningAndCautionPara>省略...</warningAndCautionPara>
                   </warning>
-                  <table>省略...</table>
+                  <table>
+                  <title/>   
+                     <tgroup cols="1">
+                     <tbody>
+                        <row>
+                           <entry>
+                           <para>
+                              最小
+                           </para>
+                           </entry>
+                        </row>
+                     </tbody>
+                     </tgroup>
+                  </table>
                   <case>
                      <caseCond>如果的条件输入</caseCond>
                      <crewDrillStep><title>省略...</title></crewDrillStep>

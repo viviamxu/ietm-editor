@@ -31,6 +31,7 @@ import { ConfigProvider } from "@arco-design/web-react";
 import { ExternalRefPublicationModal } from "./ExternalRefPublicationModal";
 import { ReferencePublicationModal } from "./ReferencePublicationModal";
 import { InternalRefModal } from "./InternalRefModal";
+import { InsertAttentionChoiceModal } from "./InsertAttentionChoiceModal";
 import { useIcnInfoStore } from "../../store/icnInfoStore";
 import { useFileUrlStore } from "../../store/fileUrlStore";
 import {
@@ -245,6 +246,7 @@ export const IETMEditorRoot = forwardRef<
         <ReferencePublicationModal />
         <ExternalRefPublicationModal />
         <InternalRefModal />
+        <InsertAttentionChoiceModal />
         {flowSession ? (
           <div
             className="ife-overlay-host"

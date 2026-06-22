@@ -1,6 +1,7 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
 
 import type { DescriptionSchema } from "../../types/descriptionSchema";
+import { isReqSafetyAttentionParent } from "./schemaAttentionReplenish";
 import { resolveSchemaContentRuleForEditorParent } from "./schemaContentRuleValidate";
 
 const ATTENTION_BLOCK_TYPES = new Set(["warning", "caution", "note"]);
@@ -67,6 +68,10 @@ export function shouldReplenishEmptyFmftAfterDelete(
   siblingsAfterDelete: PMNode[],
   schema: DescriptionSchema,
 ): boolean {
+  if (isReqSafetyAttentionParent(parentTypeName)) {
+    return false;
+  }
+
   if (countFmftBlocksInSiblings(siblingsAfterDelete) > 0) return false;
 
   const rule = resolveSchemaContentRuleForEditorParent(

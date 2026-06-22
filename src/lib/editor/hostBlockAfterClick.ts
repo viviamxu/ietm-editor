@@ -8,7 +8,9 @@ import {
   HOST_BLOCK_TYPES_NEEDING_PARA_AFTER,
   insertParaAfterHostBlock,
   shouldShowHostBlockContinueHint,
+  shouldShowSafetyAttentionContinueHint,
 } from "./insertParaAfterFmftBlock";
+import { openInsertAttentionChoiceModal } from "../../store/insertAttentionChoiceModalStore";
 
 /** 宿主块根 DOM：与 NodeView 外壳 class 一致。 */
 const HOST_BLOCK_ROOT_SELECTOR =
@@ -108,7 +110,7 @@ function hostBlockFromAttentionHintZone(
   view: EditorView,
   clientX: number,
   clientY: number,
-): { pos: number; node: PMNode } | null {
+): { pos: number; node: PMNode; action: "insert-para" | "open-attention-choice" } | null {
   const asides = view.dom.querySelectorAll("aside.s1000d-attention-block");
   for (const el of Array.from(asides)) {
     const rect = el.getBoundingClientRect();
@@ -121,16 +123,14 @@ function hostBlockFromAttentionHintZone(
     }
     const found = resolveHostBlockFromDom(view, el);
     if (!found) continue;
-    if (
-      !shouldShowHostBlockContinueHint(
-        view.state.doc,
-        found.pos,
-        found.node,
-      )
-    ) {
-      continue;
+    const { pos, node } = found;
+    const doc = view.state.doc;
+    if (shouldShowSafetyAttentionContinueHint(doc, pos, node)) {
+      return { pos, node, action: "open-attention-choice" };
     }
-    return found;
+    if (shouldShowHostBlockContinueHint(doc, pos, node)) {
+      return { pos, node, action: "insert-para" };
+    }
   }
   return null;
 }
@@ -179,6 +179,14 @@ export function handleHostBlockAfterClick(
     event.clientY,
   );
   if (hintHit) {
+    if (hintHit.action === "open-attention-choice") {
+      openInsertAttentionChoiceModal(editor, {
+        mode: "afterBlock",
+        afterBlockPos: hintHit.pos,
+      });
+      event.preventDefault();
+      return true;
+    }
     return tryInsertParaAfterHost(editor, event, hintHit);
   }
 

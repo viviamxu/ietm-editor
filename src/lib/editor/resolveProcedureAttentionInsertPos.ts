@@ -20,6 +20,23 @@ function isInsideAttentionShell($from: ResolvedPos): boolean {
   return false;
 }
 
+function isInsideSafetyRqmts($from: ResolvedPos): boolean {
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === "safetyRqmts") return true;
+  }
+  return false;
+}
+
+/** `safetyRqmts` 节点文档坐标 → 其末尾可插入 attention 块的位置。 */
+export function resolveSafetyRqmtsAppendPos(
+  doc: PMNode,
+  safetyRqmtsPos: number,
+): number | null {
+  const safety = doc.nodeAt(safetyRqmtsPos);
+  if (!safety || safety.type.name !== "safetyRqmts") return null;
+  return safetyRqmtsPos + safety.nodeSize - 1;
+}
+
 function findNearestProceduralStepEndInMain(
   editor: Editor,
 ): { pos: number } | null {
@@ -110,11 +127,18 @@ export function resolveAttentionInsertPosForEditor(
   editor: Editor,
 ): number | "cursor" | null {
   const { selection, doc } = editor.state;
+  const procedureResolution = resolveProcedureAttentionInsert(editor);
+
+  // `safetyRqmts` 仅含 attention 块：编辑现有块内时仍追加到容器末尾。
+  if (isInsideSafetyRqmts(selection.$from)) {
+    if (procedureResolution?.kind === "blocked") return null;
+    if (procedureResolution?.kind === "at") return procedureResolution.pos;
+    return null;
+  }
 
   if (isInsideAttentionShell(selection.$from)) return null;
 
   if (selection instanceof NodeSelection) {
-    const procedureResolution = resolveProcedureAttentionInsert(editor);
     if (procedureResolution?.kind === "blocked") return null;
     if (
       procedureResolution != null &&
@@ -125,11 +149,22 @@ export function resolveAttentionInsertPosForEditor(
     return selection.from + selection.node.nodeSize;
   }
 
-  const procedureResolution = resolveProcedureAttentionInsert(editor);
   if (procedureResolution?.kind === "blocked") return null;
   if (procedureResolution?.kind === "at") return procedureResolution.pos;
   if (procedureResolution?.kind === "cursor") return "cursor";
   return "cursor";
+}
+
+/** 在 `safetyRqmts` 末尾插入 attention 块（供 NodeView 工具栏等直接调用）。 */
+export function insertAttentionAtSafetyRqmtsEnd(
+  editor: Editor,
+  safetyRqmtsPos: number,
+  node: JSONContent,
+): boolean {
+  const insertPos = resolveSafetyRqmtsAppendPos(editor.state.doc, safetyRqmtsPos);
+  if (insertPos == null) return false;
+  if (!editor.can().insertContentAt(insertPos, node)) return false;
+  return editor.chain().focus().insertContentAt(insertPos, node).run();
 }
 
 /** 当前选区是否允许插入 `warning` / `caution` / `note` 块。 */

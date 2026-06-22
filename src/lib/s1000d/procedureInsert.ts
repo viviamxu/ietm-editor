@@ -3,6 +3,7 @@ import { Fragment, Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { selectionAtLeadInInsertedBlock } from "../editor/insertAttentionAfterBlock";
 import { buildMinimalWarningAndCautionParaJson } from "./descriptionSchemaInsert";
 import {
   buildMinimalCloseRqmtsJsonFromSchema,
@@ -318,31 +319,56 @@ export function buildEmptyProcedureDocJson(
   return buildEmptyProcedureDocJsonFromSchema(schema);
 }
 
-/** 将 `noSafety` 替换为含一条空 `warning` 的 `safetyRqmts`。 */
+/** 将 `noSafety` 替换为含指定 attention 块的 `safetyRqmts`。 */
+export function insertSafetyRqmtsFromNoPlaceholderWithBlock(
+  editor: Editor,
+  reqSafetyPos: number,
+  attentionBlock: JSONContent,
+): boolean {
+  const req = editor.state.doc.nodeAt(reqSafetyPos);
+  if (!req || req.type.name !== "reqSafety") return false;
+  if (req.childCount !== 1 || req.firstChild?.type.name !== "noSafety") {
+    return false;
+  }
+
+  let safetyRqmts: PMNode;
+  try {
+    safetyRqmts = PMNode.fromJSON(editor.schema, {
+      type: "safetyRqmts",
+      content: [attentionBlock],
+    });
+  } catch {
+    return false;
+  }
+
+  const from = reqSafetyPos + 1;
+  const to = from + req.firstChild.nodeSize;
+  const attentionPos = from + 1;
+
+  const ok = editor
+    .chain()
+    .focus()
+    .command(({ tr, dispatch }) => {
+      if (!dispatch) return true;
+      tr.replaceWith(from, to, safetyRqmts);
+      const sel = selectionAtLeadInInsertedBlock(tr.doc, attentionPos);
+      if (sel) tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
+
+  return ok;
+}
+
+/** @deprecated 使用弹框选择后 {@link insertSafetyRqmtsFromNoPlaceholderWithBlock} */
 export function insertSafetyRqmtsFromNoPlaceholder(
   editor: Editor,
   reqSafetyPos: number,
 ): void {
-  const req = editor.state.doc.nodeAt(reqSafetyPos);
-  if (!req || req.type.name !== "reqSafety") return;
-
-  const safetyRqmtsType = editor.schema.nodes.safetyRqmts;
-  if (!safetyRqmtsType) return;
-
   const schema = getDescriptionSchema();
-  const safetyRqmts = PMNode.fromJSON(editor.schema, {
-    type: "safetyRqmts",
-    content: [
-      {
-        type: "warning",
-        content: [buildMinimalWarningAndCautionParaJson(schema)],
-      },
-    ],
+  insertSafetyRqmtsFromNoPlaceholderWithBlock(editor, reqSafetyPos, {
+    type: "warning",
+    content: [buildMinimalWarningAndCautionParaJson(schema)],
   });
-
-  if (req.childCount === 1 && req.firstChild?.type.name === "noSafety") {
-    const from = reqSafetyPos + 1;
-    const to = from + req.firstChild.nodeSize;
-    editor.view.dispatch(editor.state.tr.replaceWith(from, to, safetyRqmts));
-  }
 }

@@ -234,6 +234,17 @@ export function shouldShowHostBlockContinueHint(
   return hostBlockNeedsParaAfter(doc, blockPos, block);
 }
 
+/** `safetyRqmts` 内每个 warning / caution / note 底缘均可展示继续输入提示。 */
+export function shouldShowSafetyAttentionContinueHint(
+  doc: PMNode,
+  blockPos: number,
+  block: PMNode,
+): boolean {
+  if (!ATTENTION_SHELL_BLOCK_TYPES.has(block.type.name)) return false;
+  const parent = doc.resolve(blockPos + block.nodeSize).parent;
+  return parent.type.name === "safetyRqmts";
+}
+
 /**
  * Enter：选中宿主块（表/图/warning 等），或光标位于块后间隙时，
  * 插入/聚焦 trailing `para`。已在块后 `para` 内编辑时不拦截。
