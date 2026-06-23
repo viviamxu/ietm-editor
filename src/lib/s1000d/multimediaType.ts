@@ -28,3 +28,31 @@ export function resolveMultimediaTypeForXml(attrs: {
 
   return "other";
 }
+
+type MultimediaObjectXlinkAttrs = {
+  dataType?: string | null;
+  webglUrl?: string | null;
+  sceneSrc?: string | null;
+  mediaSrc?: string | null;
+};
+
+/**
+ * 解析写入 `multimediaObject@xlink:href` 的 URL。
+ * WebGL 仅使用 `webglUrl`；cc3d 使用 `sceneSrc`；视频等使用 `mediaSrc`。
+ */
+export function resolveMultimediaObjectXlinkHrefForXml(
+  attrs: MultimediaObjectXlinkAttrs,
+): string {
+  const dataType = attrs.dataType?.trim();
+  if (dataType === "webgl") {
+    return String(attrs.webglUrl ?? "").trim();
+  }
+  if (dataType === "cc3d") {
+    return String(attrs.sceneSrc ?? "").trim();
+  }
+  const mediaSrc = String(attrs.mediaSrc ?? "").trim();
+  if (mediaSrc) return mediaSrc;
+  const sceneSrc = String(attrs.sceneSrc ?? "").trim();
+  if (sceneSrc) return sceneSrc;
+  return "";
+}

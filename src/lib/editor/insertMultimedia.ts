@@ -52,8 +52,7 @@ export type InsertMultimediaPayload = {
    */
   multimediaType?: string | null;
   /**
-   * WebGL 页面/资源 URL（`cc-webgl-scene` 的 `webgl-url`）。
-   * 存储于节点 attr，**不写入 S1000D XML**（导出时可选写入 `xlink:href`）。
+   * WebGL 页面/资源 URL。编辑器内存 + 导出 DM XML 时写入 `multimediaObject@xlink:href`。
    */
   webglUrl?: string | null;
   /**
@@ -101,20 +100,25 @@ function buildParameterContentJson(
 function buildMultimediaObjectJson(item: InsertMultimediaPayload): JSONContent {
   const ident = item.infoEntityIdent.trim();
   const parameterContent = buildParameterContentJson(item.parameters);
+  const dataType = item.dataType?.trim() || null;
+  const isWebgl = dataType === "webgl";
+  const isCc3d = dataType === "cc3d";
   return {
     type: "multimediaObject",
     attrs: {
       infoEntityIdent: ident,
       multimediaType: resolveMultimediaTypeForXml(item),
-      dataType: item.dataType ?? null,
+      dataType,
       fileType: item.fileType ?? null,
-      sceneSrc: resolveFileUrl(item.sceneSrc) || null,
+      sceneSrc: isWebgl ? null : resolveFileUrl(item.sceneSrc) || null,
       previewImgSrc: resolveFileUrl(item.previewImgSrc) || null,
       cnfPath: resolveFileUrl(item.cnfPath) || null,
-      mediaSrc: resolveFileUrl(item.mediaSrc) || null,
-      webglUrl: resolveFileUrl(item.webglUrl) || null,
-      webglCommandTemplate: item.webglCommandTemplate?.trim() || null,
-      webglCommand: item.webglCommand?.trim() || null,
+      mediaSrc: isWebgl || isCc3d ? null : resolveFileUrl(item.mediaSrc) || null,
+      webglUrl: isWebgl ? resolveFileUrl(item.webglUrl) || null : null,
+      webglCommandTemplate: isWebgl
+        ? item.webglCommandTemplate?.trim() || null
+        : null,
+      webglCommand: isWebgl ? item.webglCommand?.trim() || null : null,
     },
     ...(parameterContent.length > 0 ? { content: parameterContent } : {}),
   };

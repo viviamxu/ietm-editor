@@ -41,7 +41,10 @@ import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { toRelativeFileUrl } from "../ietm/fileUrl";
-import { resolveMultimediaTypeForXml } from "./multimediaType";
+import {
+  resolveMultimediaObjectXlinkHrefForXml,
+  resolveMultimediaTypeForXml,
+} from "./multimediaType";
 import { serializeDmRefToXml } from "./dmRefXml";
 import {
   internalRefHasExportableContent,
@@ -1053,14 +1056,12 @@ function serializeMultimediaObjectToXml(node: JSONContent): string {
     dataType: attrs.dataType as string | null | undefined,
     fileType: attrs.fileType as string | null | undefined,
   });
-  const hrefFull =
-    attrs.mediaSrc != null && String(attrs.mediaSrc).trim() !== ""
-      ? String(attrs.mediaSrc).trim()
-      : attrs.sceneSrc != null && String(attrs.sceneSrc).trim() !== ""
-        ? String(attrs.sceneSrc).trim()
-        : attrs.webglUrl != null && String(attrs.webglUrl).trim() !== ""
-          ? String(attrs.webglUrl).trim()
-          : "";
+  const hrefFull = resolveMultimediaObjectXlinkHrefForXml({
+    dataType: attrs.dataType as string | null | undefined,
+    webglUrl: attrs.webglUrl as string | null | undefined,
+    sceneSrc: attrs.sceneSrc as string | null | undefined,
+    mediaSrc: attrs.mediaSrc as string | null | undefined,
+  });
   const hrefRaw = hrefFull ? toRelativeFileUrl(hrefFull) : "";
   const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
   const parameters = (node.content ?? [])

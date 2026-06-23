@@ -1505,7 +1505,7 @@ export const S1000DMultimediaObject = Node.create({
           return v ? { "data-cnf-path": v } : {};
         },
       },
-      /** WebGL 页面/资源 URL。仅存编辑器内存，不写入 S1000D XML。 */
+      /** WebGL 页面/资源 URL；导出 DM XML 时写入 `xlink:href`。 */
       webglUrl: {
         default: null,
         parseHTML: (el) =>
