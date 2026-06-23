@@ -48,6 +48,8 @@ import {
   PROCEDURE_TEXT_ALIGN_NODE_TYPES,
 } from "../../extensions/s1000d/procedureNodes";
 import { s1000dIpdNodes } from "../../extensions/s1000d/ipdNodes";
+import { s1000dCrewNodes } from "../../extensions/s1000d/crewNodes";
+import { isEditorComposing, ImeCompositionExtension } from "../../lib/editor/imeComposition";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { FormatToolbar } from "./FormatToolbar";
@@ -335,6 +337,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       immediatelyRender: false,
       editable: props.editable,
       extensions: [
+        ImeCompositionExtension,
         StarterKit.configure({
           bulletList: { keepMarks: true },
           orderedList: { keepMarks: true },
@@ -384,6 +387,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         S1000dTableCellSelectionExtension,
         ...s1000dFaultIsolationNodes,
         ...s1000dProcedureNodes,
+        ...s1000dCrewNodes,
         ...s1000dIpdNodes,
       ],
       content:
@@ -403,9 +407,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         },
       },
       onUpdate: ({ editor }) => {
+        if (isEditorComposing(editor)) return;
         props.onUpdate(editor.getJSON());
       },
       onSelectionUpdate: ({ editor }) => {
+        if (isEditorComposing(editor)) return;
         props.onSelectionChange({
           from: editor.state.selection.from,
           to: editor.state.selection.to,
@@ -420,7 +426,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }
         bumpSelectionUi();
       },
-      onTransaction: ({ transaction }) => {
+      onTransaction: ({ editor, transaction }) => {
+        if (isEditorComposing(editor)) return;
         if (transaction.getMeta(tableSelectionPluginKey) !== undefined) {
           bumpSelectionUi();
         }

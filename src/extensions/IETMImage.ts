@@ -1,5 +1,5 @@
 import Image from '@tiptap/extension-image'
-import { ReactNodeViewRenderer } from '@tiptap/react'
+import { imeSafeReactNodeViewRenderer } from '../lib/editor/imeSafeReactNodeViewRenderer'
 import {
   SOURCE_XML_ATTR_KEYS,
   hasXmlAttr,
@@ -66,6 +66,6 @@ export const IETMImage = Image.extend({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(IETMImageNodeView)
+    return imeSafeReactNodeViewRenderer(IETMImageNodeView)
   },
 })

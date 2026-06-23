@@ -6,6 +6,7 @@ import {
   INVALID_DOC_ROOT_BLOCK_TYPES,
   canMigrateParagraphUnderParent,
 } from "../lib/editor/migrateParagraphToPara";
+import { createPluginComposingGuard } from "../lib/editor/imeComposition";
 
 const migrateParagraphKey = new PluginKey<boolean>("migrateParagraphToPara");
 
@@ -58,9 +59,12 @@ function collectBlockNormalizations(doc: PMNode): BlockReplacement[] {
 }
 
 function createMigrateParagraphPlugin() {
+  const composingGuard = createPluginComposingGuard();
   return new Plugin({
     key: migrateParagraphKey,
     appendTransaction(transactions, _oldState, newState) {
+      if (composingGuard.isComposing()) return null;
+
       const paraType = newState.schema.nodes.para;
       const paragraphType = newState.schema.nodes.paragraph;
       if (!paraType || !paragraphType) return null;
@@ -89,9 +93,12 @@ function createMigrateParagraphPlugin() {
       tr.setMeta(migrateParagraphKey, false);
       return tr;
     },
-    view() {
+    view(editorView) {
+      const guard = composingGuard.bindView(editorView);
       return {
+        destroy: guard.destroy,
         update(view, prevState) {
+          if (view.composing) return;
           if (prevState.doc.eq(view.state.doc)) return;
           const paraType = view.state.schema.nodes.para;
           const paragraphType = view.state.schema.nodes.paragraph;

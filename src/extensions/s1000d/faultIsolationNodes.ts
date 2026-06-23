@@ -1,5 +1,5 @@
 import { mergeAttributes, Node } from "@tiptap/core";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { imeSafeReactNodeViewRenderer } from "../../lib/editor/imeSafeReactNodeViewRenderer";
 
 import { s1000dIdAttributeConfig } from "../../lib/s1000d/s1000dIdAttribute";
 import {
@@ -76,7 +76,7 @@ export const S1000DFault = Node.create({
     return ["fault", mergeAttributes(HTMLAttributes)];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(HiddenFaultNodeView);
+    return imeSafeReactNodeViewRenderer(HiddenFaultNodeView);
   },
 });
 
@@ -89,7 +89,7 @@ export const S1000DFaultDescr = Node.create({
     return ["faultDescr", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(FaultDescrNodeView);
+    return imeSafeReactNodeViewRenderer(FaultDescrNodeView);
   },
 });
 
@@ -115,7 +115,7 @@ export const S1000DIsolationProcedure = Node.create({
     return ["isolationProcedure", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationProcedureNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationProcedureNodeView);
   },
 });
 
@@ -131,7 +131,7 @@ export const S1000DIsolationMainProcedure = Node.create({
     return ["isolationMainProcedure", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationMainProcedureNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationMainProcedureNodeView);
   },
 });
 
@@ -144,7 +144,7 @@ export const S1000DAction = Node.create({
     return ["action", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationActionNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationActionNodeView);
   },
 });
 
@@ -160,7 +160,7 @@ export const S1000DIsolationStepQuestion = Node.create({
     return ["isolationStepQuestion", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationStepQuestionNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationStepQuestionNodeView);
   },
 });
 
@@ -176,7 +176,7 @@ export const S1000DYesAnswer = Node.create({
     return ["yesAnswer", mergeAttributes(HTMLAttributes)];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(HiddenAtomNodeView);
+    return imeSafeReactNodeViewRenderer(HiddenAtomNodeView);
   },
 });
 
@@ -192,7 +192,7 @@ export const S1000DNoAnswer = Node.create({
     return ["noAnswer", mergeAttributes(HTMLAttributes)];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(HiddenAtomNodeView);
+    return imeSafeReactNodeViewRenderer(HiddenAtomNodeView);
   },
 });
 
@@ -221,7 +221,7 @@ export const S1000DChoice = Node.create({
     return ["choice", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ChoiceNodeView);
+    return imeSafeReactNodeViewRenderer(ChoiceNodeView);
   },
 });
 
@@ -237,7 +237,7 @@ export const S1000DListOfChoices = Node.create({
     return ["listOfChoices", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ListOfChoicesNodeView);
+    return imeSafeReactNodeViewRenderer(ListOfChoicesNodeView);
   },
 });
 
@@ -265,7 +265,7 @@ export const S1000DIsolationStepAnswer = Node.create({
     return ["isolationStepAnswer", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationStepAnswerNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationStepAnswerNodeView);
   },
 });
 
@@ -296,7 +296,7 @@ export const S1000DIsolationStep = Node.create({
     return ["isolationStep", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationStepNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationStepNodeView);
   },
 });
 
@@ -327,7 +327,7 @@ export const S1000DIsolationProcedureEnd = Node.create({
     return ["isolationProcedureEnd", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(IsolationProcedureEndNodeView);
+    return imeSafeReactNodeViewRenderer(IsolationProcedureEndNodeView);
   },
 });
 
@@ -343,7 +343,7 @@ export const S1000DFaultIsolationProcedure = Node.create({
     return ["faultIsolationProcedure", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(FaultIsolationProcedureNodeView);
+    return imeSafeReactNodeViewRenderer(FaultIsolationProcedureNodeView);
   },
 });
 

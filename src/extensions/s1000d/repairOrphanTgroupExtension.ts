@@ -1,6 +1,9 @@
 import { Extension } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
+
+import { createPluginComposingGuard } from "../../lib/editor/imeComposition";
 
 const repairOrphanTgroupKey = new PluginKey("repairOrphanTgroup");
 
@@ -77,10 +80,12 @@ export const RepairOrphanTgroupExtension = Extension.create({
   name: "repairOrphanTgroup",
 
   addProseMirrorPlugins() {
+    const composingGuard = createPluginComposingGuard();
     return [
       new Plugin({
         key: repairOrphanTgroupKey,
         appendTransaction(transactions, _oldState, newState) {
+          if (composingGuard.isComposing()) return null;
           if (!transactions.some((tr) => tr.docChanged)) return null;
 
           const ranges = collectTgroupRepairRanges(newState.doc);
@@ -92,6 +97,9 @@ export const RepairOrphanTgroupExtension = Extension.create({
             tr = tr.delete(from, to);
           }
           return tr;
+        },
+        view(editorView: EditorView) {
+          return composingGuard.bindView(editorView);
         },
       }),
     ];

@@ -17,6 +17,7 @@ import {
   resolveBlockNodeSelectionBeforePos,
 } from "../../lib/s1000d/schemaContentRuleValidate";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
+import { createPluginComposingGuard } from "../../lib/editor/imeComposition";
 
 const schemaContentGuardKey = new PluginKey("s1000dSchemaContentGuard");
 
@@ -83,6 +84,7 @@ export const S1000DSchemaContentGuardExtension = Extension.create({
   priority: 1040,
 
   addProseMirrorPlugins() {
+    const composingGuard = createPluginComposingGuard();
     return [
       new Plugin({
         key: schemaContentGuardKey,
@@ -125,6 +127,7 @@ export const S1000DSchemaContentGuardExtension = Extension.create({
           },
         },
         appendTransaction(transactions, _oldState, newState) {
+          if (composingGuard.isComposing()) return null;
           if (!transactions.some((tr) => tr.docChanged)) return null;
 
           const schema = getDescriptionSchema();
@@ -135,6 +138,9 @@ export const S1000DSchemaContentGuardExtension = Extension.create({
           if (!deleteIllegalLooseParaRanges(tr, ranges)) return null;
           clampSelectionAfterDelete(tr);
           return tr;
+        },
+        view(editorView) {
+          return composingGuard.bindView(editorView);
         },
       }),
     ];

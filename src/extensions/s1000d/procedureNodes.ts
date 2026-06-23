@@ -1,5 +1,5 @@
 import { mergeAttributes, Node } from "@tiptap/core";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { imeSafeReactNodeViewRenderer } from "../../lib/editor/imeSafeReactNodeViewRenderer";
 
 import {
   CloseRqmtsNodeView,
@@ -100,7 +100,7 @@ function createProcedureEmptyPlaceholderNode(name: string) {
       return [name, mergeAttributes(HTMLAttributes)];
     },
     addNodeView() {
-      return ReactNodeViewRenderer(ProcedureEmptyPlaceholderNodeView);
+      return imeSafeReactNodeViewRenderer(ProcedureEmptyPlaceholderNodeView);
     },
   });
 }
@@ -116,7 +116,7 @@ export const S1000DPreliminaryRqmts = Node.create({
     return ["preliminaryRqmts", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(PreliminaryRqmtsNodeView);
+    return imeSafeReactNodeViewRenderer(PreliminaryRqmtsNodeView);
   },
 });
 
@@ -129,7 +129,7 @@ export const S1000DMainProcedure = Node.create({
     return ["mainProcedure", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(MainProcedureNodeView);
+    return imeSafeReactNodeViewRenderer(MainProcedureNodeView);
   },
 });
 
@@ -142,7 +142,7 @@ export const S1000DCloseRqmts = Node.create({
     return ["closeRqmts", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(CloseRqmtsNodeView);
+    return imeSafeReactNodeViewRenderer(CloseRqmtsNodeView);
   },
 });
 
@@ -187,7 +187,7 @@ export const S1000DProceduralStep = Node.create({
     return ["proceduralStep", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ProceduralStepNodeView);
+    return imeSafeReactNodeViewRenderer(ProceduralStepNodeView);
   },
 });
 
@@ -200,7 +200,7 @@ export const S1000DReqCondGroup = Node.create({
     return ["reqCondGroup", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqGroupNodeView);
+    return imeSafeReactNodeViewRenderer(ReqGroupNodeView);
   },
 });
 
@@ -213,7 +213,7 @@ export const S1000DReqCondNoRef = Node.create({
     return ["reqCondNoRef", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqCondNoRefNodeView);
+    return imeSafeReactNodeViewRenderer(ReqCondNoRefNodeView);
   },
 });
 
@@ -230,7 +230,7 @@ export const S1000DReqPersons = Node.create({
     return ["reqPersons", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqPersonsNodeView);
+    return imeSafeReactNodeViewRenderer(ReqPersonsNodeView);
   },
 });
 
@@ -246,7 +246,7 @@ export const S1000DPersonnel = Node.create({
     return ["personnel", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(PersonnelNodeView);
+    return imeSafeReactNodeViewRenderer(PersonnelNodeView);
   },
 });
 
@@ -299,7 +299,7 @@ export const S1000DReqSupportEquips = Node.create({
     return ["reqSupportEquips", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqGroupNodeView);
+    return imeSafeReactNodeViewRenderer(ReqGroupNodeView);
   },
 });
 
@@ -314,7 +314,7 @@ export const S1000DSupportEquipDescrGroup = Node.create({
     return ["supportEquipDescrGroup", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SupportEquipDescrGroupNodeView);
+    return imeSafeReactNodeViewRenderer(SupportEquipDescrGroupNodeView);
   },
 });
 
@@ -327,7 +327,7 @@ export const S1000DSupportEquipDescr = Node.create({
     return ["supportEquipDescr", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SupportEquipDescrNodeView);
+    return imeSafeReactNodeViewRenderer(SupportEquipDescrNodeView);
   },
 });
 
@@ -340,7 +340,7 @@ export const S1000DReqSupplies = Node.create({
     return ["reqSupplies", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqGroupNodeView);
+    return imeSafeReactNodeViewRenderer(ReqGroupNodeView);
   },
 });
 
@@ -355,7 +355,7 @@ export const S1000DSupplyDescrGroup = Node.create({
     return ["supplyDescrGroup", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SupplyDescrGroupNodeView);
+    return imeSafeReactNodeViewRenderer(SupplyDescrGroupNodeView);
   },
 });
 
@@ -368,7 +368,7 @@ export const S1000DSupplyDescr = Node.create({
     return ["supplyDescr", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SupplyDescrNodeView);
+    return imeSafeReactNodeViewRenderer(SupplyDescrNodeView);
   },
 });
 
@@ -381,7 +381,7 @@ export const S1000DReqSpares = Node.create({
     return ["reqSpares", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqGroupNodeView);
+    return imeSafeReactNodeViewRenderer(ReqGroupNodeView);
   },
 });
 
@@ -395,7 +395,7 @@ export const S1000DSpareDescrGroup = Node.create({
     return ["spareDescrGroup", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SpareDescrGroupNodeView);
+    return imeSafeReactNodeViewRenderer(SpareDescrGroupNodeView);
   },
 });
 
@@ -408,7 +408,7 @@ export const S1000DSpareDescr = Node.create({
     return ["spareDescr", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SpareDescrNodeView);
+    return imeSafeReactNodeViewRenderer(SpareDescrNodeView);
   },
 });
 
@@ -421,7 +421,7 @@ export const S1000DReqSafety = Node.create({
     return ["reqSafety", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ReqGroupNodeView);
+    return imeSafeReactNodeViewRenderer(ReqGroupNodeView);
   },
 });
 
@@ -435,7 +435,7 @@ export const S1000DSafetyRqmts = Node.create({
     return ["safetyRqmts", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(SafetyRqmtsNodeView);
+    return imeSafeReactNodeViewRenderer(SafetyRqmtsNodeView);
   },
 });
 

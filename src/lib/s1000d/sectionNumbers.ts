@@ -8,11 +8,19 @@ import {
   computeProcedureSectionNumberSegments,
   findProceduralStepPosForTitle,
 } from "./procedureSectionHeading";
+import {
+  computeCrewConditionStepNumber,
+  computeCrewSectionNumberPath,
+  formatCrewSectionNumber,
+  isCrewConditionStepTitle,
+  isCrewSectionTitle,
+} from "./crewSectionHeading";
 
 export const LEVELLED_PARA = "levelledPara";
 export const TITLE = "title";
 
 const TITLE_CAPTION_PARENT_TYPES = new Set(["figure", "table", "multimedia"]);
+const CREW_CONDITION_TYPES = new Set(["if", "elseIf", "case"]);
 
 /** 将路径 [2, 1] 格式化为展示用序号 `2.1.` */
 export function formatSectionNumber(path: readonly number[]): string {
@@ -51,9 +59,32 @@ function isChapterSectionTitleAtResolved($pos: ResolvedPos): boolean {
   const parentType = $pos.node(titleDepth - 1).type.name;
   if (TITLE_CAPTION_PARENT_TYPES.has(parentType)) return false;
 
+  if (isCrewConditionStepTitleAtResolved($pos)) return true;
+
+  for (let d = titleDepth - 1; d > 0; d--) {
+    if (CREW_CONDITION_TYPES.has($pos.node(d).type.name)) return false;
+  }
+
   for (let d = titleDepth - 1; d > 0; d--) {
     const ancestor = $pos.node(d).type.name;
     if (ancestor === LEVELLED_PARA || ancestor === PROCEDURAL_STEP) return true;
+    if (ancestor === "crewDrill" || ancestor === "crewDrillStep") return true;
+  }
+  return false;
+}
+
+function isCrewConditionStepTitleAtResolved($pos: ResolvedPos): boolean {
+  let titleDepth = -1;
+  for (let d = $pos.depth; d > 0; d--) {
+    if ($pos.node(d).type.name === TITLE) {
+      titleDepth = d;
+      break;
+    }
+  }
+  if (titleDepth < 0) return false;
+  if ($pos.node(titleDepth - 1).type.name !== "crewDrillStep") return false;
+  for (let d = titleDepth - 1; d > 0; d--) {
+    if (CREW_CONDITION_TYPES.has($pos.node(d).type.name)) return true;
   }
   return false;
 }
@@ -80,12 +111,15 @@ export function isProceduralStepSectionTitle(
   }
 }
 
-/** 章节标题序号路径（levelledPara 或含大纲节号的 proceduralStep）。 */
+/** 章节标题序号路径（levelledPara、proceduralStep 或 crewDrill/crewDrillStep）。 */
 export function computeSectionNumberPathForTitle(
   doc: PMNode,
   titlePos: number,
   procedureConfig: ProcedureUiConfig = getProcedureUiConfig(),
 ): number[] {
+  if (isCrewSectionTitle(doc, titlePos)) {
+    return computeCrewSectionNumberPath(doc, titlePos);
+  }
   if (isProceduralStepSectionTitle(doc, titlePos)) {
     if (!procedureConfig.numbering.enabled) return [];
     const stepPos = findProceduralStepPosForTitle(doc, titlePos);
@@ -159,8 +193,18 @@ export function collectSectionNumberAssignments(
       return true;
     }
 
-    const path = computeSectionNumberPathForTitle(doc, pos);
-    const next = path.length > 0 ? formatSectionNumber(path) : null;
+    let next: string | null = null;
+    if (isCrewConditionStepTitle(doc, pos)) {
+      next = computeCrewConditionStepNumber(doc, pos);
+    } else {
+      const path = computeSectionNumberPathForTitle(doc, pos);
+      next =
+        path.length > 0
+          ? isCrewSectionTitle(doc, pos)
+            ? formatCrewSectionNumber(path)
+            : formatSectionNumber(path)
+          : null;
+    }
     const curr = normalizeSectionNumberAttr(
       (node.attrs as { sectionNumber?: string | null }).sectionNumber,
     );

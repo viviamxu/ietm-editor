@@ -2,7 +2,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { imeSafeReactNodeViewRenderer } from "../lib/editor/imeSafeReactNodeViewRenderer";
 
 import type { DescriptionSchema } from "../types/descriptionSchema";
 
@@ -44,6 +44,7 @@ import {
   readXlinkHrefFromElement,
 } from "../lib/s1000d/xlinkHref";
 import { resolveFileUrl } from "../lib/ietm/fileUrl";
+import { createPluginComposingGuard } from "../lib/editor/imeComposition";
 import {
   DM_REF_TARGET_ID_ATTR,
   normalizeDmRefEditorAttrs,
@@ -87,10 +88,24 @@ function isS1000DTitleParent(parent: Element | null): boolean {
     return true;
   }
 
+  if (
+    parent.getAttribute("data-s1000d-node") === "crewDrill" ||
+    parent.getAttribute("data-s1000d-node") === "crewDrillStep" ||
+    parent.getAttribute("data-s1000d-node") === "crewRefCard" ||
+    parent.classList.contains("s1000d-crew-drill__content") ||
+    parent.classList.contains("s1000d-crew-drill-step__content") ||
+    parent.classList.contains("s1000d-crew-ref-card__content")
+  ) {
+    return true;
+  }
+
   const ln = parent.localName.toLowerCase();
   return (
     ln === "levelledpara" ||
     ln === "proceduralstep" ||
+    ln === "crewdrill" ||
+    ln === "crewdrillstep" ||
+    ln === "crewrefcard" ||
     ln === "figure" ||
     ln === "table" ||
     ln === "sequentiallist" ||
@@ -147,10 +162,25 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
     }
     let levelledParaCount = 0;
     let proceduralStepCount = 0;
+    let crewDrillStepCount = 0;
     for (let d = $pos.depth; d > 0; d--) {
       const name = $pos.node(d).type.name;
       if (name === "levelledPara") levelledParaCount++;
       if (name === "proceduralStep") proceduralStepCount++;
+      if (name === "crewDrillStep") crewDrillStepCount++;
+    }
+    if (crewDrillStepCount > 0 && levelledParaCount === 0 && proceduralStepCount === 0) {
+      return clampS1000dTitleDisplayLevel(crewDrillStepCount + 1);
+    }
+    if (titleDepth > 0) {
+      const parentType = $pos.node(titleDepth - 1).type.name;
+      if (
+        parentType === "crewDrill" &&
+        levelledParaCount === 0 &&
+        proceduralStepCount === 0
+      ) {
+        return 1;
+      }
     }
     if (proceduralStepCount > 0 && levelledParaCount === 0) {
       return clampS1000dTitleDisplayLevel(proceduralStepCount + 1);
@@ -162,9 +192,12 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
 }
 
 function createS1000dTitleLevelsPlugin() {
+  const composingGuard = createPluginComposingGuard();
   return new Plugin({
     key: s1000dTitleLevelsKey,
     appendTransaction(transactions, _oldState, newState) {
+      if (composingGuard.isComposing()) return null;
+
       const docChanged = transactions.some((tr) => tr.docChanged);
       const forced = transactions.some((tr) => {
         const meta = tr.getMeta(s1000dTitleLevelsKey);
@@ -197,6 +230,7 @@ function createS1000dTitleLevelsPlugin() {
       return changed ? tr : null;
     },
     view(editorView: EditorView) {
+      const guard = composingGuard.bindView(editorView);
       queueMicrotask(() => {
         if (editorView.isDestroyed) return;
         editorView.dispatch(
@@ -205,7 +239,7 @@ function createS1000dTitleLevelsPlugin() {
           }),
         );
       });
-      return {};
+      return guard;
     },
   });
 }
@@ -259,7 +293,7 @@ export const WarningAndCautionLead = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(WarningAndCautionLeadNodeView);
+    return imeSafeReactNodeViewRenderer(WarningAndCautionLeadNodeView);
   },
 });
 
@@ -364,13 +398,13 @@ export const WarningAndCautionPara = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(WarningAndCautionParaNodeView);
+    return imeSafeReactNodeViewRenderer(WarningAndCautionParaNodeView);
   },
 });
 
 /**
  * S1000D `warning`：块级注意单元，子节点必须为至少一个 `warningAndCautionPara`。
- * 视图层使用 `ReactNodeViewRenderer` 提供可辨识的 WYSIWYG 外壳。
+ * 视图层使用 `imeSafeReactNodeViewRenderer` 提供可辨识的 WYSIWYG 外壳。
  */
 export const S1000DWarning = Node.create({
   name: "warning",
@@ -413,7 +447,7 @@ export const S1000DWarning = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(WarningNodeView);
+    return imeSafeReactNodeViewRenderer(WarningNodeView);
   },
 });
 
@@ -461,7 +495,7 @@ export const S1000DCaution = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(WarningNodeView);
+    return imeSafeReactNodeViewRenderer(WarningNodeView);
   },
 });
 
@@ -490,7 +524,7 @@ export const NoteLead = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(NoteLeadNodeView);
+    return imeSafeReactNodeViewRenderer(NoteLeadNodeView);
   },
 });
 
@@ -520,7 +554,7 @@ export const NotePara = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(NoteParaNodeView);
+    return imeSafeReactNodeViewRenderer(NoteParaNodeView);
   },
 });
 
@@ -568,7 +602,7 @@ export const S1000DNote = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(NoteNodeView);
+    return imeSafeReactNodeViewRenderer(NoteNodeView);
   },
 });
 
@@ -876,7 +910,7 @@ export const S1000DDmRef = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(DmRefNodeView);
+    return imeSafeReactNodeViewRenderer(DmRefNodeView);
   },
 });
 /**
@@ -951,7 +985,7 @@ export const S1000DInternalRef = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(InternalRefNodeView);
+    return imeSafeReactNodeViewRenderer(InternalRefNodeView);
   },
 });
 
@@ -1175,7 +1209,7 @@ export const S1000DAttentionSymbol = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AttentionSymbolNodeView);
+    return imeSafeReactNodeViewRenderer(AttentionSymbolNodeView);
   },
 });
 
@@ -1297,7 +1331,7 @@ export const S1000DGraphic = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(GraphicNodeView);
+    return imeSafeReactNodeViewRenderer(GraphicNodeView);
   },
 });
 
@@ -1539,7 +1573,7 @@ export const S1000DMultimediaObject = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(MultimediaObjectNodeView);
+    return imeSafeReactNodeViewRenderer(MultimediaObjectNodeView);
   },
 });
 
@@ -1571,7 +1605,7 @@ export const S1000DMultimedia = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(MultimediaNodeView);
+    return imeSafeReactNodeViewRenderer(MultimediaNodeView);
   },
 });
 
@@ -1633,7 +1667,7 @@ export const S1000DFigure = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(FigureNodeView);
+    return imeSafeReactNodeViewRenderer(FigureNodeView);
   },
 });
 
@@ -1710,7 +1744,7 @@ export const LevelledPara = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(LevelledParaNodeView);
+    return imeSafeReactNodeViewRenderer(LevelledParaNodeView);
   },
 });
 
@@ -2396,6 +2430,28 @@ export function getProcedureInnerXmlFromDmXml(
   return preprocessS1000dDescriptionHtmlFragment(joined);
 }
 
+/**
+ * 从 DM 中取出 `<content>/<crew>` 的直接子节点 XML 片段（无 `<crew>` 外壳）。
+ */
+export function getCrewInnerXmlFromDmXml(xmlString: string): string | null {
+  extractIdentAndStatusSection(xmlString);
+  const contentRoot = extractContentElementFromDmXml(xmlString);
+  if (!contentRoot) return null;
+  const crew = Array.from(contentRoot.children).find(
+    (c) => c.localName === "crew",
+  );
+  if (!crew) return null;
+
+  const serializer = new XMLSerializer();
+  const parts: string[] = [];
+  for (const child of Array.from(crew.children)) {
+    parts.push(serializer.serializeToString(child));
+  }
+  const joined = parts.length > 0 ? parts.join("") : null;
+  if (!joined) return null;
+  return preprocessS1000dDescriptionHtmlFragment(joined);
+}
+
 function normalizeIpdInnerXmlForEditor(ipcRoot: Element) {
   for (const csn of Array.from(ipcRoot.children)) {
     if (csn.localName?.toLowerCase() !== "catalogseqnumber") continue;
@@ -2454,9 +2510,10 @@ export function getDmInnerXmlFromDmXml(
   const description = getDescriptionInnerXmlFromDmXml(xmlString);
   const fault = getFaultIsolationInnerXmlFromDmXml(xmlString);
   const procedure = getProcedureInnerXmlFromDmXml(xmlString);
+  const crew = getCrewInnerXmlFromDmXml(xmlString);
   const ipd = getIpdInnerXmlFromDmXml(xmlString);
 
-  let kind: "description" | "faultIsolation" | "procedure" | "ipd" =
+  let kind: "description" | "faultIsolation" | "procedure" | "ipd" | "crew" =
     "description";
   if (typeof schemaOrPreferFault === "boolean") {
     kind = schemaOrPreferFault ? "faultIsolation" : "description";
@@ -2465,6 +2522,7 @@ export function getDmInnerXmlFromDmXml(
     if (/\billustratedPartsCatalog\b/.test(contentRule)) kind = "ipd";
     else if (/\bfaultIsolation\b/.test(contentRule)) kind = "faultIsolation";
     else if (/\bprocedure\b/.test(contentRule)) kind = "procedure";
+    else if (/\bcrew\b/.test(contentRule)) kind = "crew";
     else if (/\bdescription\b/.test(contentRule)) kind = "description";
     else if (
       Object.prototype.hasOwnProperty.call(
@@ -2487,19 +2545,28 @@ export function getDmInnerXmlFromDmXml(
       !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "description")
     ) {
       kind = "faultIsolation";
+    } else if (
+      Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "crew") &&
+      !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "description") &&
+      !Object.prototype.hasOwnProperty.call(schemaOrPreferFault, "procedure")
+    ) {
+      kind = "crew";
     }
   }
 
   if (kind === "ipd") {
-    return ipd ?? description ?? procedure ?? fault;
+    return ipd ?? description ?? procedure ?? crew ?? fault;
   }
   if (kind === "faultIsolation") {
-    return fault ?? procedure ?? description ?? ipd;
+    return fault ?? procedure ?? crew ?? description ?? ipd;
   }
   if (kind === "procedure") {
-    return procedure ?? description ?? fault ?? ipd;
+    return procedure ?? crew ?? description ?? fault ?? ipd;
   }
-  return description ?? procedure ?? fault ?? ipd;
+  if (kind === "crew") {
+    return crew ?? procedure ?? description ?? fault ?? ipd;
+  }
+  return description ?? crew ?? procedure ?? fault ?? ipd;
 }
 
 /**

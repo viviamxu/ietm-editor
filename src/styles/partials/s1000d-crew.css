@@ -1,0 +1,284 @@
+/* 操作类 DM 编辑样式 */
+
+.ietm-editor-surface .tiptap .s1000d-crew-ref-card {
+  margin: 0 0 24px;
+  padding: 16px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-ref-card__content > title,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-ref-card__content
+  > s1000d-block-title:first-child,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-ref-card__content
+  > .s1000d-title-display:first-child {
+  display: block;
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ietm-text-heading, #1d2129);
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-drill {
+  margin: 20px 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-drill-step {
+  margin: 12px 0;
+}
+
+/* crewDrill / crewDrillStep 内 title 字号与颜色由 s1000d-title-display 层级规则控制；序号见 s1000d-content.css */
+
+/* 检查 / 响应卡片 */
+.ietm-editor-surface .tiptap .s1000d-crew-car {
+  margin: 10px 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__content {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 12px;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 0 8px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__badge--check {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #389e0d;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__badge--response {
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  color: #d4b106;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-car__row-body para {
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* 条件分支 if / elseIf / case */
+.ietm-editor-surface .tiptap .s1000d-crew-condition {
+  margin: 12px 0;
+  --s1000d-crew-badge-col: 80px;
+  --s1000d-crew-badge-gap: 8px;
+  --s1000d-crew-cond-step-indent: calc(
+    var(--s1000d-crew-badge-col) + var(--s1000d-crew-badge-gap) - 20px
+  );
+}
+
+/* flex 列布局：不依赖 grid，避免 .react-renderer 包装层占格 */
+.ietm-editor-surface .tiptap .s1000d-crew-condition__content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-case-cond {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--s1000d-crew-badge-gap);
+  min-height: 1.5em;
+  position: relative;
+  z-index: 1;
+  flex-direction: row;
+  align-items: center;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-condition__badge {
+  box-sizing: border-box;
+  flex: 0 0 var(--s1000d-crew-badge-col);
+  width: var(--s1000d-crew-badge-col);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  height: 25px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  background: #f3faf5;
+  border: 1px solid #d9ece2;
+  color: #346846;
+  user-select: none;
+  position: relative;
+  z-index: 2;
+}
+
+.ietm-editor-surface .tiptap .s1000d-crew-case-cond__text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.55;
+}
+
+/* NodeViewContent 内层 div 撑满，避免条件文字竖排 */
+.ietm-editor-surface .tiptap .s1000d-crew-case-cond__text > div {
+  min-width: 0;
+  width: 100%;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition__content
+  .s1000d-crew-drill-step {
+  margin: 0 0 0 var(--s1000d-crew-cond-step-indent);
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition__content
+  .s1000d-crew-drill-step
+  + .s1000d-crew-drill-step {
+  padding-top: 4px;
+}
+
+/*
+ * 连续 if / elseIf / case 条件链：徽章列左侧竖线（如果 → 否则如果 → …）
+ * 链角色由 CrewConditionNodeView 写入 --chain-start | mid | end
+ */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-start,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-mid,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-end {
+  position: relative;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-start {
+  margin-bottom: 0;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-mid,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-end {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-start::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-mid::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-end::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--s1000d-crew-badge-col, 80px) / 2);
+  width: 1px; 
+  background: #d9d9d9;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 首段：竖线从首个徽章垂直中心向下 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-start::before {
+  top: 12px;
+  bottom: 0;
+}
+
+/* 中间 / 末段：竖线自块顶贯穿（与上一段首尾相接） */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-mid::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-end::before {
+  top: 0;
+  bottom: 0;
+}
+
+/* 末段且无子步骤：竖线在末个徽章垂直中心止 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition--chain-end:not(:has(.s1000d-crew-drill-step))::before {
+  bottom: auto;
+  height: 12px;
+}
+
+/* 条件块内子步骤 title：1) 2) 蓝色序号 + 深色标题 */
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition
+  .s1000d-crew-drill-step
+  .s1000d-title-display[data-s1000d-section-number]:not(
+    [data-s1000d-title-level="0"]
+  )::before,
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition
+  .s1000d-crew-drill-step
+  s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
+    [data-s1000d-title-level="0"]
+  )::before {
+  content: attr(data-s1000d-section-number) "\00a0";
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition
+  .s1000d-crew-drill-step
+  .s1000d-title-display:not([data-s1000d-title-level="0"]),
+.ietm-editor-surface
+  .tiptap
+  .s1000d-crew-condition
+  .s1000d-crew-drill-step
+  s1000d-block-title.s1000d-title-display:not([data-s1000d-title-level="0"]) {
+  color: var(--ietm-text-heading, #1d2129);
+  font-weight: 600;
+}

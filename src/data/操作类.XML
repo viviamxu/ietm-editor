@@ -34,7 +34,7 @@
                   </tgroup>
                 </table>
                <crewDrillStep>
-                  <title>操作步骤标题</title>
+                  <title>操作步骤标题第一步</title>
                   <para>使用备份验证工具检查最近一次的备份文件是否完整，确保没有损坏或缺失的数据块。</para>
                   <crewDrillStep>
                      <title>操作子步骤标题</title>
@@ -50,39 +50,36 @@
                   <crewDrillStep>
                      <title>操作子步骤标题</title>
                      <figure>
-                        <title>省略</title>
-                        <graphic infoEntityIdent="XXX"></graphic>
+                        <title>图片标题</title>
+                        <!-- <graphic infoEntityIdent="XXX"></graphic> -->
                      </figure>
                   </crewDrillStep>
                </crewDrillStep>
                <crewDrillStep>
-                  <title>操作标题</title>
-                  <warning>
-                     <warningAndCautionPara>省略...</warningAndCautionPara>
-                  </warning>
+                  <title>操作标题第二步</title>
                   <table>
-                  <title/>   
-                  <tgroup cols="1">
-                    <tbody>
-                      <row>
-                        <entry>
-                          <para>
-                            最小
-                          </para>
-                        </entry>
-                      </row>
-                    </tbody>
-                  </tgroup>
-                </table>
+                     <title/>   
+                     <tgroup cols="1">
+                     <tbody>
+                        <row>
+                           <entry>
+                           <para>
+                              第2个
+                           </para>
+                           </entry>
+                        </row>
+                     </tbody>
+                     </tgroup>
+                  </table>
                   <if>
                      <caseCond>如果的条件输入</caseCond>
-                     <crewDrillStep><title>省略...</title></crewDrillStep>
-                     <crewDrillStep><title>省略...</title></crewDrillStep>
+                     <crewDrillStep><title>如果的操作子步骤标题1</title><para>如果的操作子步骤内容</para></crewDrillStep>
+                     <crewDrillStep><title>如果的操作子步骤标题2</title></crewDrillStep>
                   </if>
                   <elseIf>
-                     <caseCond>如果的条件输入</caseCond>
-                     <crewDrillStep><title>省略...</title></crewDrillStep>
-                     <crewDrillStep><title>省略...</title></crewDrillStep>
+                     <caseCond>否则如果的条件输入</caseCond>
+                     <crewDrillStep><title>否则如果的操作子步骤标题1</title></crewDrillStep>
+                     <crewDrillStep><title>否则如果的操作子步骤标题2</title></crewDrillStep>
                   </elseIf>
                </crewDrillStep>
                <crewDrillStep>

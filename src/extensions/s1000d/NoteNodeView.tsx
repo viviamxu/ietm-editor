@@ -8,11 +8,10 @@ import {
   AttentionBlockSymbolIconButton,
   readFirstAttentionSymbolFromBlock,
 } from "./attentionBlockSymbolIcon";
-import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import { useNodeViewEditorState, useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
 import { openInsertSymbolModalForAttentionBlock } from "../../lib/editor/insertSymbols";
 import {
   useCallback,
-  useEffect,
   useReducer,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -94,15 +93,7 @@ export function NoteNodeView(props: NodeViewProps) {
   const attentionSymbol = readFirstAttentionSymbolFromBlock(node);
   const hasAttentionSymbol = attentionSymbol != null;
 
-  useEffect(() => {
-    const bump = () => bumpFromDoc();
-    editor.on("selectionUpdate", bump);
-    editor.on("transaction", bump);
-    return () => {
-      editor.off("selectionUpdate", bump);
-      editor.off("transaction", bump);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["selectionUpdate", "transaction"], bumpFromDoc);
 
   const { nodeSelected, caretInside } = selectionOnNoteBlock(props);
   const showChrome = hovered || caretInside || nodeSelected;

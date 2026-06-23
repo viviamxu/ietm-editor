@@ -110,16 +110,49 @@
   user-select: none;
 }
 
-/* levelledPara / proceduralStep：空标题与序号同行等 */
+/* crewDrill / crewDrillStep 章节标题序号（与 levelledPara 同色） */
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(.s1000d-crew-drill, .s1000d-crew-drill-step)
+  .s1000d-title-display[data-s1000d-section-number]:not(
+    [data-s1000d-title-level="0"]
+  )::before,
+.ietm-editor-surface
+  .tiptap
+  :is(.s1000d-crew-drill, .s1000d-crew-drill-step)
+  s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
+    [data-s1000d-title-level="0"]
+  )::before {
+  content: attr(data-s1000d-section-number) "\00a0";
+  display: inline;
+  float: none;
+  height: auto;
+  color: #2563eb;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* levelledPara / proceduralStep / crewDrill：空标题与序号同行等 */
+.ietm-editor-surface
+  .tiptap
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child)),
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child)) {
@@ -131,13 +164,23 @@
 
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child))::before,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child))::before {
@@ -149,13 +192,23 @@
 
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child))::after,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child))::after {
@@ -167,14 +220,24 @@
 
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child))
   > br.ProseMirror-trailingBreak,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):is(:empty, :has(> br.ProseMirror-trailingBreak:only-child))
@@ -187,19 +250,34 @@
 /* levelledPara 空标题：纯样式占位（无自动序号时用 ::before） */
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-title-level]:not(
     [data-s1000d-title-level="0"]
   ):not([data-s1000d-section-number]):empty::before,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-title-level]:not(
     [data-s1000d-title-level="0"]
   ):not([data-s1000d-section-number]):empty::before,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-title-level]:not(
     [data-s1000d-title-level="0"]
   ):not([data-s1000d-section-number]):has(
@@ -207,7 +285,12 @@
   )::before,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-title-level]:not(
     [data-s1000d-title-level="0"]
   ):not([data-s1000d-section-number]):has(
@@ -223,25 +306,45 @@
 /* 有自动序号时空标题占位（与 ::before 序号同一行，见上方 flex 规则） */
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):empty::after,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):empty::after,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   .s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):has(> br.ProseMirror-trailingBreak:only-child)::after,
 .ietm-editor-surface
   .tiptap
-  :is(.s1000d-levelled-para, .s1000d-procedural-step)
+  :is(
+      .s1000d-levelled-para,
+      .s1000d-procedural-step,
+      .s1000d-crew-drill,
+      .s1000d-crew-drill-step
+    )
   s1000d-block-title.s1000d-title-display[data-s1000d-section-number]:not(
     [data-s1000d-title-level="0"]
   ):has(> br.ProseMirror-trailingBreak:only-child)::after {

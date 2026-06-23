@@ -1361,6 +1361,9 @@ function serializeNodeToXml(node: JSONContent): string {
     if (kind === "procedure") {
       return `<content>\n  <procedure>\n${docChildren}\n  </procedure>\n</content>`;
     }
+    if (kind === "crew") {
+      return `<content>\n  <crew>\n${docChildren}\n  </crew>\n</content>`;
+    }
     if (kind === "ipd") {
       return `<content>\n  <illustratedPartsCatalog>\n${docChildren}\n  </illustratedPartsCatalog>\n</content>`;
     }
@@ -1399,11 +1402,13 @@ export function exportEditorToDmXmlString(editor: Editor): string {
   const xsd =
     kind === "procedure"
       ? "proced.xsd"
-      : kind === "faultIsolation"
-        ? "fault.xsd"
-        : kind === "ipd"
-          ? "ipd.xsd"
-          : "descript.xsd";
+      : kind === "crew"
+        ? "crew.xsd"
+        : kind === "faultIsolation"
+          ? "fault.xsd"
+          : kind === "ipd"
+            ? "ipd.xsd"
+            : "descript.xsd";
 
   return `<?xml version="1.0" encoding="utf-8"?>
 ${doctypeXml}
