@@ -1058,7 +1058,9 @@ function serializeMultimediaObjectToXml(node: JSONContent): string {
       ? String(attrs.mediaSrc).trim()
       : attrs.sceneSrc != null && String(attrs.sceneSrc).trim() !== ""
         ? String(attrs.sceneSrc).trim()
-        : "";
+        : attrs.webglUrl != null && String(attrs.webglUrl).trim() !== ""
+          ? String(attrs.webglUrl).trim()
+          : "";
   const hrefRaw = hrefFull ? toRelativeFileUrl(hrefFull) : "";
   const xlink = hrefRaw ? ` xlink:href="${escapeXml(hrefRaw)}"` : "";
   const parameters = (node.content ?? [])

@@ -163,7 +163,7 @@ export const IETMEditorRoot = forwardRef<
     useFileUrlStore.getState().setFileUrlPrefix(props.fileUrlPrefix ?? "");
   }, [props.fileUrlPrefix]);
 
-  // 初始化 @ietm-manual/preview（注册 cc-3d-scene Web Component）
+  // 初始化 @ietm-manual/preview（注册 cc-3d-scene；cc-webgl-scene 由宿主或新版 preview 注册）
   useEffect(() => {
     const libPath = props.previewLibPath ?? "/";
     void import("@ietm-manual/preview/index").then((mod) => {

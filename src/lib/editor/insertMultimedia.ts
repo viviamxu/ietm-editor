@@ -20,7 +20,7 @@ export type InsertMultimediaPayload = {
   /** 可选标题，写入 `multimedia > title` */
   title?: string;
   /**
-   * ICN 业务类型：`"cc3d"` 三维 | `"math"` 公式 | `null` 其它。
+   * ICN 业务类型：`"cc3d"` 三维 | `"webgl"` WebGL | `"math"` 公式 | `null` 其它。
    * 对应后端 `dataType`，存储于节点 attr，**不写入 S1000D XML**。
    */
   dataType?: string | null;
@@ -51,6 +51,21 @@ export type InsertMultimediaPayload = {
    * 未传时由 {@link resolveMultimediaTypeForXml} 根据 fileType/dataType 推断。
    */
   multimediaType?: string | null;
+  /**
+   * WebGL 页面/资源 URL（`cc-webgl-scene` 的 `webgl-url`）。
+   * 存储于节点 attr，**不写入 S1000D XML**（导出时可选写入 `xlink:href`）。
+   */
+  webglUrl?: string | null;
+  /**
+   * WebGL 命令模板 JSON 字符串。
+   * 存储于节点 attr，**不写入 S1000D XML**。
+   */
+  webglCommandTemplate?: string | null;
+  /**
+   * WebGL 命令实例 JSON 字符串。
+   * 存储于节点 attr，**不写入 S1000D XML**。
+   */
+  webglCommand?: string | null;
   /**
    * cc3d 场景参数，写入 `multimediaObject` 子节点 `<parameter>`（导出至 S1000D XML）。
    * 宿主可在确认插入 cc3d 且 `cnfPath` 有值时，从 scene.json 的
@@ -97,6 +112,9 @@ function buildMultimediaObjectJson(item: InsertMultimediaPayload): JSONContent {
       previewImgSrc: resolveFileUrl(item.previewImgSrc) || null,
       cnfPath: resolveFileUrl(item.cnfPath) || null,
       mediaSrc: resolveFileUrl(item.mediaSrc) || null,
+      webglUrl: resolveFileUrl(item.webglUrl) || null,
+      webglCommandTemplate: item.webglCommandTemplate?.trim() || null,
+      webglCommand: item.webglCommand?.trim() || null,
     },
     ...(parameterContent.length > 0 ? { content: parameterContent } : {}),
   };

@@ -51,10 +51,10 @@ export function publicationRowMatchesMode(
 ): boolean {
   if (mode === "multimedia") {
     if (isVideoFileType(row.fileType)) return true;
-    if (row.dataType === "cc3d" || row.dataType === "math") return true;
+    if (row.dataType === "cc3d" || row.dataType === "webgl" || row.dataType === "math") return true;
     return false;
   }
   if (isVideoFileType(row.fileType)) return false;
-  if (row.dataType === "cc3d") return false;
+  if (row.dataType === "cc3d" || row.dataType === "webgl") return false;
   return true;
 }

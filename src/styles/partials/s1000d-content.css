@@ -720,6 +720,24 @@
   overflow: hidden;
 }
 
+/* WebGL 模式：整块展示 cc-webgl-scene */
+.ietm-editor-surface .tiptap .s1000d-multimedia-object-node--webgl {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.ietm-editor-surface .tiptap .s1000d-webgl-scene {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 240px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
 /* 视频模式 */
 .ietm-editor-surface .tiptap .s1000d-multimedia-object-node--video {
   display: block;

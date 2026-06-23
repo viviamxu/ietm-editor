@@ -7,7 +7,7 @@ export interface IcnInfoRow {
   fullCode: string;
   title: string;
   /**
-   * 业务类型：`"cc3d"` 三维 | `"math"` 公式 | `null` 其它。
+   * 业务类型：`"cc3d"` 三维 | `"webgl"` WebGL | `"math"` 公式 | `null` 其它。
    * 对应后端 `dataType` 字段。
    */
   dataType: string | null;

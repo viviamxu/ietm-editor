@@ -43,6 +43,9 @@ export type MultimediaObjectHydrateAttrs = {
   sceneSrc?: string | null;
   previewImgSrc?: string | null;
   cnfPath?: string | null;
+  webglUrl?: string | null;
+  webglCommandTemplate?: string | null;
+  webglCommand?: string | null;
   multimediaType?: string;
 };
 
@@ -60,6 +63,15 @@ export function icnInfoRowToMultimediaAttrs(
       previewImgSrc: resolveFileUrl(row.thPath),
       cnfPath: row.cnfPath ? resolveFileUrl(row.cnfPath) : null,
       multimediaType: "3D",
+    };
+  }
+
+  if (dataType === "webgl") {
+    return {
+      dataType: "webgl",
+      fileType,
+      previewImgSrc: resolveFileUrl(row.thPath),
+      multimediaType: "computerGraphic",
     };
   }
 
@@ -106,7 +118,16 @@ function needsMultimediaHydration(attrs: Record<string, unknown>): boolean {
   if (!ident) return false;
   const mediaSrc = String(attrs.mediaSrc ?? "").trim();
   const sceneSrc = String(attrs.sceneSrc ?? "").trim();
-  return !mediaSrc && !sceneSrc;
+  const webglUrl = String(attrs.webglUrl ?? "").trim();
+  const webglCommand = String(attrs.webglCommand ?? "").trim();
+  const webglCommandTemplate = String(attrs.webglCommandTemplate ?? "").trim();
+  return (
+    !mediaSrc &&
+    !sceneSrc &&
+    !webglUrl &&
+    !webglCommand &&
+    !webglCommandTemplate
+  );
 }
 
 /**

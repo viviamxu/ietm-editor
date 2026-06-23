@@ -1347,7 +1347,12 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
     String(xlinkHref ?? "").trim(),
   );
   const is3dByXml = multimediaType === "3D" || isZipHref;
-  const dataType = dataIcnType ?? (is3dByXml ? "cc3d" : null);
+  const webglUrl = resolveFileUrl(el.getAttribute("data-webgl-url"));
+  const webglCommandTemplate = el.getAttribute("data-webgl-command-template");
+  const webglCommand = el.getAttribute("data-webgl-command");
+  const isWebglByXml = dataIcnType === "webgl" || !!webglUrl;
+  const dataType =
+    dataIcnType ?? (is3dByXml ? "cc3d" : isWebglByXml ? "webgl" : null);
   const legacyMedia = resolveFileUrl(el.getAttribute("data-media-src"));
   const legacyScene = resolveFileUrl(el.getAttribute("data-scene-src"));
   const previewImgSrc = resolveFileUrl(el.getAttribute("data-preview-img-src"));
@@ -1363,9 +1368,14 @@ function readMultimediaObjectAttrsFromElement(el: Element) {
       (is3dByXml && xlinkHref ? xlinkHref : null),
     previewImgSrc: previewImgSrc || null,
     cnfPath: cnfPath || null,
+    webglUrl:
+      webglUrl || (isWebglByXml && xlinkHref ? xlinkHref : null),
+    webglCommandTemplate: webglCommandTemplate?.trim() || null,
+    webglCommand: webglCommand?.trim() || null,
     fileType: el.getAttribute("data-file-type"),
     mediaSrc:
-      legacyMedia || (!is3dByXml && xlinkHref ? xlinkHref : null),
+      legacyMedia ||
+      (!is3dByXml && !isWebglByXml && xlinkHref ? xlinkHref : null),
     sourceXmlAttrKeys: xmlAttrsPresentOnElement(el, [
       "infoEntityIdent",
       "infoentityident",
@@ -1449,7 +1459,7 @@ export const S1000DMultimediaObject = Node.create({
           return v ? { multimediaType: String(v) } : {};
         },
       },
-      /** ICN 业务类型："cc3d" 三维 | "math" 公式 | null 其它。仅存编辑器内存，不写入 S1000D XML。 */
+      /** ICN 业务类型："cc3d" 三维 | "webgl" WebGL | "math" 公式 | null 其它。仅存编辑器内存，不写入 S1000D XML。 */
       dataType: {
         default: null,
         parseHTML: (el) =>
@@ -1495,6 +1505,41 @@ export const S1000DMultimediaObject = Node.create({
           return v ? { "data-cnf-path": v } : {};
         },
       },
+      /** WebGL 页面/资源 URL。仅存编辑器内存，不写入 S1000D XML。 */
+      webglUrl: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? resolveFileUrl(el.getAttribute("data-webgl-url")) || null
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { webglUrl?: string | null }).webglUrl;
+          return v ? { "data-webgl-url": v } : {};
+        },
+      },
+      /** WebGL 命令模板 JSON。仅存编辑器内存，不写入 S1000D XML。 */
+      webglCommandTemplate: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element
+            ? el.getAttribute("data-webgl-command-template")
+            : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { webglCommandTemplate?: string | null })
+            .webglCommandTemplate;
+          return v ? { "data-webgl-command-template": String(v) } : {};
+        },
+      },
+      /** WebGL 命令实例 JSON。仅存编辑器内存，不写入 S1000D XML。 */
+      webglCommand: {
+        default: null,
+        parseHTML: (el) =>
+          el instanceof Element ? el.getAttribute("data-webgl-command") : null,
+        renderHTML: (attrs) => {
+          const v = (attrs as { webglCommand?: string | null }).webglCommand;
+          return v ? { "data-webgl-command": String(v) } : {};
+        },
+      },
       /** 文件后缀（如 mp4）。仅存编辑器内存，不写入 S1000D XML。 */
       fileType: {
         default: null,
@@ -1517,7 +1562,8 @@ export const S1000DMultimediaObject = Node.create({
             el.getAttribute("multimediatype") ??
             "";
           const dataType = el.getAttribute("data-icn-type");
-          if (mt === "3D" || dataType === "cc3d") return null;
+          if (mt === "3D" || dataType === "cc3d" || dataType === "webgl")
+            return null;
           const fromXlink = resolveFileUrl(readXlinkHrefFromElement(el));
           return fromXlink || null;
         },

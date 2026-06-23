@@ -19,6 +19,7 @@ export function resolveMultimediaTypeForXml(attrs: {
 
   const dataType = attrs.dataType?.trim();
   if (dataType === "cc3d") return "3D";
+  if (dataType === "webgl") return "computerGraphic";
 
   const fileType = attrs.fileType?.trim().toLowerCase();
   if (fileType === "mp4" || fileType === "webm") return "video";
