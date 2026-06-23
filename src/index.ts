@@ -210,6 +210,24 @@ export {
 export { useToolbarConfigStore };
 export { useProcedureBindingStore };
 export { bindProceduralStepDerivativeRef } from "./lib/s1000d/bindProceduralStepAnimation";
+export {
+  WEBGL_PARAMETER_IDENT,
+  BINDABLE_DERIVATIVE_BINDING_LEAF_TYPES,
+} from "./types/procedureAnimationBinding";
+export {
+  buildMediaBindingTreeNode,
+  buildMediaBindingTreeNodeId,
+  buildWebGlBindingTreeNodes,
+  buildWebGlMediaBindingTreeFromStep,
+  collectMultimediaInProceduralStep,
+  hasWebGlParameters,
+  isBindableDerivativeBindingLeafType,
+  proceduralStepContainsParameterRef,
+} from "./lib/s1000d/proceduralStepBindingTree";
+export type {
+  MultimediaParameterBindingSource,
+  ProceduralStepMultimediaBindingSource,
+} from "./lib/s1000d/proceduralStepBindingTree";
 export type {
   BuiltinToolbarItemId,
   CustomToolbarItem,

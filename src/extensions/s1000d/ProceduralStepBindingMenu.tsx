@@ -3,6 +3,7 @@ import { IconCheck } from "@arco-design/web-react/icon";
 import { LayoutGrid } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 
+import { isBindableDerivativeBindingLeafType } from "../../lib/s1000d/proceduralStepBindingTree";
 import type {
   DerivativeBindingNodeType,
   DerivativeBindingTreeNode,
@@ -89,6 +90,15 @@ function renderBindingMenuNodes(
         <Menu.SubMenu key={node.id} title={node.label}>
           {renderBindingMenuNodes(children, boundId, onBind)}
         </Menu.SubMenu>
+      );
+    }
+
+    if (isBindableDerivativeBindingLeafType(node.type)) {
+      return renderBindingMenuItem(
+        node,
+        boundId,
+        onBind,
+        `s1000d-procedural-step-binding__${node.type}`,
       );
     }
 

@@ -5,7 +5,15 @@ export type DerivativeBindingNodeType =
   | "scene"
   | "animation"
   | "animationClip"
-  | "slice";
+  | "slice"
+  | "webgl";
+
+/** WebGL 指令 `<parameter>` 的 `parameterIdent` 固定值。 */
+export const WEBGL_PARAMETER_IDENT = "WEBGL";
+
+/** 绑定菜单中可直接点击绑定的叶子节点类型（含 3D 切面/动画片段与 WebGL 指令）。 */
+export const BINDABLE_DERIVATIVE_BINDING_LEAF_TYPES: readonly DerivativeBindingNodeType[] =
+  ["slice", "animationClip", "webgl"];
 
 export interface DerivativeBindingTreeNode {
   id: string;

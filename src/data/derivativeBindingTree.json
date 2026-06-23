@@ -1,5 +1,22 @@
 [
   {
+    "id": "media:ICN-WEBGL-DEMO:42",
+    "label": "门机构 WebGL 演示",
+    "type": "media",
+    "children": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "label": "指令 1",
+        "type": "webgl"
+      },
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "label": "指令 2",
+        "type": "webgl"
+      }
+    ]
+  },
+  {
     "id": "media-1",
     "label": "媒体标题",
     "type": "media",

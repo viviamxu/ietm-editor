@@ -2,7 +2,7 @@ import type { Editor } from "@tiptap/core";
 
 import { mergeSourceXmlAttrKeysAfterPatch } from "./sourceXmlAttrKeys";
 
-/** 将动画/切面 id 写入当前 `proceduralStep` 的 `derivativeClassificationRefId`。 */
+/** 将 3D 动画/切面或 WebGL 指令对应的 `<parameter id>` 写入 `derivativeClassificationRefId`。 */
 export function bindProceduralStepDerivativeRef(
   editor: Editor,
   pos: number,
