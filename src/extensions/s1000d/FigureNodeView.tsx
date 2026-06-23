@@ -4,14 +4,13 @@ import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
 import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
 import { HostBlockContinueHint } from "./HostBlockContinueHint";
-import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import { useNodeViewEditorState, useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
 import {
   figureHasDisplayableGraphic,
 } from "../../lib/editor/figureGraphic";
 import { openPublicationModalForFmftBlock } from "../../lib/editor/fmftPublicationPick";
 import {
   useCallback,
-  useEffect,
   useReducer,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -74,15 +73,7 @@ export function FigureNodeView(props: NodeViewProps) {
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
 
-  useEffect(() => {
-    const bump = () => bumpFromSelection();
-    editor.on("selectionUpdate", bump);
-    editor.on("update", bump);
-    return () => {
-      editor.off("selectionUpdate", bump);
-      editor.off("update", bump);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["selectionUpdate", "update"], bumpFromSelection);
 
   const { nodeSelected, caretInside } = selectionOnThisFigure(props);
   const showChrome = hovered || caretInside || nodeSelected;

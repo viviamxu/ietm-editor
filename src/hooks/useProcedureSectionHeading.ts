@@ -1,8 +1,9 @@
 import type { NodeViewProps } from "@tiptap/react";
-import { useEffect, useReducer } from "react";
+import { useReducer } from "react";
 
 import { resolveProcedureSectionHeading } from "../lib/s1000d/procedureSectionHeading";
 import { useProcedureUiConfigStore } from "../store/procedureUiConfigStore";
+import { useImeSafeEditorSync } from "./useNodeViewEditorState";
 import type { ProcedureSectionHeading } from "../types/procedureUiConfig";
 
 const EMPTY_HEADING: ProcedureSectionHeading = {
@@ -18,15 +19,7 @@ export function useProcedureSectionHeading(
   const { editor, getPos } = props;
   const [, bump] = useReducer((n: number) => n + 1, 0);
 
-  useEffect(() => {
-    const onChange = () => bump();
-    editor.on("update", onChange);
-    editor.on("selectionUpdate", onChange);
-    return () => {
-      editor.off("update", onChange);
-      editor.off("selectionUpdate", onChange);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["update", "selectionUpdate"], bump);
 
   const pos = typeof getPos === "function" ? getPos() : undefined;
   if (pos == null) return EMPTY_HEADING;

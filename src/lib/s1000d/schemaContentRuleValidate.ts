@@ -124,6 +124,8 @@ export function resolveSchemaContentRuleForEditorParent(
           return schema.illustratedPartsCatalog?.content ?? "";
         case "procedure":
           return schema.procedure?.content ?? "";
+        case "crew":
+          return schema.crew?.content ?? "";
         case "faultIsolation":
           return schema.faultIsolation?.content ?? "";
         default:

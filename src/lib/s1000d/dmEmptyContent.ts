@@ -3,6 +3,7 @@ import type { JSONContent } from "@tiptap/core";
 import type { DescriptionSchema } from "../../types/descriptionSchema";
 import { buildEmptyDescriptionDocJson } from "./descriptionSchemaInsert";
 import { buildEmptyFaultIsolationDocJson } from "./faultIsolationInsert";
+import { buildEmptyCrewDocJsonFromSchema } from "./crewInsert";
 import { buildEmptyProcedureDocJsonFromSchema } from "./procedureInsert";
 import { buildEmptyIpdDocJson } from "./ipdInsert";
 import { getDmContentKind } from "./dmContentKind";
@@ -17,6 +18,9 @@ export function buildEmptyDocJsonFromSchema(
   }
   if (kind === "procedure") {
     return buildEmptyProcedureDocJsonFromSchema(schema);
+  }
+  if (kind === "crew") {
+    return buildEmptyCrewDocJsonFromSchema(schema);
   }
   if (kind === "ipd") {
     return buildEmptyIpdDocJson(schema);

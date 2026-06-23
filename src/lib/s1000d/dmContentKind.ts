@@ -5,7 +5,8 @@ export type DmContentKind =
   | "description"
   | "faultIsolation"
   | "procedure"
-  | "ipd";
+  | "ipd"
+  | "crew";
 
 /**
  * 根据描述类 / 故障隔离 / 程序类 / 图解类 schema 判定编辑器模式。
@@ -21,6 +22,9 @@ export function getDmContentKind(schema: DescriptionSchema): DmContentKind {
   }
   if (/\bprocedure\b/.test(contentRule)) {
     return "procedure";
+  }
+  if (/\bcrew\b/.test(contentRule)) {
+    return "crew";
   }
   if (/\bdescription\b/.test(contentRule)) {
     return "description";
@@ -46,6 +50,13 @@ export function getDmContentKind(schema: DescriptionSchema): DmContentKind {
   ) {
     return "procedure";
   }
+  if (
+    Object.prototype.hasOwnProperty.call(schema, "crew") &&
+    !Object.prototype.hasOwnProperty.call(schema, "description") &&
+    !Object.prototype.hasOwnProperty.call(schema, "procedure")
+  ) {
+    return "crew";
+  }
   return "description";
 }
 
@@ -63,4 +74,8 @@ export function isProcedureDm(schema: DescriptionSchema): boolean {
 
 export function isIpdDm(schema: DescriptionSchema): boolean {
   return getDmContentKind(schema) === "ipd";
+}
+
+export function isCrewDm(schema: DescriptionSchema): boolean {
+  return getDmContentKind(schema) === "crew";
 }

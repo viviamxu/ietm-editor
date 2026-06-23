@@ -22,6 +22,8 @@ export function resolveFmftContentRule(schema: DescriptionSchema): string {
       return schema.illustratedPartsCatalog?.content ?? "";
     case "procedure":
       return schema.proceduralStep?.content ?? schema.mainProcedure?.content ?? "";
+    case "crew":
+      return schema.crewDrillStep?.content ?? schema.crewDrill?.content ?? "";
     case "faultIsolation":
       return schema.faultIsolation?.content ?? "";
     default:

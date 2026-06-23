@@ -10,6 +10,7 @@ import {
   sectionNumberAttrsEqual,
   stripLeadingSectionNumberFromTitleNode,
 } from "../../lib/s1000d/sectionNumbers";
+import { createPluginComposingGuard } from "../../lib/editor/imeComposition";
 import { getProcedureUiConfig } from "../../store/procedureUiConfigStore";
 
 export const s1000dSectionNumbersKey = new PluginKey<{
@@ -32,9 +33,12 @@ function pathFromSectionNumber(sectionNumber: string): number[] | null {
 }
 
 export function createS1000dSectionNumbersPlugin() {
+  const composingGuard = createPluginComposingGuard();
   return new Plugin({
     key: s1000dSectionNumbersKey,
     appendTransaction(transactions, _oldState, newState) {
+      if (composingGuard.isComposing()) return null;
+
       const docChanged = transactions.some((tr) => tr.docChanged);
       const forced = transactions.some((tr) => {
         const meta = tr.getMeta(s1000dSectionNumbersKey);
@@ -107,6 +111,7 @@ export function createS1000dSectionNumbersPlugin() {
       return changed ? tr : null;
     },
     view(editorView: EditorView) {
+      const guard = composingGuard.bindView(editorView);
       queueMicrotask(() => {
         if (editorView.isDestroyed) return;
         editorView.dispatch(
@@ -115,7 +120,7 @@ export function createS1000dSectionNumbersPlugin() {
           }),
         );
       });
-      return {};
+      return guard;
     },
   });
 }

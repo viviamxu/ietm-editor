@@ -1,13 +1,14 @@
 import type { Editor } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type { NodeViewProps } from "@tiptap/react";
-import { useCallback, useEffect, useReducer, type MouseEvent } from "react";
+import { useCallback, useReducer, type MouseEvent } from "react";
 
 import {
   insertParaAfterHostBlock,
   shouldShowHostBlockContinueHint,
   shouldShowSafetyAttentionContinueHint,
 } from "../../lib/editor/insertParaAfterFmftBlock";
+import { useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
 import { openInsertAttentionChoiceModal } from "../../store/insertAttentionChoiceModalStore";
 
 /**
@@ -24,15 +25,7 @@ export function AttentionBlockContinueHint(props: {
   const { editor, getPos, node, visible } = props;
   const [, bump] = useReducer((n: number) => n + 1, 0);
 
-  useEffect(() => {
-    const refresh = () => bump();
-    editor.on("selectionUpdate", refresh);
-    editor.on("update", refresh);
-    return () => {
-      editor.off("selectionUpdate", refresh);
-      editor.off("update", refresh);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["selectionUpdate", "update"], bump);
 
   const blockPos = typeof getPos === "function" ? getPos() : undefined;
   const doc = editor.state.doc;

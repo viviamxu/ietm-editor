@@ -1,5 +1,5 @@
 import { mergeAttributes, Node } from "@tiptap/core";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { imeSafeReactNodeViewRenderer } from "../../lib/editor/imeSafeReactNodeViewRenderer";
 
 import {
   SOURCE_XML_ATTR_KEYS,
@@ -138,7 +138,7 @@ export const S1000DCatalogSeqNumberGroup = Node.create({
     ];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(CatalogSeqNumberGroupNodeView);
+    return imeSafeReactNodeViewRenderer(CatalogSeqNumberGroupNodeView);
   },
 });
 
