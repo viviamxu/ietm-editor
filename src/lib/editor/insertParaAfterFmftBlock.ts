@@ -61,6 +61,32 @@ function isHostBlockType(typeName: string): boolean {
   return HOST_BLOCK_TYPES_NEEDING_PARA_AFTER.has(typeName);
 }
 
+/** NodeView `getPos()` 在文档变更 / 重挂载间隙可能过期；须校验后再 `resolve`。 */
+export function isLiveHostBlockAtPos(
+  doc: PMNode,
+  blockPos: number,
+  block: PMNode,
+): boolean {
+  if (blockPos < 0 || blockPos > doc.content.size) return false;
+  const live = doc.nodeAt(blockPos);
+  if (!live || live.type.name !== block.type.name) return false;
+  const insertPos = blockPos + block.nodeSize;
+  return insertPos >= 0 && insertPos <= doc.content.size;
+}
+
+function resolveAfterHostBlockPos(
+  doc: PMNode,
+  blockPos: number,
+  block: PMNode,
+): ResolvedPos | null {
+  if (!isLiveHostBlockAtPos(doc, blockPos, block)) return null;
+  try {
+    return doc.resolve(blockPos + block.nodeSize);
+  } catch {
+    return null;
+  }
+}
+
 /** 在父节点 `insertIndex` 处插入 `para` 后的内容片段（用于 schema 校验）。 */
 function parentContentWithParaAt(
   parent: PMNode,
@@ -118,9 +144,15 @@ export function insertParaAfterHostBlock(
   const paraType = editor.state.schema.nodes.para;
   if (!paraType) return false;
   if (!isHostBlockType(block.type.name)) return false;
+  if (!isLiveHostBlockAtPos(editor.state.doc, blockPos, block)) return false;
 
   const insertPos = blockPos + block.nodeSize;
-  const $insert = editor.state.doc.resolve(insertPos);
+  let $insert: ResolvedPos;
+  try {
+    $insert = editor.state.doc.resolve(insertPos);
+  } catch {
+    return false;
+  }
   const parent = $insert.parent;
   if (!parentAllowsTrailingPara(parent.type.name)) return false;
 
@@ -191,7 +223,13 @@ function isCursorInsideParaAfterHostBlock(
   if (!(selection instanceof NodeSelection) && !selection.empty) return false;
 
   const insertPos = blockPos + block.nodeSize;
-  const $insert = editor.state.doc.resolve(insertPos);
+  let $insert: ResolvedPos;
+  try {
+    if (!isLiveHostBlockAtPos(editor.state.doc, blockPos, block)) return false;
+    $insert = editor.state.doc.resolve(insertPos);
+  } catch {
+    return false;
+  }
   const parent = $insert.parent;
   const nextIndex = $insert.index();
   if (nextIndex >= parent.childCount) return false;
@@ -210,8 +248,8 @@ function hostBlockNeedsParaAfter(
   blockPos: number,
   block: PMNode,
 ): boolean {
-  const insertPos = blockPos + block.nodeSize;
-  const $insert = doc.resolve(insertPos);
+  const $insert = resolveAfterHostBlockPos(doc, blockPos, block);
+  if (!$insert) return false;
   const parent = $insert.parent;
   const nextIndex = $insert.index();
   if (nextIndex >= parent.childCount) return true;
@@ -228,9 +266,9 @@ export function shouldShowHostBlockContinueHint(
   block: PMNode,
 ): boolean {
   if (!isHostBlockType(block.type.name)) return false;
-  const insertPos = blockPos + block.nodeSize;
-  const parent = doc.resolve(insertPos).parent;
-  if (!parentAllowsTrailingPara(parent.type.name)) return false;
+  const $insert = resolveAfterHostBlockPos(doc, blockPos, block);
+  if (!$insert) return false;
+  if (!parentAllowsTrailingPara($insert.parent.type.name)) return false;
   return hostBlockNeedsParaAfter(doc, blockPos, block);
 }
 
@@ -241,8 +279,9 @@ export function shouldShowSafetyAttentionContinueHint(
   block: PMNode,
 ): boolean {
   if (!ATTENTION_SHELL_BLOCK_TYPES.has(block.type.name)) return false;
-  const parent = doc.resolve(blockPos + block.nodeSize).parent;
-  return parent.type.name === "safetyRqmts";
+  const $insert = resolveAfterHostBlockPos(doc, blockPos, block);
+  if (!$insert) return false;
+  return $insert.parent.type.name === "safetyRqmts";
 }
 
 /**

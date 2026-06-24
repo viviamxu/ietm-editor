@@ -5,6 +5,7 @@ import { useCallback, useReducer, type MouseEvent } from "react";
 
 import {
   insertParaAfterHostBlock,
+  isLiveHostBlockAtPos,
   shouldShowHostBlockContinueHint,
 } from "../../lib/editor/insertParaAfterFmftBlock";
 import { useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
@@ -29,6 +30,7 @@ export function HostBlockContinueHint(props: {
     visible &&
     editor.isEditable &&
     blockPos != null &&
+    isLiveHostBlockAtPos(doc, blockPos, node) &&
     shouldShowHostBlockContinueHint(doc, blockPos, node);
 
   const onHintMouseDown = useCallback(
@@ -38,7 +40,7 @@ export function HostBlockContinueHint(props: {
       const pos = typeof getPos === "function" ? getPos() : undefined;
       if (pos == null || !editor.isEditable) return;
       const block = editor.state.doc.nodeAt(pos);
-      if (!block) return;
+      if (!block || !isLiveHostBlockAtPos(editor.state.doc, pos, block)) return;
       insertParaAfterHostBlock(editor, pos, block);
     },
     [editor, getPos],

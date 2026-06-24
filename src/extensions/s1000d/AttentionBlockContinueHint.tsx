@@ -5,6 +5,7 @@ import { useCallback, useReducer, type MouseEvent } from "react";
 
 import {
   insertParaAfterHostBlock,
+  isLiveHostBlockAtPos,
   shouldShowHostBlockContinueHint,
   shouldShowSafetyAttentionContinueHint,
 } from "../../lib/editor/insertParaAfterFmftBlock";
@@ -29,12 +30,14 @@ export function AttentionBlockContinueHint(props: {
 
   const blockPos = typeof getPos === "function" ? getPos() : undefined;
   const doc = editor.state.doc;
+  const liveBlock =
+    blockPos != null && isLiveHostBlockAtPos(doc, blockPos, node);
   const showParaHint =
-    blockPos != null &&
-    shouldShowHostBlockContinueHint(doc, blockPos, node);
+    liveBlock &&
+    shouldShowHostBlockContinueHint(doc, blockPos!, node);
   const showSafetyHint =
-    blockPos != null &&
-    shouldShowSafetyAttentionContinueHint(doc, blockPos, node);
+    liveBlock &&
+    shouldShowSafetyAttentionContinueHint(doc, blockPos!, node);
   const showHint =
     visible && editor.isEditable && blockPos != null && (showParaHint || showSafetyHint);
 
@@ -45,7 +48,7 @@ export function AttentionBlockContinueHint(props: {
       const pos = typeof getPos === "function" ? getPos() : undefined;
       if (pos == null || !editor.isEditable) return;
       const block = editor.state.doc.nodeAt(pos);
-      if (!block) return;
+      if (!block || !isLiveHostBlockAtPos(editor.state.doc, pos, block)) return;
       if (shouldShowSafetyAttentionContinueHint(editor.state.doc, pos, block)) {
         openInsertAttentionChoiceModal(editor, {
           mode: "afterBlock",
