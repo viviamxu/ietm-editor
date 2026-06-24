@@ -958,6 +958,7 @@ const ignoredExportAttrs = [
   "rawXml",
   "displayLevel",
   "sectionNumber",
+  "crewRefCardTitle",
   "start",
   "sourceXmlAttrKeys",
   "src",

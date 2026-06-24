@@ -136,6 +136,10 @@ export {
   buildMinimalCrewRefCardJson,
   buildMinimalCrewDrillJson,
   buildMinimalCrewDrillStepJson,
+  buildMinimalCrewConditionJson,
+  buildMinimalChallengeAndResponseJson,
+  insertCrewConditionAtCursor,
+  insertChallengeAndResponseAtCursor,
 } from "./lib/s1000d/crewInsert";
 export { buildEmptyIpdDocJson } from "./lib/s1000d/ipdInsert";
 export { buildEmptyDocJsonFromSchema } from "./lib/s1000d/dmEmptyContent";

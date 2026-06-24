@@ -1,46 +1,17 @@
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import {
+  resolveCrewConditionChainRole,
+  resolveCrewConditionNestDepth,
+} from "../../lib/s1000d/crewConditionLayout";
 
 const CONDITION_KIND_LABEL: Record<string, string> = {
   if: "如果",
   elseIf: "否则如果",
   case: "条件",
 };
-
-const CREW_CONDITION_NODE_NAMES = new Set(["if", "elseIf", "case"]);
-const CREW_CONDITION_CHAIN_PARENTS = new Set(["crewDrillStep", "crewDrill"]);
-
-type CrewConditionChainRole = "start" | "mid" | "end";
-
-function resolveCrewConditionChainRole(
-  props: NodeViewProps,
-): CrewConditionChainRole | null {
-  const { editor, getPos } = props;
-  const pos = typeof getPos === "function" ? getPos() : undefined;
-  if (pos == null) return null;
-  try {
-    const $pos = editor.state.doc.resolve(pos);
-    const parent = $pos.parent;
-    if (!CREW_CONDITION_CHAIN_PARENTS.has(parent.type.name)) return null;
-
-    const index = $pos.index();
-    const isSiblingCondition = (i: number) =>
-      CREW_CONDITION_NODE_NAMES.has(parent.child(i).type.name);
-
-    const hasPrev = index > 0 && isSiblingCondition(index - 1);
-    const hasNext =
-      index < parent.childCount - 1 && isSiblingCondition(index + 1);
-
-    if (!hasPrev && !hasNext) return null;
-    if (!hasPrev && hasNext) return "start";
-    if (hasPrev && hasNext) return "mid";
-    return "end";
-  } catch {
-    return null;
-  }
-}
 
 function resolveCaseCondLabel(props: NodeViewProps): string {
   const { editor, getPos } = props;
@@ -188,6 +159,10 @@ export function CrewConditionNodeView(props: NodeViewProps) {
     () => resolveCrewConditionChainRole(props),
     [props, docVersion],
   );
+  const nestDepth = useMemo(
+    () => resolveCrewConditionNestDepth(props),
+    [props, docVersion],
+  );
 
   return (
     <NodeViewWrapper
@@ -201,6 +176,12 @@ export function CrewConditionNodeView(props: NodeViewProps) {
       data-s1000d-node={kind}
       data-s1000d-crew-cond-kind={kind}
       data-s1000d-crew-cond-chain={chainRole ?? undefined}
+      data-s1000d-crew-cond-depth={nestDepth}
+      style={
+        {
+          "--s1000d-crew-cond-depth": nestDepth,
+        } as CSSProperties
+      }
     >
       <NodeViewContent className="s1000d-crew-condition__content" />
     </NodeViewWrapper>

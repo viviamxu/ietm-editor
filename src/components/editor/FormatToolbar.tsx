@@ -30,6 +30,10 @@ import {
   insertIsolationStepAtCursor,
 } from "../../lib/s1000d/faultIsolationInsert";
 import { insertProceduralStepAtCursor } from "../../lib/s1000d/procedureInsert";
+import {
+  insertChallengeAndResponseAtCursor,
+  insertCrewConditionAtCursor,
+} from "../../lib/s1000d/crewInsert";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
@@ -123,7 +127,9 @@ export function FormatToolbar({
   const isProcedureDm = contentKind === "procedure";
   const isFaultDm = contentKind === "faultIsolation";
   const isIpdDm = contentKind === "ipd";
+  const isCrewDm = contentKind === "crew";
   const isRichTextDm = isDescriptionDm || isProcedureDm;
+  const showInsertParagraph = isRichTextDm || isCrewDm;
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
   const onInsertExternalRefClick = useToolbarConfigStore(
     (s) => s.onInsertExternalRefClick,
@@ -488,6 +494,54 @@ export function FormatToolbar({
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
+        {isCrewDm ? (
+          <>
+            <button
+              type="button"
+              className="ietm-toggle-btn"
+              disabled={formatBarLocked}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCrewConditionAtCursor(editor, "if")}
+              title="插入如果（if）"
+              aria-label="插入 if"
+            >
+              IF
+            </button>
+            <button
+              type="button"
+              className="ietm-toggle-btn"
+              disabled={formatBarLocked}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCrewConditionAtCursor(editor, "elseIf")}
+              title="插入否则如果（elseIf）"
+              aria-label="插入 elseIf"
+            >
+              ElseIf
+            </button>
+            <button
+              type="button"
+              className="ietm-toggle-btn"
+              disabled={formatBarLocked}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCrewConditionAtCursor(editor, "case")}
+              title="插入条件（case）"
+              aria-label="插入 case"
+            >
+              Case
+            </button>
+            <button
+              type="button"
+              className="ietm-toggle-btn"
+              disabled={formatBarLocked}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertChallengeAndResponseAtCursor(editor)}
+              title="插入检查/响应（challengeAndResponse）"
+              aria-label="插入 challengeAndResponse"
+            >
+              C&R
+            </button>
+          </>
+        ) : null}
         {isDescriptionDm && isBuiltinVisible("insertLevelledPara") ? (
           <button
             type="button"
@@ -599,7 +653,7 @@ export function FormatToolbar({
             <Omega size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isRichTextDm ? (
+        {showInsertParagraph ? (
           <>
             <ToolbarCustomItems placement="insert" ctx={toolbarCtx} />
             <button

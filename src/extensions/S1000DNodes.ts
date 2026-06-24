@@ -175,6 +175,13 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
     if (titleDepth > 0) {
       const parentType = $pos.node(titleDepth - 1).type.name;
       if (
+        parentType === "crewRefCard" &&
+        levelledParaCount === 0 &&
+        proceduralStepCount === 0
+      ) {
+        return 1;
+      }
+      if (
         parentType === "crewDrill" &&
         levelledParaCount === 0 &&
         proceduralStepCount === 0
@@ -189,6 +196,20 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
   } catch {
     return 1;
   }
+}
+
+/** `crewRefCard` 直接子级 `title`（操作卡片主标题，非 crewDrill 内标题）。 */
+function isCrewRefCardRootTitle(doc: PMNode, titleStartPos: number): boolean {
+  try {
+    const $pos = doc.resolve(titleStartPos + 1);
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name !== "title") continue;
+      return $pos.node(d - 1).type.name === "crewRefCard";
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }
 
 function createS1000dTitleLevelsPlugin() {
@@ -213,14 +234,19 @@ function createS1000dTitleLevelsPlugin() {
         if (node.type.name !== "title") return true;
 
         const next = computeTitleDisplayLevel(newState.doc, pos);
+        const nextCrewRefCardTitle = isCrewRefCardRootTitle(newState.doc, pos);
         const curr = normalizeTitleDisplayLevel(
           (node.attrs as { displayLevel?: number }).displayLevel,
         );
+        const currCrewRefCardTitle = Boolean(
+          (node.attrs as { crewRefCardTitle?: boolean }).crewRefCardTitle,
+        );
 
-        if (curr !== next) {
+        if (curr !== next || currCrewRefCardTitle !== nextCrewRefCardTitle) {
           tr = tr.setNodeMarkup(pos, undefined, {
             ...node.attrs,
             displayLevel: next,
+            crewRefCardTitle: nextCrewRefCardTitle,
           });
           changed = true;
         }
@@ -673,6 +699,20 @@ export const S1000DTitle = Node.create({
           return { "data-s1000d-section-number": num };
         },
       },
+      /** 操作卡片主标题标记；仅编辑区 CSS，不入 S1000D XML。 */
+      crewRefCardTitle: {
+        default: false,
+        rendered: true,
+        parseHTML: (el) =>
+          el instanceof Element &&
+          el.hasAttribute("data-s1000d-crew-ref-card-title"),
+        renderHTML: (attrs) => {
+          if (!(attrs as { crewRefCardTitle?: boolean }).crewRefCardTitle) {
+            return {};
+          }
+          return { "data-s1000d-crew-ref-card-title": "1" };
+        },
+      },
     };
   },
 
@@ -716,12 +756,17 @@ export const S1000DTitle = Node.create({
     const level = normalizeTitleDisplayLevel(
       (node.attrs as { displayLevel?: number }).displayLevel,
     );
+    const isCrewRefCardTitle = Boolean(
+      (node.attrs as { crewRefCardTitle?: boolean }).crewRefCardTitle,
+    );
     return [
       "s1000d-block-title",
       mergeAttributes(HTMLAttributes, {
         "data-s1000d-title": "1",
         "data-s1000d-title-level": String(level),
-        class: "s1000d-title-display",
+        class: isCrewRefCardTitle
+          ? "s1000d-title-display s1000d-crew-ref-card__title"
+          : "s1000d-title-display",
       }),
       0,
     ];

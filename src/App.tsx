@@ -19,6 +19,8 @@ import ipdDmXml from "./data/图解demo.XML?raw";
 import ipdSchema from "./data/图解类.json";
 import procedureSchema from "./data/程序类.json";
 import procedureDmXml from "./data/程序类.xml?raw";
+import crewSchema from "./data/操作类.json";
+import crewDmXml from "./data/操作类.XML?raw";
 
 import { getDmContentKind } from "./lib/s1000d/dmContentKind";
 
@@ -46,14 +48,14 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: procedureDmXml,
+      dmXml: crewDmXml,
 
-      dmDocumentName: "图解demo.XML",
+      dmDocumentName: "操作类.XML",
 
       theme: "auto",
       onThemeChange: setResolvedTheme,
 
-      descriptionSchema: procedureSchema as DescriptionSchema,
+      descriptionSchema: crewSchema as DescriptionSchema,
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {
