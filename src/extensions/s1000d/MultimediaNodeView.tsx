@@ -3,14 +3,16 @@ import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
 import { FmftBlockDeleteButton } from "./FmftBlockDeleteButton";
-import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import {
+  useImeSafeEditorSync,
+  useNodeViewEditorState,
+} from "../../hooks/useNodeViewEditorState";
 import {
   multimediaHasDisplayableObject,
   openPublicationModalForFmftBlock,
 } from "../../lib/editor/fmftPublicationPick";
 import {
   useCallback,
-  useEffect,
   useReducer,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -72,16 +74,11 @@ export function MultimediaNodeView(props: NodeViewProps) {
   const { readOnly } = useNodeViewEditorState(editor);
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
-
-  useEffect(() => {
-    const bump = () => bumpFromSelection();
-    editor.on("selectionUpdate", bump);
-    editor.on("update", bump);
-    return () => {
-      editor.off("selectionUpdate", bump);
-      editor.off("update", bump);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(
+    editor,
+    ["selectionUpdate", "update"],
+    bumpFromSelection,
+  );
 
   const { nodeSelected, caretInside } = selectionOnThisMultimedia(props);
   const showChrome = hovered || caretInside || nodeSelected;

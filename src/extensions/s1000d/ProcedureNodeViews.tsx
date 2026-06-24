@@ -17,7 +17,10 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
-import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import {
+  useImeSafeEditorSync,
+  useNodeViewEditorState,
+} from "../../hooks/useNodeViewEditorState";
 import { useProcedureSectionHeading } from "../../hooks/useProcedureSectionHeading";
 import {
   getReqCondNoRefIndex,
@@ -122,14 +125,7 @@ function ProcedureSectionNodeView({
   const { full: heading } = useProcedureSectionHeading(props);
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
-
-  useEffect(() => {
-    const bump = () => bumpFromSelection();
-    editor.on("selectionUpdate", bump);
-    return () => {
-      editor.off("selectionUpdate", bump);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["selectionUpdate"], bumpFromSelection);
 
   const { nodeSelected, caretInside } = selectionInsideBlock(props, blockType);
   const showChrome = hovered || caretInside || nodeSelected;
@@ -213,16 +209,11 @@ export function ProceduralStepNodeView(props: NodeViewProps) {
   const [tree, setTree] = useState<DerivativeBindingTreeNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
-
-  useEffect(() => {
-    const bump = () => bumpFromSelection();
-    editor.on("selectionUpdate", bump);
-    editor.on("update", bump);
-    return () => {
-      editor.off("selectionUpdate", bump);
-      editor.off("update", bump);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(
+    editor,
+    ["selectionUpdate", "update"],
+    bumpFromSelection,
+  );
 
   useEffect(() => {
     ensureProceduralStepTitle(editor, getPos, node);

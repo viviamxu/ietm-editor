@@ -1,6 +1,7 @@
 import type { Editor } from "@tiptap/react";
 import { useEffect, useReducer } from "react";
 
+import { deferEditorMutation } from "../lib/editor/deferEditorMutation";
 import { isEditorComposing } from "../lib/editor/imeComposition";
 
 /** 订阅文档与可编辑态变化，供 NodeView 内 React 控件同步 `editor.isEditable`。 */
@@ -12,7 +13,7 @@ export function useNodeViewEditorState(editor: Editor): {
   useEffect(() => {
     const on = () => {
       if (isEditorComposing(editor)) return;
-      bump();
+      deferEditorMutation(bump);
     };
     editor.on("transaction", on);
     return () => {
@@ -24,7 +25,7 @@ export function useNodeViewEditorState(editor: Editor): {
 
 type EditorSyncEvent = "transaction" | "selectionUpdate" | "update";
 
-/** 组合输入期间跳过回调，避免 NodeView / 工具栏无意义重绘。 */
+/** 组合输入期间跳过回调；同步回调推迟到微任务，避免与 NodeView flushSync 冲突。 */
 export function useImeSafeEditorSync(
   editor: Editor,
   events: EditorSyncEvent[],
@@ -33,7 +34,7 @@ export function useImeSafeEditorSync(
   useEffect(() => {
     const handler = () => {
       if (isEditorComposing(editor)) return;
-      onSync();
+      deferEditorMutation(onSync);
     };
     for (const event of events) {
       editor.on(event, handler);

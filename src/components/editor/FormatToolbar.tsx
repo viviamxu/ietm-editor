@@ -77,6 +77,7 @@ import {
 } from "../../lib/editor/s1000dTableCommands";
 import { useToolbarConfigStore } from "../../store/toolbarConfigStore";
 import { isEditorComposing } from "../../lib/editor/imeComposition";
+import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import type {
   BuiltinToolbarItemId,
   ToolbarItemContext,
@@ -131,11 +132,11 @@ export function FormatToolbar({
   useEffect(() => {
     const onTxn = () => {
       if (isEditorComposing(editor)) return;
-      refresh();
+      deferEditorMutation(refresh);
     };
     const onSelection = () => {
       if (isEditorComposing(editor)) return;
-      refresh();
+      deferEditorMutation(refresh);
     };
     editor.on("transaction", onTxn);
     editor.on("selectionUpdate", onSelection);

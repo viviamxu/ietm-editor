@@ -2,12 +2,11 @@ import type { NodeViewProps } from "@tiptap/react";
 import { Trash2 } from "lucide-react";
 import {
   useCallback,
-  useEffect,
   useReducer,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
-import { useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
+import { useImeSafeEditorSync, useNodeViewEditorState } from "../../hooks/useNodeViewEditorState";
 import {
   canDeleteAttentionBlock,
   deleteAttentionBlockAtPos,
@@ -21,16 +20,7 @@ export function AttentionBlockDeleteButton(props: {
   const { editor, getPos, blockLabel } = props;
   const { readOnly } = useNodeViewEditorState(editor);
   const [, bump] = useReducer((n: number) => n + 1, 0);
-
-  useEffect(() => {
-    const on = () => bump();
-    editor.on("update", on);
-    editor.on("selectionUpdate", on);
-    return () => {
-      editor.off("update", on);
-      editor.off("selectionUpdate", on);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["update", "selectionUpdate"], bump);
 
   const blockPos = typeof getPos === "function" ? getPos() : null;
   const canDelete =

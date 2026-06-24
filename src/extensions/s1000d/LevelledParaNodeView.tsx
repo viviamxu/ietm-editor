@@ -4,11 +4,12 @@ import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { Brackets } from "lucide-react";
 import {
   useCallback,
-  useEffect,
   useReducer,
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+
+import { useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
 
 function selectionOnThisLevelledPara(props: NodeViewProps): {
   nodeSelected: boolean;
@@ -49,14 +50,7 @@ export function LevelledParaNodeView(props: NodeViewProps) {
   const { editor, getPos, HTMLAttributes } = props;
   const [hovered, setHovered] = useState(false);
   const [, bumpFromSelection] = useReducer((n: number) => n + 1, 0);
-
-  useEffect(() => {
-    const bump = () => bumpFromSelection();
-    editor.on("selectionUpdate", bump);
-    return () => {
-      editor.off("selectionUpdate", bump);
-    };
-  }, [editor]);
+  useImeSafeEditorSync(editor, ["selectionUpdate"], bumpFromSelection);
 
   const { nodeSelected, caretInside } = selectionOnThisLevelledPara(props);
   const showChrome = hovered || caretInside || nodeSelected;

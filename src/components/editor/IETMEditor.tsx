@@ -50,6 +50,7 @@ import {
 import { s1000dIpdNodes } from "../../extensions/s1000d/ipdNodes";
 import { s1000dCrewNodes } from "../../extensions/s1000d/crewNodes";
 import { isEditorComposing, ImeCompositionExtension } from "../../lib/editor/imeComposition";
+import { deferEditorMutation } from "../../lib/editor/deferEditorMutation";
 import { migrateParagraphInJson } from "../../lib/editor/migrateParagraphToPara";
 import { hydrateMultimediaObjectsInEditor } from "../../lib/ietm/multimediaIcnHydrate";
 import { FormatToolbar } from "./FormatToolbar";
@@ -412,24 +413,24 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
       },
       onSelectionUpdate: ({ editor }) => {
         if (isEditorComposing(editor)) return;
-        props.onSelectionChange({
-          from: editor.state.selection.from,
-          to: editor.state.selection.to,
-        });
-
+        const from = editor.state.selection.from;
+        const to = editor.state.selection.to;
         const anchorKey = `${editor.state.selection.anchor}-${editor.state.selection.head}`;
-        if (anchorKey !== selectionAnchorRef.current) {
-          selectionAnchorRef.current = anchorKey;
-          if (peekSuppressPropertyPanelOpen()) {
-            setPropertySettingsOpen(false);
+        deferEditorMutation(() => {
+          props.onSelectionChange({ from, to });
+          if (anchorKey !== selectionAnchorRef.current) {
+            selectionAnchorRef.current = anchorKey;
+            if (peekSuppressPropertyPanelOpen()) {
+              setPropertySettingsOpen(false);
+            }
           }
-        }
-        bumpSelectionUi();
+          bumpSelectionUi();
+        });
       },
       onTransaction: ({ editor, transaction }) => {
         if (isEditorComposing(editor)) return;
         if (transaction.getMeta(tableSelectionPluginKey) !== undefined) {
-          bumpSelectionUi();
+          deferEditorMutation(() => bumpSelectionUi());
         }
       },
       onCreate: ({ editor }) => {

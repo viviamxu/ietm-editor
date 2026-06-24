@@ -10,6 +10,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
 import {
   findInternalRefTargetById,
   navigateInternalRefTarget,
@@ -50,17 +51,16 @@ export function InternalRefNodeView(props: NodeViewProps) {
 
   const [targetTypeName, setTargetTypeName] = useState<string | null>(null);
 
-  useEffect(() => {
-    const sync = () => {
-      const meta = refId ? findInternalRefTargetById(editor, refId) : null;
-      setTargetTypeName(meta?.typeName ?? null);
-    };
-    sync();
-    editor.on("transaction", sync);
-    return () => {
-      editor.off("transaction", sync);
-    };
+  const syncTargetType = useCallback(() => {
+    const meta = refId ? findInternalRefTargetById(editor, refId) : null;
+    setTargetTypeName(meta?.typeName ?? null);
   }, [editor, refId]);
+
+  useEffect(() => {
+    syncTargetType();
+  }, [syncTargetType]);
+
+  useImeSafeEditorSync(editor, ["transaction"], syncTargetType);
 
   const typeLabel = useMemo(
     () => resolveTypeLabel(irrtt, targetTypeName),

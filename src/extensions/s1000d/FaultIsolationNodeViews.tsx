@@ -27,17 +27,11 @@ import {
 } from "../../lib/s1000d/faultIsolationInsert";
 
 import { openIsolationFlowEditor } from "../../lib/s1000d/isolationFlowBridge";
+import { useImeSafeEditorSync } from "../../hooks/useNodeViewEditorState";
 
 function useEditorRefresh(editor: NodeViewProps["editor"]) {
   const [, bump] = useReducer((n: number) => n + 1, 0);
-  useEffect(() => {
-    const on = () => bump();
-    editor.on("transaction", on);
-    return () => {
-      editor.off("transaction", on);
-    };
-  }, [editor]);
-  return bump;
+  useImeSafeEditorSync(editor, ["transaction"], bump);
 }
 
 function readFaultCodeFromProcedure(node: PMNode): string {
