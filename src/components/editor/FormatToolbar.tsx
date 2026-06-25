@@ -33,11 +33,11 @@ import {
 import { insertProceduralStepAtCursor } from "../../lib/s1000d/procedureInsert";
 import {
   canInsertCrewStepLevelBlockAtCursor,
-  canInsertElseIfAtCursor,
   insertChallengeAndResponseAtCursor,
   insertCrewConditionAtCursor,
   insertCrewDrillStepAtCursor,
 } from "../../lib/s1000d/crewInsert";
+import { insertElseIfFromToolbar } from "../../lib/s1000d/crewConditionInsert";
 import { isCrewRefCardMode } from "../../lib/s1000d/crewModeSwitch";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
@@ -539,13 +539,13 @@ export function FormatToolbar({
               disabled={formatBarLocked || !canInsertCrewStepLevelBlock}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                if (!canInsertElseIfAtCursor(editor)) {
-                  Message.error('ElseIf 须接在 If 或 ElseIf 之后。请先插入 If')
-                  return;
+                if (!insertElseIfFromToolbar(editor)) {
+                  Message.error(
+                    "无法插入 ElseIf：须先有 If，且 ElseIf 须接在同层 If 链之后。",
+                  );
                 }
-                insertCrewConditionAtCursor(editor, "elseIf");
               }}
-              title="插入否则如果（elseIf，须接在 If 或 ElseIf 之后）"
+              title="插入否则如果（elseIf，接在同层 If/ElseIf 链后）"
               aria-label="插入 elseIf"
             >
               ElseIf

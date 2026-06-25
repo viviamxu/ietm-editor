@@ -1,8 +1,13 @@
 import type { Editor, JSONContent } from "@tiptap/core";
-import { Fragment, Node as PMNode } from "@tiptap/pm/model";
+import { Fragment, Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
-import { buildMinimalCrewConditionJson } from "./crewInsert";
+import {
+  buildMinimalCrewConditionJson,
+  canInsertCrewStepLevelBlockAtCursor,
+  canInsertElseIfAtCursor,
+  insertCrewConditionAtCursor,
+} from "./crewInsert";
 import { resolveCrewConditionAtPos } from "./crewConditionDelete";
 
 const IF_ELSE_IF_TYPES = new Set(["if", "elseIf"]);
@@ -233,6 +238,41 @@ export function insertSiblingElseIfAfterChain(
     insertPos,
     buildMinimalCrewConditionJson("elseIf"),
   );
+}
+
+function resolveInnermostIfElseIfBlockPos($from: ResolvedPos): number | null {
+  for (let d = $from.depth; d > 0; d--) {
+    const name = $from.node(d).type.name;
+    if (name === "if" || name === "elseIf") {
+      return $from.before(d);
+    }
+  }
+  return null;
+}
+
+/**
+ * 顶栏 ElseIf：优先按光标插入；若在 If/ElseIf 内且光标位置不允许，则与块菜单
+ * 「ElseIf（接在链后）」相同，在当前 If 链末尾插入同级 ElseIf。
+ */
+export function insertElseIfFromToolbar(editor: Editor): boolean {
+  if (!canInsertCrewStepLevelBlockAtCursor(editor)) return false;
+  if (!editor.state.schema.nodes.elseIf) return false;
+
+  if (canInsertElseIfAtCursor(editor)) {
+    return insertCrewConditionAtCursor(editor, "elseIf");
+  }
+
+  const blockPos = resolveInnermostIfElseIfBlockPos(
+    editor.state.selection.$from,
+  );
+  if (
+    blockPos != null &&
+    canInsertSiblingElseIfAfterChain(editor, blockPos)
+  ) {
+    return insertSiblingElseIfAfterChain(editor, blockPos);
+  }
+
+  return false;
 }
 
 /** 在 if/elseIf 链末尾插入同级新 `if` 链（显式位置，不依赖光标）。 */

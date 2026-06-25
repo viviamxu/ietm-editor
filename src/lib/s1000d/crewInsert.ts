@@ -133,6 +133,21 @@ export function buildMinimalChallengeAndResponseJson(): JSONContent {
   };
 }
 
+const CREW_CONDITION_BLOCK_TYPES = new Set(["if", "elseIf", "case"]);
+
+function getInnermostConditionBlockDepth($from: ResolvedPos): number {
+  for (let d = $from.depth; d >= 0; d--) {
+    if (CREW_CONDITION_BLOCK_TYPES.has($from.node(d).type.name)) return d;
+  }
+  return -1;
+}
+
+function hostContentEndInsertPos($from: ResolvedPos, hostDepth: number): number {
+  const host = $from.node(hostDepth);
+  const hostPos = $from.before(hostDepth);
+  return hostPos + host.nodeSize - 1;
+}
+
 function getInnermostConditionHostDepth($from: ResolvedPos): number {
   for (let d = $from.depth; d >= 0; d--) {
     if (CREW_CONDITION_HOSTS.has($from.node(d).type.name)) return d;
@@ -475,18 +490,19 @@ export function insertCrewDrillStepAtCursor(editor: Editor): boolean {
       const siblingPos = resolveCrewDrillStepTitleEndSiblingInsertPos($from);
       if (siblingPos != null) return siblingPos;
 
+      const condDepth = getInnermostConditionBlockDepth($from);
+      if (condDepth >= 0) {
+        return hostContentEndInsertPos($from, condDepth);
+      }
+
       const stepDepth = getInnermostCrewDrillStepDepth($from);
       if (stepDepth >= 0) {
-        const host = $from.node(stepDepth);
-        const hostPos = $from.before(stepDepth);
-        return hostPos + host.nodeSize - 1;
+        return hostContentEndInsertPos($from, stepDepth);
       }
 
       const hostDepth = getInnermostConditionHostDepth($from);
       if (hostDepth >= 0) {
-        const host = $from.node(hostDepth);
-        const hostPos = $from.before(hostDepth);
-        return hostPos + host.nodeSize - 1;
+        return hostContentEndInsertPos($from, hostDepth);
       }
 
       const target = findNearestCrewDrill(_editor);

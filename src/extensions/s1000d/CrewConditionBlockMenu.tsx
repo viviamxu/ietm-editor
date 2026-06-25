@@ -220,7 +220,7 @@ export function CrewConditionBlockMenu(props: {
             title={
               <span className="s1000d-crew-condition-menu__item-label">
                 <Plus size={14} aria-hidden />
-                添加分支
+                添加内容
               </span>
             }
           >

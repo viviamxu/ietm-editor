@@ -3,7 +3,12 @@ import type { Node as PMNode, ResolvedPos } from '@tiptap/pm/model'
 import { NodeSelection } from '@tiptap/pm/state'
 
 import { getDescriptionSchema } from '../../store/descriptionSchemaStore'
-import { isProcedureDm } from '../s1000d/dmContentKind'
+import { isCrewDm, isProcedureDm } from '../s1000d/dmContentKind'
+import {
+  CREW_BLOCK_INSPECTABLE_TYPE_SET,
+  CREW_INNER_INSPECT_DEFER,
+  CREW_OUTRANKS_INNER_DEFER,
+} from '../s1000d/crewInspectableTypes'
 import {
   PROCEDURE_BLOCK_INSPECTABLE_TYPE_SET,
   PROCEDURE_INNER_INSPECT_DEFER,
@@ -87,6 +92,19 @@ function resolveInspectableContext() {
       ]),
       innerDefer: PROCEDURE_INNER_INSPECT_DEFER,
       outranks: PROCEDURE_OUTRANKS_INNER_DEFER,
+    }
+  }
+  if (isCrewDm(schema)) {
+    return {
+      inspectableTypes: new Set<string>([
+        ...INSPECTABLE_NODE_TYPES,
+        ...CREW_BLOCK_INSPECTABLE_TYPE_SET,
+      ]),
+      innerDefer: new Set<string>([
+        ...INNER_INSPECT_DEFER,
+        ...CREW_INNER_INSPECT_DEFER,
+      ]),
+      outranks: CREW_OUTRANKS_INNER_DEFER,
     }
   }
   return {
