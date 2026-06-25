@@ -2,7 +2,7 @@ import { Dropdown, Menu } from "@arco-design/web-react";
 
 import type { NodeViewProps } from "@tiptap/react";
 
-import { LayoutGrid, Brackets, Trash2, Plus, EllipsisVertical } from "lucide-react";
+import {  Brackets, Trash2, Plus, EllipsisVertical } from "lucide-react";
 
 import {
   useCallback,

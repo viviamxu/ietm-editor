@@ -53,8 +53,8 @@ import {
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
 import {
-  bindFigureGraphicsForEditorImport,
-  bindFigureGraphicsInHtmlFragment,
+  prepareFigureGraphicsForEditorImport,
+  prepareFigureGraphicsInHtmlFragment,
 } from "../lib/s1000d/bindFigureGraphicsForImport";
 import { propagateEntryAlignToParasInFragment } from "../lib/s1000d/tableEntryAlign";
 
@@ -1728,30 +1728,36 @@ export const S1000DFigure = Node.create({
   },
 
   parseHTML() {
+    const readFigureAttrs = (el: Element) => ({
+      id: el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id"),
+      changeType: el.getAttribute("changeType"),
+      changeMark: el.getAttribute("changeMark"),
+      reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
+      authorityName: el.getAttribute("authorityName"),
+      authorityDocument: el.getAttribute("authorityDocument"),
+      securityClassification: el.getAttribute("securityClassification"),
+      commercialClassification: el.getAttribute("commercialClassification"),
+      caveat: el.getAttribute("caveat"),
+      [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
+        el,
+        FIGURE_XML_ATTR_NAMES,
+      ),
+    });
+
     return [
+      {
+        tag: "s1000d-xml-figure",
+        priority: 56,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return readFigureAttrs(el);
+        },
+      },
       {
         tag: "figure",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return {
-            id:
-              el.getAttribute("id") ??
-              el.getAttribute("data-s1000d-element-id"),
-            changeType: el.getAttribute("changeType"),
-            changeMark: el.getAttribute("changeMark"),
-            reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
-            authorityName: el.getAttribute("authorityName"),
-            authorityDocument: el.getAttribute("authorityDocument"),
-            securityClassification: el.getAttribute("securityClassification"),
-            commercialClassification: el.getAttribute(
-              "commercialClassification",
-            ),
-            caveat: el.getAttribute("caveat"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
-              el,
-              FIGURE_XML_ATTR_NAMES,
-            ),
-          };
+          return readFigureAttrs(el);
         },
       },
     ];
@@ -2343,7 +2349,7 @@ export function preprocessS1000dDescriptionHtmlFragment(
   fragmentXml: string,
 ): string {
   const stripped = stripHtmlDocumentWrapperTags(fragmentXml.trim());
-  const body = bindFigureGraphicsInHtmlFragment(
+  const body = prepareFigureGraphicsInHtmlFragment(
     sanitizeS1000dXmlTablesForHtmlImport(
       normalizeS1000dSelfClosingElementsForHtmlImport(
         renameS1000dTitleTagsForHtmlImport(stripped),
@@ -2372,7 +2378,7 @@ export function getDescriptionInnerXmlFromDmXml(
   normalizeWarningAndCautionParasForEditor(description);
   normalizeNoteParasForEditor(description);
   normalizeS1000dListsForEditor(description);
-  bindFigureGraphicsForEditorImport(description);
+  prepareFigureGraphicsForEditorImport(description);
 
   const BLOCK_TAGS = [
     "table",
@@ -2442,7 +2448,7 @@ export function getFaultIsolationInnerXmlFromDmXml(
   );
   if (!faultIsolation) return null;
 
-  bindFigureGraphicsForEditorImport(faultIsolation);
+  prepareFigureGraphicsForEditorImport(faultIsolation);
 
   const serializer = new XMLSerializer();
   const parts: string[] = [];
@@ -2513,7 +2519,7 @@ export function getProcedureInnerXmlFromDmXml(
   if (!procedure) return null;
 
   normalizeProcedureInnerXmlForEditor(procedure);
-  bindFigureGraphicsForEditorImport(procedure);
+  prepareFigureGraphicsForEditorImport(procedure);
 
   const serializer = new XMLSerializer();
   const atomNodes = procedure.querySelectorAll("dmRef");
@@ -2543,7 +2549,7 @@ export function getCrewInnerXmlFromDmXml(xmlString: string): string | null {
   );
   if (!crew) return null;
 
-  bindFigureGraphicsForEditorImport(crew);
+  prepareFigureGraphicsForEditorImport(crew);
 
   const serializer = new XMLSerializer();
   const parts: string[] = [];
@@ -2583,7 +2589,7 @@ export function getIpdInnerXmlFromDmXml(xmlString: string): string | null {
   if (!ipc) return null;
 
   normalizeIpdInnerXmlForEditor(ipc);
-  bindFigureGraphicsForEditorImport(ipc);
+  prepareFigureGraphicsForEditorImport(ipc);
 
   const serializer = new XMLSerializer();
   const figureParts: string[] = [];

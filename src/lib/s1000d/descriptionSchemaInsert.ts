@@ -44,7 +44,6 @@ import { resolveCrewContentMode } from "./crewModeSwitch";
 import {
   findDescrCrewHost,
   isDescrCrewCrewDm,
-  resolveDescrCrewLevelledParaInsertPos,
   resolveDescrCrewZoneInsertPos,
   type DescrCrewZone,
 } from "./descrCrewLayout";
