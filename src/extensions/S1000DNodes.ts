@@ -52,6 +52,10 @@ import {
 } from "../lib/s1000d/dmRefXml";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
+import {
+  bindFigureGraphicsForEditorImport,
+  bindFigureGraphicsInHtmlFragment,
+} from "../lib/s1000d/bindFigureGraphicsForImport";
 import { propagateEntryAlignToParasInFragment } from "../lib/s1000d/tableEntryAlign";
 
 export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
@@ -2339,9 +2343,11 @@ export function preprocessS1000dDescriptionHtmlFragment(
   fragmentXml: string,
 ): string {
   const stripped = stripHtmlDocumentWrapperTags(fragmentXml.trim());
-  const body = sanitizeS1000dXmlTablesForHtmlImport(
-    normalizeS1000dSelfClosingElementsForHtmlImport(
-      renameS1000dTitleTagsForHtmlImport(stripped),
+  const body = bindFigureGraphicsInHtmlFragment(
+    sanitizeS1000dXmlTablesForHtmlImport(
+      normalizeS1000dSelfClosingElementsForHtmlImport(
+        renameS1000dTitleTagsForHtmlImport(stripped),
+      ),
     ),
   );
   return propagateEntryAlignToParasInFragment(body);
@@ -2366,6 +2372,7 @@ export function getDescriptionInnerXmlFromDmXml(
   normalizeWarningAndCautionParasForEditor(description);
   normalizeNoteParasForEditor(description);
   normalizeS1000dListsForEditor(description);
+  bindFigureGraphicsForEditorImport(description);
 
   const BLOCK_TAGS = [
     "table",
@@ -2434,6 +2441,8 @@ export function getFaultIsolationInnerXmlFromDmXml(
     (c) => c.localName === "faultIsolation",
   );
   if (!faultIsolation) return null;
+
+  bindFigureGraphicsForEditorImport(faultIsolation);
 
   const serializer = new XMLSerializer();
   const parts: string[] = [];
@@ -2504,6 +2513,7 @@ export function getProcedureInnerXmlFromDmXml(
   if (!procedure) return null;
 
   normalizeProcedureInnerXmlForEditor(procedure);
+  bindFigureGraphicsForEditorImport(procedure);
 
   const serializer = new XMLSerializer();
   const atomNodes = procedure.querySelectorAll("dmRef");
@@ -2532,6 +2542,8 @@ export function getCrewInnerXmlFromDmXml(xmlString: string): string | null {
     (c) => c.localName === "crew",
   );
   if (!crew) return null;
+
+  bindFigureGraphicsForEditorImport(crew);
 
   const serializer = new XMLSerializer();
   const parts: string[] = [];
@@ -2571,6 +2583,7 @@ export function getIpdInnerXmlFromDmXml(xmlString: string): string | null {
   if (!ipc) return null;
 
   normalizeIpdInnerXmlForEditor(ipc);
+  bindFigureGraphicsForEditorImport(ipc);
 
   const serializer = new XMLSerializer();
   const figureParts: string[] = [];
