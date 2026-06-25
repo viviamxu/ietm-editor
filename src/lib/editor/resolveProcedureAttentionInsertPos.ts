@@ -3,6 +3,8 @@ import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import { getDmContentKind } from "../s1000d/dmContentKind";
+import { isInsideCrewChallengeAndResponse } from "../s1000d/crewChallengeContext";
+import { resolveDescrCrewAttentionInsertPos } from "../s1000d/descrCrewLayout";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 
 export type ProcedureAttentionInsertResolution =
@@ -125,8 +127,24 @@ export function resolveProcedureAttentionInsert(
 
 export function resolveAttentionInsertPosForEditor(
   editor: Editor,
+  node?: JSONContent,
 ): number | "cursor" | null {
+  const attentionType = node?.type;
+  if (
+    attentionType === "warning" ||
+    attentionType === "caution" ||
+    attentionType === "note"
+  ) {
+    const descrPos = resolveDescrCrewAttentionInsertPos(editor, attentionType);
+    if (descrPos != null) return descrPos;
+  }
+
   const { selection, doc } = editor.state;
+
+  if (isInsideCrewChallengeAndResponse(selection.$from)) {
+    return null;
+  }
+
   const procedureResolution = resolveProcedureAttentionInsert(editor);
 
   // `safetyRqmts` 仅含 attention 块：编辑现有块内时仍追加到容器末尾。
@@ -172,7 +190,7 @@ export function canInsertAttentionNodeIntoEditor(
   editor: Editor,
   node: JSONContent,
 ): boolean {
-  const insertPos = resolveAttentionInsertPosForEditor(editor);
+  const insertPos = resolveAttentionInsertPosForEditor(editor, node);
   if (insertPos == null) return false;
   if (insertPos === "cursor") {
     return editor.can().insertContent(node);
@@ -187,7 +205,7 @@ export function insertAttentionNodeIntoEditor(
 ): boolean {
   if (!canInsertAttentionNodeIntoEditor(editor, node)) return false;
 
-  const insertPos = resolveAttentionInsertPosForEditor(editor);
+  const insertPos = resolveAttentionInsertPosForEditor(editor, node);
   if (insertPos == null) return false;
 
   if (insertPos === "cursor") {

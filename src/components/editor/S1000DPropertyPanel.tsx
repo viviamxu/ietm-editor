@@ -22,6 +22,9 @@ const HIDDEN_ATTR_KEYS = new Set([
   /** 故障隔离：编辑器内分支缓存，不参与 S1000D 导出 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
+  /** 操作类：crewRefCard / descrCrew 切换缓存 */
+  "cachedCrewRefCardJson",
+  "cachedDescrCrewJson",
 ]);
 
 const ATTR_ORDER: Partial<Record<string, string[]>> = {
@@ -95,6 +98,7 @@ const NODE_TYPE_LABEL: Partial<Record<string, string>> = {
   reqSpares: "备件要求 (reqSpares)",
   reqSafety: "安全要求 (reqSafety)",
   proceduralStep: "程序步骤 (proceduralStep)",
+  crewDrillStep: "操作步骤 (crewDrillStep)",
   supportEquipDescr: "工装 (supportEquipDescr)",
   supplyDescr: "辅料 (supplyDescr)",
   spareDescr: "备件 (spareDescr)",

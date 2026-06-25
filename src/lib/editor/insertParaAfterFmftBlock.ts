@@ -1,5 +1,9 @@
 import type { Editor } from "@tiptap/core";
-import { Fragment, type Node as PMNode, type ResolvedPos } from "@tiptap/pm/model";
+import {
+  Fragment,
+  type Node as PMNode,
+  type ResolvedPos,
+} from "@tiptap/pm/model";
 import { NodeSelection, TextSelection, type Transaction } from "@tiptap/pm/state";
 
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
@@ -59,6 +63,27 @@ function focusParaAt(editor: Editor, paraPos: number): boolean {
 
 function isHostBlockType(typeName: string): boolean {
   return HOST_BLOCK_TYPES_NEEDING_PARA_AFTER.has(typeName);
+}
+
+const STEP_BODY_WRAP_TYPES = new Set(["title", "para", "paragraph"]);
+
+/** 步骤/层级块内编辑 title/para 时，宿主块查找不越过该块（避免误命中外层 table 等）。 */
+const HOST_BLOCK_SEARCH_SCOPE_PARENTS = new Set([
+  "crewDrillStep",
+  "proceduralStep",
+  "levelledPara",
+]);
+
+function hostBlockSearchMinDepth($from: ResolvedPos): number {
+  for (let d = $from.depth; d > 0; d--) {
+    if (!STEP_BODY_WRAP_TYPES.has($from.node(d).type.name)) continue;
+    const hostDepth = d - 1;
+    if (!HOST_BLOCK_SEARCH_SCOPE_PARENTS.has($from.node(hostDepth).type.name)) {
+      continue;
+    }
+    return hostDepth;
+  }
+  return 0;
 }
 
 /** NodeView `getPos()` 在文档变更 / 重挂载间隙可能过期；须校验后再 `resolve`。 */
@@ -214,7 +239,7 @@ function resolveHostBlockFromNodeSelection(
   return null;
 }
 
-function isCursorInsideParaAfterHostBlock(
+export function isCursorInsideParaAfterHostBlock(
   editor: Editor,
   blockPos: number,
   block: PMNode,
@@ -313,7 +338,8 @@ export function findHostBlockBeforeSelection(
   }
 
   const $from = selection.$from;
-  for (let d = $from.depth; d > 0; d--) {
+  const minDepth = hostBlockSearchMinDepth($from);
+  for (let d = $from.depth; d > minDepth; d--) {
     const parent = $from.node(d);
     if (!parentAllowsTrailingPara(parent.type.name)) continue;
 
@@ -468,6 +494,7 @@ export function ensureParaAfterFmftNearSelection(editor: Editor): boolean {
 const NESTED_BLOCK_AFTER_TRAILING_PARA = new Set([
   "proceduralStep",
   "levelledPara",
+  "crewDrillStep",
 ]);
 
 function isEmptyTrailingBlockNode(block: PMNode): boolean {

@@ -138,7 +138,9 @@ export {
   buildMinimalCrewDrillStepJson,
   buildMinimalCrewConditionJson,
   buildMinimalChallengeAndResponseJson,
+  canInsertElseIfAtCursor,
   insertCrewConditionAtCursor,
+  insertCrewDrillStepAtCursor,
   insertChallengeAndResponseAtCursor,
 } from "./lib/s1000d/crewInsert";
 export { buildEmptyIpdDocJson } from "./lib/s1000d/ipdInsert";

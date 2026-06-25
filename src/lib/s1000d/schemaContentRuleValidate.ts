@@ -44,6 +44,8 @@ const CREW_EDITOR_CONTENT_RULES: Record<string, string> = {
   case: "caseCond (crewDrillStep | if | elseIf | case)*",
   challenge: "(para | fmftElemGroup)*",
   response: "(para | fmftElemGroup)*",
+  descrCrew:
+    "(warning | caution | note | levelledPara | fmftElemGroup)*",
 };
 
 /** 编辑器专用节点 → schema content token */

@@ -81,7 +81,7 @@
                      <caseCond>系统模式切换至应急状态</caseCond>
                    
                      <!-- 主体1：普通执行步骤 -->
-                     <crewDrillStep><title>关闭主供电回路</title></crewDrillStep>
+                     <crewDrillStep><title>关闭主供电回路</title><para>关闭主供电回路内容</para></crewDrillStep>
                    
                      <!-- 主体2：case多分支项 -->
                      <case>
@@ -137,7 +137,7 @@
                   <case>
                      <caseCond>如果的条件输入</caseCond>
                      <crewDrillStep><title>省略...</title></crewDrillStep>
-                     <crewDrillStep><title>省略...</title></crewDrillStep>
+                     <crewDrillStep><title>末尾</title><para>sdfds</para></crewDrillStep>
                   </case>
                </crewDrillStep>
             </crewDrill>

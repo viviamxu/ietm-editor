@@ -1,10 +1,15 @@
 import { Extension } from '@tiptap/core'
 import { INSPECTABLE_NODE_TYPE_LIST } from '../lib/editor/inspectableNodeTypes'
+import { CREW_NATIVE_BLOCK_ID_TYPES } from '../lib/s1000d/crewInspectableTypes'
 import { PROCEDURE_NATIVE_BLOCK_ID_TYPES } from '../lib/s1000d/procedureInspectableTypes'
 import { SOURCE_XML_ATTR_KEYS } from '../lib/s1000d/sourceXmlAttrKeys'
 
 const SOURCE_XML_ATTR_KEYS_TYPES = [
-  ...new Set([...INSPECTABLE_NODE_TYPE_LIST, ...PROCEDURE_NATIVE_BLOCK_ID_TYPES]),
+  ...new Set([
+    ...INSPECTABLE_NODE_TYPE_LIST,
+    ...PROCEDURE_NATIVE_BLOCK_ID_TYPES,
+    ...CREW_NATIVE_BLOCK_ID_TYPES,
+  ]),
 ]
 
 /**

@@ -1,6 +1,7 @@
 import type { Editor } from "@tiptap/core";
 import { useEffect, useReducer, useState } from "react";
 
+
 import {
   insertFilmFromSchema,
   insertImageFromSchema,
@@ -31,9 +32,13 @@ import {
 } from "../../lib/s1000d/faultIsolationInsert";
 import { insertProceduralStepAtCursor } from "../../lib/s1000d/procedureInsert";
 import {
+  canInsertCrewStepLevelBlockAtCursor,
+  canInsertElseIfAtCursor,
   insertChallengeAndResponseAtCursor,
   insertCrewConditionAtCursor,
+  insertCrewDrillStepAtCursor,
 } from "../../lib/s1000d/crewInsert";
+import { isCrewRefCardMode } from "../../lib/s1000d/crewModeSwitch";
 import { useDescriptionSchemaStore } from "../../store/descriptionSchemaStore";
 import type { SaveDmXmlHandler } from "../../types/saveDmXmlHandler";
 import {
@@ -66,6 +71,7 @@ import {
   ListCollapse,
   ListEnd,
   ListTree,
+  CreditCard,
 } from "lucide-react";
 
 import {
@@ -91,6 +97,7 @@ import type {
 import { InsertTablePicker } from "./InsertTablePicker";
 import { TableEditToolbar } from "./TableEditToolbar";
 import { ToolbarCustomItems } from "./ToolbarCustomItems";
+import { Message } from "@arco-design/web-react";
 
 type MainTabKey = ToolbarTab;
 
@@ -128,8 +135,14 @@ export function FormatToolbar({
   const isFaultDm = contentKind === "faultIsolation";
   const isIpdDm = contentKind === "ipd";
   const isCrewDm = contentKind === "crew";
+  const isCrewRefCardActive = isCrewDm && isCrewRefCardMode(editor.state.doc);
+  const isCrewDescrCrewActive = isCrewDm && !isCrewRefCardActive;
+  /** 描述类，或操作类「描述类操作」模式：工具栏能力与描述类 DM 对齐 */
+  const isDescriptionLikeDm = isDescriptionDm || isCrewDescrCrewActive;
   const isRichTextDm = isDescriptionDm || isProcedureDm;
+  const showNestingControls = isRichTextDm || isCrewDm;
   const showInsertParagraph = isRichTextDm || isCrewDm;
+  const showRichTextFormatExtras = isRichTextDm || isCrewDescrCrewActive;
   const hideBuiltinItems = useToolbarConfigStore((s) => s.hideBuiltinItems);
   const onInsertExternalRefClick = useToolbarConfigStore(
     (s) => s.onInsertExternalRefClick,
@@ -170,6 +183,8 @@ export function FormatToolbar({
   const canInsertNote = canInsertNoteFromSchema(editor, schema);
   const canInsertSymbol = canInsertSymbolFromSchema(editor, schema);
   const canInsertLevelledPara = canInsertLevelledParaFromSchema(editor, schema);
+  const canInsertCrewStepLevelBlock =
+    canInsertCrewStepLevelBlockAtCursor(editor);
 
   const toggleSubscript = () => {
     const chain = editor.chain().focus().unsetMark("s1000dSup");
@@ -494,12 +509,23 @@ export function FormatToolbar({
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isCrewDm ? (
+        {isCrewRefCardActive ? (
           <>
             <button
               type="button"
               className="ietm-toggle-btn"
-              disabled={formatBarLocked}
+              disabled={formatBarLocked || !canInsertCrewStepLevelBlock}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertCrewDrillStepAtCursor(editor)}
+              title="插入操作卡（crewDrillStep）"
+              aria-label="插入操作卡"
+            >
+              <CreditCard size={16} aria-hidden className="shrink-0"/>
+            </button>
+            <button
+              type="button"
+              className="ietm-toggle-btn"
+              disabled={formatBarLocked || !canInsertCrewStepLevelBlock}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => insertCrewConditionAtCursor(editor, "if")}
               title="插入如果（if）"
@@ -510,10 +536,16 @@ export function FormatToolbar({
             <button
               type="button"
               className="ietm-toggle-btn"
-              disabled={formatBarLocked}
+              disabled={formatBarLocked || !canInsertCrewStepLevelBlock}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => insertCrewConditionAtCursor(editor, "elseIf")}
-              title="插入否则如果（elseIf）"
+              onClick={() => {
+                if (!canInsertElseIfAtCursor(editor)) {
+                  Message.error('ElseIf 须接在 If 或 ElseIf 之后。请先插入 If')
+                  return;
+                }
+                insertCrewConditionAtCursor(editor, "elseIf");
+              }}
+              title="插入否则如果（elseIf，须接在 If 或 ElseIf 之后）"
               aria-label="插入 elseIf"
             >
               ElseIf
@@ -521,7 +553,7 @@ export function FormatToolbar({
             <button
               type="button"
               className="ietm-toggle-btn"
-              disabled={formatBarLocked}
+              disabled={formatBarLocked || !canInsertCrewStepLevelBlock}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => insertCrewConditionAtCursor(editor, "case")}
               title="插入条件（case）"
@@ -532,7 +564,7 @@ export function FormatToolbar({
             <button
               type="button"
               className="ietm-toggle-btn"
-              disabled={formatBarLocked}
+              disabled={formatBarLocked || !canInsertCrewStepLevelBlock}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => insertChallengeAndResponseAtCursor(editor)}
               title="插入检查/响应（challengeAndResponse）"
@@ -542,7 +574,7 @@ export function FormatToolbar({
             </button>
           </>
         ) : null}
-        {isDescriptionDm && isBuiltinVisible("insertLevelledPara") ? (
+        {isDescriptionLikeDm && isBuiltinVisible("insertLevelledPara") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -555,7 +587,7 @@ export function FormatToolbar({
             <SquarePilcrow size={16} aria-hidden className="shrink-0" />
           </button>
         ) : null}
-        {isRichTextDm ? (
+        {showNestingControls ? (
           <>
             <button
               type="button"
@@ -582,7 +614,7 @@ export function FormatToolbar({
           </>
         ) : null}
 
-        {isRichTextDm && isBuiltinVisible("insertSequentialList") ? (
+        {showRichTextFormatExtras && isBuiltinVisible("insertSequentialList") ? (
           <button
             type="button"
             className="ietm-icon-btn"
@@ -738,7 +770,7 @@ export function FormatToolbar({
         </button>
       </div>
 
-      {isRichTextDm ? (
+      {showRichTextFormatExtras ? (
         <>
           <span
             className="ietm-format-toolbar__divider"

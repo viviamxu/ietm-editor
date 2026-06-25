@@ -21,13 +21,16 @@ import { TextStyleKit } from "@tiptap/extension-text-style/text-style-kit";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { IETMImage } from "../../extensions/IETMImage";
 import { SourceXmlAttrKeysExtension } from "../../extensions/sourceXmlAttrKeysExtension";
+import { CrewBlockIdExtension } from "../../extensions/s1000d/crewBlockIdExtension";
 import { ProcedureBlockIdExtension } from "../../extensions/s1000d/procedureBlockIdExtension";
 import { MigrateParagraphToParaExtension } from "../../extensions/migrateParagraphToParaExtension";
 import { S1000DParagraph } from "../../extensions/s1000d/s1000dParagraph";
 import { S1000DListExitKeymap } from "../../extensions/s1000d/s1000dListExitKeymap";
+import { S1000DCrewDrillStepTitleEnterKeymap } from "../../extensions/s1000d/s1000dCrewDrillStepTitleEnterKeymap";
 import { S1000DFmftBlockEnterKeymap } from "../../extensions/s1000d/s1000dFmftBlockEnterKeymap";
 import { S1000DHostBlockAfterClickExtension } from "../../extensions/s1000d/s1000dHostBlockAfterClickExtension";
 import { S1000DSchemaContentGuardExtension } from "../../extensions/s1000d/s1000dSchemaContentGuardExtension";
+import { S1000DDescrCrewOrderExtension } from "../../extensions/s1000d/s1000dDescrCrewOrderExtension";
 import { S1000DHostBlockTrailingParaBackspaceKeymap } from "../../extensions/s1000d/s1000dHostBlockTrailingParaBackspaceKeymap";
 import { S1000DFmftInnerNodeDeleteKeymap } from "../../extensions/s1000d/s1000dFmftInnerNodeDeleteKeymap";
 import { RepairOrphanTgroupExtension } from "../../extensions/s1000d/repairOrphanTgroupExtension";
@@ -355,9 +358,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }),
         S1000DParagraph,
         S1000DListExitKeymap,
+        S1000DCrewDrillStepTitleEnterKeymap,
         S1000DFmftBlockEnterKeymap,
         S1000DHostBlockAfterClickExtension,
         S1000DSchemaContentGuardExtension,
+        S1000DDescrCrewOrderExtension,
         S1000DHostBlockTrailingParaBackspaceKeymap,
         S1000DFmftInnerNodeDeleteKeymap,
         RepairOrphanTgroupExtension,
@@ -381,6 +386,7 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         Highlight.configure({ multicolor: true }),
         SourceXmlAttrKeysExtension,
         ProcedureBlockIdExtension,
+        CrewBlockIdExtension,
         IETMImage.configure({
           resize: false,
         }),

@@ -3,6 +3,8 @@ import type { ResolvedPos } from "@tiptap/pm/model";
 export const LIST_ITEM = "listItem";
 export const LEVELLED_PARA = "levelledPara";
 export const PROCEDURAL_STEP = "proceduralStep";
+export const CREW_DRILL_STEP = "crewDrillStep";
+export const CREW_CONDITION_TYPES = new Set(["if", "elseIf", "case"]);
 export const LIST_TYPES = new Set(["bulletList", "orderedList"]);
 export const WRAP_BLOCK_TYPES = new Set(["title", "para", "paragraph"]);
 
@@ -40,6 +42,14 @@ export function getInnermostProceduralStepDepth($from: ResolvedPos): number {
   let depth = -1;
   for (let d = 0; d <= $from.depth; d++) {
     if ($from.node(d).type.name === PROCEDURAL_STEP) depth = d;
+  }
+  return depth;
+}
+
+export function getInnermostCrewDrillStepDepth($from: ResolvedPos): number {
+  let depth = -1;
+  for (let d = 0; d <= $from.depth; d++) {
+    if ($from.node(d).type.name === CREW_DRILL_STEP) depth = d;
   }
   return depth;
 }
@@ -173,5 +183,14 @@ export function isInProceduralStepTitleOrPara($from: ResolvedPos): boolean {
     $from,
     getInnermostProceduralStepDepth($from),
     STEP_NESTING_BLOCK_TYPES,
+  );
+}
+
+/** 光标是否位于 crewDrillStep 的 title/para（或其中段落）内。 */
+export function isInCrewDrillStepTitleOrPara($from: ResolvedPos): boolean {
+  return isInHostBlockTitleOrPara(
+    $from,
+    getInnermostCrewDrillStepDepth($from),
+    new Set([...STEP_NESTING_BLOCK_TYPES, "challengeAndResponse"]),
   );
 }
