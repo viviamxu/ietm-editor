@@ -24,6 +24,7 @@ import {
   resolveAttentionInsertPosForEditor,
 } from "../editor/resolveProcedureAttentionInsertPos";
 import { createMinimalS1000dTableInsertJson } from "../../extensions/s1000d/s1000dTableNodes";
+import { dispatchSectionNumbersSync } from "../../extensions/s1000d/s1000dSectionNumbers";
 import { useExternalRefModalStore } from "../../store/externalRefModalStore";
 import { useInsertPublicationModalStore } from "../../store/insertPublicationModalStore";
 import { useInternalRefModalStore } from "../../store/internalRefModalStore";
@@ -50,6 +51,11 @@ import {
   internalRefHasExportableContent,
   serializeInternalRefToXml,
 } from "./internalRefXml";
+import {
+  contentRuleMentions,
+  firstTopLevelContentBranch,
+} from "./contentRuleParse";
+import { containerAllowsLooseParaChild } from "./schemaContentRuleValidate";
 
 function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
   const $from = editor.state.selection.$from;
@@ -57,13 +63,6 @@ function isInsideNodeType(editor: Editor, nodeTypeName: string): boolean {
     if ($from.node(d).type.name === nodeTypeName) return true;
   }
   return false;
-}
-
-/** 内容模型字符串中是否出现独立 token（粗匹配，供插入前校验） */
-function contentRuleMentions(rule: string | undefined, token: string): boolean {
-  if (!rule) return false;
-  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`\\b${escaped}\\b`).test(rule);
 }
 
 function requireSchemaNode(schema: DescriptionSchema, name: string): boolean {
@@ -111,10 +110,13 @@ export function buildInsertLevelledParaJson(
   const rule = schema.levelledPara?.content ?? "";
   const children: JSONContent[] = [];
 
-  if (rule === "" || /\btitle\??/.test(rule)) {
+  if (rule === "" || contentRuleMentions(rule, "title")) {
     children.push({ type: "title", content: [] });
   }
-  if (rule === "" || /\bpara\b/.test(rule)) {
+  if (
+    rule === "" ||
+    containerAllowsLooseParaChild("levelledPara", schema)
+  ) {
     children.push({ type: "para", content: [] });
   }
   if (children.length === 0) {
@@ -128,6 +130,86 @@ export function buildInsertLevelledParaJson(
   }
 
   return { type: "levelledPara", content: children };
+}
+
+/** 在 `doc` 直系块之后插入 sibling 的文档坐标。 */
+function resolveDocLevelSiblingInsertPos($from: ResolvedPos): number {
+  for (let d = $from.depth; d >= 1; d--) {
+    if ($from.node(d - 1).type.name === "doc") {
+      return $from.after(d);
+    }
+  }
+  return $from.after(1);
+}
+
+function syncSectionNumbersAfterStructuralInsert(editor: Editor): void {
+  queueMicrotask(() => {
+    if (editor.isDestroyed) return;
+    dispatchSectionNumbersSync(editor);
+  });
+}
+
+function insertLevelledParaAtDocLevel(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  const json = buildInsertLevelledParaJson(schema);
+  if (!json) return false;
+
+  const $from = editor.state.selection.$from;
+  const insertPos = resolveDocLevelSiblingInsertPos($from);
+  if (!editor.can().insertContentAt(insertPos, json)) return false;
+
+  const ok = editor
+    .chain()
+    .focus()
+    .command(({ state, tr, dispatch }) => {
+      let node: PMNode;
+      try {
+        node = PMNode.fromJSON(state.schema, json);
+      } catch {
+        return false;
+      }
+
+      const pos = resolveDocLevelSiblingInsertPos(state.selection.$from);
+      if (!dispatch) return true;
+
+      tr.insert(pos, node);
+      const sel = selectionInLevelledParaTitle(tr.doc, pos);
+      if (sel) tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
+  if (ok) syncSectionNumbersAfterStructuralInsert(editor);
+  return ok;
+}
+
+export function canInsertLevelledParaFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+): boolean {
+  if (!requireSchemaNode(schema, "levelledPara")) return false;
+  if (!editor.state.schema.nodes.levelledPara) return false;
+
+  const $from = editor.state.selection.$from;
+  const lpDepth = getInnermostLevelledParaDepth($from);
+
+  if (lpDepth >= 0) {
+    if (collectAncestorDepths($from, LEVELLED_PARA).length >= TITLE_LEVEL_CAP) {
+      return false;
+    }
+    const lpType = editor.state.schema.nodes.levelledPara;
+    const child = buildChildLevelledParaNode(editor.state.schema, schema, lpType);
+    if (!child) return false;
+    const host = $from.node(lpDepth);
+    return lpType.validContent(host.content.addToEnd(child));
+  }
+
+  const json = buildInsertLevelledParaJson(schema);
+  if (!json) return false;
+  const insertPos = resolveDocLevelSiblingInsertPos($from);
+  return editor.can().insertContentAt(insertPos, json);
 }
 
 function selectionInLevelledParaTitle(
@@ -194,12 +276,10 @@ export function insertLevelledParaFromSchema(
   if (!lpType) return false;
 
   if (getInnermostLevelledParaDepth(editor.state.selection.$from) < 0) {
-    const json = buildInsertLevelledParaJson(schema);
-    if (!json) return false;
-    return editor.chain().focus().insertContent(json).run();
+    return insertLevelledParaAtDocLevel(editor, schema);
   }
 
-  return editor
+  const ok = editor
     .chain()
     .focus()
     .command(({ state, tr, dispatch }) => {
@@ -237,6 +317,8 @@ export function insertLevelledParaFromSchema(
       return true;
     })
     .run();
+  if (ok) syncSectionNumbersAfterStructuralInsert(editor);
+  return ok;
 }
 
 /** 在光标处插入空 `para`（描述类正文段落块）。 */
@@ -768,7 +850,8 @@ function buildMinimalFmftElemChild(
 export function buildEmptyDescriptionBodyFromSchema(
   schema: DescriptionSchema,
 ): JSONContent[] {
-  const rule = schema.description?.content ?? "";
+  const fullRule = schema.description?.content ?? "";
+  const rule = firstTopLevelContentBranch(fullRule);
   const leading: JSONContent[] = [];
 
   const wantsPara = rule === "" || contentRuleMentions(rule, "para");

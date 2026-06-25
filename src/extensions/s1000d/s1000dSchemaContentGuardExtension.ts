@@ -3,6 +3,7 @@ import {
   NodeSelection,
   Plugin,
   PluginKey,
+  Selection,
   TextSelection,
   type Transaction,
 } from "@tiptap/pm/state";
@@ -36,15 +37,40 @@ function redirectIllegalTextCursorClick(
   clickPos: number,
 ): boolean {
   const doc = view.state.doc;
-  const fallbackPos = resolveBlockNodeSelectionBeforePos(doc, clickPos);
-  if (fallbackPos != null) {
-    view.dispatch(
-      view.state.tr.setSelection(NodeSelection.create(doc, fallbackPos)),
-    );
+  const $click = doc.resolve(clickPos);
+
+  const nearText = TextSelection.near($click, 1);
+  if (nearText.$from.parent.inlineContent) {
+    view.dispatch(view.state.tr.setSelection(nearText));
+    view.focus();
     return true;
   }
-  view.dom.blur();
-  return true;
+
+  const fallbackPos = resolveBlockNodeSelectionBeforePos(doc, clickPos);
+  if (fallbackPos != null) {
+    const $pos = doc.resolve(fallbackPos);
+    const node = $pos.nodeAfter;
+    if (node?.isTextblock) {
+      const inner = TextSelection.create(doc, fallbackPos + 1);
+      view.dispatch(view.state.tr.setSelection(inner));
+      view.focus();
+      return true;
+    }
+    if (node && NodeSelection.isSelectable(node)) {
+      view.dispatch(view.state.tr.setSelection(new NodeSelection($pos)));
+      view.focus();
+      return true;
+    }
+  }
+
+  const fallback = Selection.near($click, 1);
+  if (fallback instanceof TextSelection && fallback.$from.parent.inlineContent) {
+    view.dispatch(view.state.tr.setSelection(fallback));
+    view.focus();
+    return true;
+  }
+
+  return false;
 }
 
 function handleIllegalTextCursorPointer(
@@ -66,10 +92,9 @@ function handleIllegalTextCursorPointer(
     return redirectIllegalTextCursorClick(view, coords.pos);
   }
 
-  if (!containerAllowsLooseParaChild("doc", schema)) {
+  if (!containerAllowsLooseParaChild("doc", schema, view.state.doc)) {
     event.preventDefault();
-    view.dom.blur();
-    return true;
+    return redirectIllegalTextCursorClick(view, view.state.selection.from);
   }
 
   return false;

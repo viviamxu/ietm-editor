@@ -6,6 +6,7 @@ import {
   insertImageFromSchema,
   insertSymbolFromSchema,
   insertLevelledParaFromSchema,
+  canInsertLevelledParaFromSchema,
   insertParagraphFromSchema,
   insertRandomOrAttentionListFromSchema,
   insertSequentialListFromSchema,
@@ -162,6 +163,7 @@ export function FormatToolbar({
   const canInsertCaution = canInsertCautionFromSchema(editor, schema);
   const canInsertNote = canInsertNoteFromSchema(editor, schema);
   const canInsertSymbol = canInsertSymbolFromSchema(editor, schema);
+  const canInsertLevelledPara = canInsertLevelledParaFromSchema(editor, schema);
 
   const toggleSubscript = () => {
     const chain = editor.chain().focus().unsetMark("s1000dSup");
@@ -490,7 +492,7 @@ export function FormatToolbar({
           <button
             type="button"
             className="ietm-icon-btn"
-            disabled={formatBarLocked}
+            disabled={formatBarLocked || !canInsertLevelledPara}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertLevelledParaFromSchema(editor, schema)}
             title="在当前节下插入子层级段落"

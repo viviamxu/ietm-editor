@@ -178,7 +178,8 @@ export const ImeCompositionExtension = Extension.create({
             beforeinput(view, event) {
               if (!(event instanceof InputEvent)) return false;
               const t = event.inputType;
-              if (t.startsWith("insertComposition") || t === "insertText") {
+              // 仅 IME 组合输入标记 composing；普通 insertText 无 compositionend，会误拦序号等 appendTransaction。
+              if (t.startsWith("insertComposition")) {
                 markViewComposing(view, true);
               }
               return false;

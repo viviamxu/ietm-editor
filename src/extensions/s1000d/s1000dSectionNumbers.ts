@@ -37,13 +37,12 @@ export function createS1000dSectionNumbersPlugin() {
   return new Plugin({
     key: s1000dSectionNumbersKey,
     appendTransaction(transactions, _oldState, newState) {
-      if (composingGuard.isComposing()) return null;
-
       const docChanged = transactions.some((tr) => tr.docChanged);
       const forced = transactions.some((tr) => {
         const meta = tr.getMeta(s1000dSectionNumbersKey);
         return meta?.forceInitialSync === true;
       });
+      if (composingGuard.isComposing() && !forced) return null;
       if (!docChanged && !forced) return null;
 
       const assignments = collectSectionNumberAssignments(newState.doc);
