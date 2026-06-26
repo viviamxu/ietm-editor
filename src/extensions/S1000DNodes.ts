@@ -54,7 +54,9 @@ import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
 import {
   prepareFigureGraphicsForEditorImport,
-  prepareFigureGraphicsInHtmlFragment,
+  sanitizeS1000dXmlFiguresForHtmlImport,
+  S1000D_XML_FIGURE_IMPORT_ATTR,
+  S1000D_XML_FIGURE_IMPORT_VALUE,
 } from "../lib/s1000d/bindFigureGraphicsForImport";
 import { propagateEntryAlignToParasInFragment } from "../lib/s1000d/tableEntryAlign";
 
@@ -68,6 +70,12 @@ export { S1000DEmphasis };
  */
 function isS1000DTitleParent(parent: Element | null): boolean {
   if (!parent) return false;
+  if (
+    parent.getAttribute("data-s1000d-xml-figure") === "1" ||
+    parent.getAttribute("data-s1000d-node") === "figure"
+  ) {
+    return true;
+  }
   if (parent.getAttribute("data-s1000d-node") === "levelledPara") return true;
   if (parent.classList.contains("s1000d-levelled-para__content")) return true;
   if (parent.getAttribute("data-s1000d-xml-table") === "1") return true;
@@ -111,6 +119,7 @@ function isS1000DTitleParent(parent: Element | null): boolean {
     ln === "crewdrillstep" ||
     ln === "crewrefcard" ||
     ln === "figure" ||
+    ln === "s1000d-xml-figure" ||
     ln === "table" ||
     ln === "sequentiallist" ||
     ln === "randomlist" ||
@@ -1317,6 +1326,7 @@ export const S1000DGraphic = Node.create({
     return [
       {
         tag: "graphic",
+        priority: 60,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           const src = resolveFileUrl(readGraphicSrcFromElement(el));
@@ -1332,6 +1342,7 @@ export const S1000DGraphic = Node.create({
       },
       {
         tag: "img",
+        priority: 100,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
@@ -1745,6 +1756,21 @@ export const S1000DFigure = Node.create({
     });
 
     return [
+      {
+        /** 不可用 `tag: 'div[data-…]'`，部分运行时不会把它当成匹配规则（与 table 外壳同理）。 */
+        tag: "div",
+        priority: 70,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (
+            el.getAttribute(S1000D_XML_FIGURE_IMPORT_ATTR) !==
+            S1000D_XML_FIGURE_IMPORT_VALUE
+          ) {
+            return false;
+          }
+          return readFigureAttrs(el);
+        },
+      },
       {
         tag: "s1000d-xml-figure",
         priority: 56,
@@ -2349,8 +2375,8 @@ export function preprocessS1000dDescriptionHtmlFragment(
   fragmentXml: string,
 ): string {
   const stripped = stripHtmlDocumentWrapperTags(fragmentXml.trim());
-  const body = prepareFigureGraphicsInHtmlFragment(
-    sanitizeS1000dXmlTablesForHtmlImport(
+  const body = sanitizeS1000dXmlTablesForHtmlImport(
+    sanitizeS1000dXmlFiguresForHtmlImport(
       normalizeS1000dSelfClosingElementsForHtmlImport(
         renameS1000dTitleTagsForHtmlImport(stripped),
       ),

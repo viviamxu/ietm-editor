@@ -397,9 +397,8 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         ...s1000dCrewNodes,
         ...s1000dIpdNodes,
       ],
-      content:
-        normalizeEditorContentInput(props.initialContent) ??
-        buildEmptyDocJsonFromSchema(getDescriptionSchema()),
+      /** 首屏勿用 `content: html`：`useEditor` 初次 parse 会丢失 `figure` 子节点；改在 `onCreate` 里 `setContent`。 */
+      content: buildEmptyDocJsonFromSchema(getDescriptionSchema()),
       editorProps: {
         attributes: {
           class: "ietm-tiptap-root",
@@ -440,8 +439,15 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
         }
       },
       onCreate: ({ editor }) => {
-        if (!initialContentWasHtmlRef.current) return;
-        runPostHtmlContentNormalize(editor);
+        const normalized = normalizeEditorContentInput(props.initialContent);
+        if (normalized != null) {
+          if (typeof normalized !== "string" || normalized.length > 0) {
+            editor.commands.setContent(normalized);
+          }
+        }
+        if (initialContentWasHtmlRef.current) {
+          runPostHtmlContentNormalize(editor);
+        }
       },
     });
 
