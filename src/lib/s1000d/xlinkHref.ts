@@ -23,6 +23,11 @@ export function readGraphicSrcFromElement(el: Element): string {
   const xlink = readXlinkHrefFromElement(el);
   if (xlink) return xlink;
 
+  if (el.localName?.toLowerCase() === "graphic") {
+    const explicitSrc = el.getAttribute("src");
+    if (explicitSrc?.trim()) return explicitSrc.trim();
+  }
+
   const fromData = el.getAttribute("data-editor-src");
   if (fromData?.trim()) return fromData.trim();
 

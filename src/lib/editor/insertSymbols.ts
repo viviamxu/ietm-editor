@@ -264,6 +264,7 @@ export function insertSymbolIntoEditor(
   payload: InsertImagePayload,
   options?: InsertSymbolOptions,
 ): boolean {
+
   if (options?.attentionBlockPos != null) {
     return insertOrReplaceAttentionSymbolAtBlockPos(
       editor,

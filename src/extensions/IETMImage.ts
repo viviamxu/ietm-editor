@@ -38,10 +38,16 @@ export const IETMImage = Image.extend({
     const rules = this.parent?.() ?? []
     return rules.map((rule) => {
       const prevGetAttrs = rule.getAttrs
-      if (typeof prevGetAttrs !== "function") return rule
       return {
         ...rule,
         getAttrs: (element: HTMLElement) => {
+          /** S1000D `figure > graphic` 导入标记；不得解析为出版物 `image` 节点。 */
+          if (element.getAttribute("data-s1000d-node") === "graphic") {
+            return false
+          }
+          if (typeof prevGetAttrs !== "function") {
+            return {}
+          }
           const base = prevGetAttrs(element)
           if (base === false) return false
           const attrs: Record<string, unknown> =

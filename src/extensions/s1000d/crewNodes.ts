@@ -13,6 +13,7 @@ import {
   CrewDrillNodeView,
   CrewDrillStepNodeView,
   CrewRefCardNodeView,
+  DescrCrewNodeView,
   ResponseRowNodeView,
 } from "./CrewNodeViews";
 
@@ -52,6 +53,36 @@ const CREW_DRILL_BODY =
 const CREW_STEP_BODY =
   "(warning | caution | note | para | fmftElemGroup | challengeAndResponse)*";
 const CREW_CONDITION_TAIL = "(crewDrillStep | if | elseIf | case)*";
+
+/** 编辑器内缓存另一操作类正文模式 JSON，不参与 S1000D XML 导出。 */
+function editorCrewBranchCacheAttr(
+  attrKey: "cachedCrewRefCardJson" | "cachedDescrCrewJson",
+  dataAttr: string,
+) {
+  return {
+    default: null as string | null,
+    parseHTML: (el: HTMLElement) => {
+      const v = el.getAttribute(dataAttr);
+      return v != null && v.trim() !== "" ? v : null;
+    },
+    renderHTML: (attrs: Record<string, string | null | undefined>) => {
+      const v = attrs[attrKey];
+      if (v == null || String(v).trim() === "") return {};
+      return { [dataAttr]: String(v) };
+    },
+  };
+}
+
+const CREW_MODE_CACHE_ATTRS = {
+  cachedCrewRefCardJson: editorCrewBranchCacheAttr(
+    "cachedCrewRefCardJson",
+    "data-editor-cached-crew-ref-card",
+  ),
+  cachedDescrCrewJson: editorCrewBranchCacheAttr(
+    "cachedDescrCrewJson",
+    "data-editor-cached-descr-crew",
+  ),
+};
 
 export const S1000DCaseCond = Node.create({
   name: "caseCond",
@@ -163,12 +194,36 @@ export const S1000DCrewRefCard = Node.create({
   group: CREW_REF_CARD_GROUP,
   content: `(title?) (para | warning | caution | note | fmftElemGroup)* crewDrill+`,
   defining: true,
+  addAttributes() {
+    return {
+      cachedDescrCrewJson: CREW_MODE_CACHE_ATTRS.cachedDescrCrewJson,
+    };
+  },
   parseHTML: () => blockTagParseRules("crewRefCard"),
   renderHTML({ HTMLAttributes }) {
     return ["crewRefCard", mergeAttributes(HTMLAttributes), 0];
   },
   addNodeView() {
     return imeSafeReactNodeViewRenderer(CrewRefCardNodeView);
+  },
+});
+
+export const S1000DDescrCrew = Node.create({
+  name: "descrCrew",
+  group: CREW_REF_CARD_GROUP,
+  content: `(warning | caution | note | levelledPara | fmftElemGroup)*`,
+  defining: true,
+  addAttributes() {
+    return {
+      cachedCrewRefCardJson: CREW_MODE_CACHE_ATTRS.cachedCrewRefCardJson,
+    };
+  },
+  parseHTML: () => blockTagParseRules("descrCrew"),
+  renderHTML({ HTMLAttributes }) {
+    return ["descrCrew", mergeAttributes(HTMLAttributes), 0];
+  },
+  addNodeView() {
+    return imeSafeReactNodeViewRenderer(DescrCrewNodeView);
   },
 });
 
@@ -184,4 +239,5 @@ export const s1000dCrewNodes = [
   S1000DCrewDrillStep,
   S1000DCrewDrill,
   S1000DCrewRefCard,
+  S1000DDescrCrew,
 ] as const;

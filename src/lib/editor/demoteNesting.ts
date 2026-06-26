@@ -4,13 +4,16 @@ import type { ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
 import {
+  CREW_DRILL_STEP,
   LEVELLED_PARA,
   LIST_TYPES,
   PROCEDURAL_STEP,
   TITLE_LEVEL_CAP,
   collectAncestorDepths,
+  getInnermostCrewDrillStepDepth,
   getInnermostLevelledParaDepth,
   getInnermostProceduralStepDepth,
+  isInCrewDrillStepTitleOrPara,
   isInLevelledParaTitleOrPara,
   isInListNestingContext,
   isInProceduralStepTitleOrPara,
@@ -239,10 +242,30 @@ function wrapProceduralStepDeeper(editor: Editor): boolean {
   return wrapHostBlockDeeper(editor, stepDepth, PROCEDURAL_STEP);
 }
 
+function canWrapCrewDrillStepDeeper($from: ResolvedPos): boolean {
+  if (isInListDemoteContext($from)) return false;
+
+  const stepDepth = getInnermostCrewDrillStepDepth($from);
+  if (stepDepth < 0) return false;
+  if (collectAncestorDepths($from, CREW_DRILL_STEP).length >= TITLE_LEVEL_CAP) {
+    return false;
+  }
+
+  return isInCrewDrillStepTitleOrPara($from);
+}
+
+function wrapCrewDrillStepDeeper(editor: Editor): boolean {
+  const $from = editor.state.selection.$from;
+  const stepDepth = getInnermostCrewDrillStepDepth($from);
+  if (stepDepth < 0) return false;
+  return wrapHostBlockDeeper(editor, stepDepth, CREW_DRILL_STEP);
+}
+
 export function canDemoteNesting(editor: Editor): boolean {
   if (!editor.isEditable) return false;
   const $from = editor.state.selection.$from;
   if (resolveListSinkTarget($from)) return true;
+  if (canWrapCrewDrillStepDeeper($from)) return true;
   if (canWrapProceduralStepDeeper($from)) return true;
   return canWrapLevelledParaDeeper($from);
 }
@@ -255,6 +278,10 @@ export function demoteNesting(editor: Editor): boolean {
 
   if (listTarget) {
     return sinkListItemAtTarget(editor, listTarget);
+  }
+
+  if (canWrapCrewDrillStepDeeper($from)) {
+    return wrapCrewDrillStepDeeper(editor);
   }
 
   if (canWrapProceduralStepDeeper($from)) {

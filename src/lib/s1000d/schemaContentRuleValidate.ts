@@ -28,7 +28,25 @@ const ATTENTION_TYPES = new Set(["warning", "caution", "note"]);
 
 const FMFT_TYPES = new Set(["figure", "multimedia", "table"]);
 
-
+/**
+ * 操作类容器：与 `crewNodes.ts` TipTap `content` 一致。
+ * JSON schema 常用 `title? para*` 序列写法，现有解析器只认 `|` 分支，否则会误判 `para` 非法并删除。
+ */
+const CREW_EDITOR_CONTENT_RULES: Record<string, string> = {
+  crewRefCard:
+    "(title?) (para | warning | caution | note | fmftElemGroup)* crewDrill+",
+  crewDrill:
+    "(title?) (warning | caution | note | para | fmftElemGroup)* (crewDrillStep | if | elseIf | case)*",
+  crewDrillStep:
+    "title? (warning | caution | note | para | fmftElemGroup | challengeAndResponse)* (crewDrillStep | if | elseIf | case)*",
+  if: "caseCond (crewDrillStep | if | elseIf | case)*",
+  elseIf: "caseCond (crewDrillStep | if | elseIf | case)*",
+  case: "caseCond (crewDrillStep | if | elseIf | case)*",
+  challenge: "(para | fmftElemGroup)*",
+  response: "(para | fmftElemGroup)*",
+  descrCrew:
+    "(warning | caution | note | levelledPara | fmftElemGroup)*",
+};
 
 /** 编辑器专用节点 → schema content token */
 
@@ -339,11 +357,11 @@ export function resolveSchemaContentRuleForEditorParent(
     case "isolationStep":
 
       return schema.isolationStep?.content ?? "";
-
-    default:
-
+    default: {
+      const crewRule = CREW_EDITOR_CONTENT_RULES[parentTypeName];
+      if (crewRule) return crewRule;
       return schema[parentTypeName]?.content ?? "";
-
+    }
   }
 
 }

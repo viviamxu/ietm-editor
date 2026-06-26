@@ -39,6 +39,14 @@ import {
 } from "./tableEntryAlign";
 import { resolvePreferredFmftBlockType } from "./resolveFmftPublicationMode";
 import { buildEmptyDocJsonFromSchema } from "./dmEmptyContent";
+import { buildEmptyCrewDocJsonForMode } from "./crewInsert";
+import { resolveCrewContentMode } from "./crewModeSwitch";
+import {
+  findDescrCrewHost,
+  isDescrCrewCrewDm,
+  resolveDescrCrewZoneInsertPos,
+  type DescrCrewZone,
+} from "./descrCrewLayout";
 import { useDmMetadataStore } from "../../store/dmMetadataStore";
 import { getDescriptionSchema } from "../../store/descriptionSchemaStore";
 import { toRelativeFileUrl } from "../ietm/fileUrl";
@@ -584,9 +592,11 @@ const minimalAttentionRandomListJson: JSONContent = {
 function buildAttentionParaChildrenFromSchemaRule(
   rule: string | undefined,
   leadType: "warningAndCautionLead" | "noteLead",
+  options?: { includeAttentionList?: boolean },
 ): JSONContent[] {
   const contentRule = rule ?? "text*";
   const children: JSONContent[] = [];
+  const includeList = options?.includeAttentionList !== false;
 
   if (contentRuleMentions(contentRule, "text")) {
     children.push({ type: leadType, content: [] });
@@ -594,7 +604,10 @@ function buildAttentionParaChildrenFromSchemaRule(
     children.push({ type: leadType, content: [] });
   }
 
-  if (contentRuleMentions(contentRule, "attentionRandomList")) {
+  if (
+    includeList &&
+    contentRuleMentions(contentRule, "attentionRandomList")
+  ) {
     children.push(minimalAttentionRandomListJson);
   }
 
@@ -605,15 +618,58 @@ function buildAttentionParaChildrenFromSchemaRule(
   return children;
 }
 
+/** descrCrew 默认空稿 / 顶栏「添加」：attention 块仅引导文，不带 `attentionRandomList`。 */
+export const DESCR_CREW_ATTENTION_INSERT_OPTIONS = {
+  includeAttentionList: false,
+} as const;
+
+export type AttentionInsertJsonOptions = {
+  includeAttentionList?: boolean;
+};
+
+function resolveAttentionInsertOptionsForDoc(
+  doc: PMNode,
+): AttentionInsertJsonOptions | undefined {
+  return isDescrCrewCrewDm(doc)
+    ? DESCR_CREW_ATTENTION_INSERT_OPTIONS
+    : undefined;
+}
+
+/** 顶栏插入兜底：去掉 `warningAndCautionPara` / `notePara` 内默认列表。 */
+function stripAttentionRandomListFromAttentionBlock(
+  json: JSONContent,
+): JSONContent {
+  if (!json.content?.length) return json;
+  return {
+    ...json,
+    content: json.content.map((paraShell) => {
+      if (
+        paraShell.type !== "warningAndCautionPara" &&
+        paraShell.type !== "notePara"
+      ) {
+        return paraShell;
+      }
+      return {
+        ...paraShell,
+        content: (paraShell.content ?? []).filter(
+          (child) => child.type !== "attentionRandomList",
+        ),
+      };
+    }),
+  };
+}
+
 /** 按 schema `warningAndCautionPara.content` 组装最小 `warningAndCautionPara`。 */
 export function buildMinimalWarningAndCautionParaJson(
   schema: DescriptionSchema,
+  options?: { includeAttentionList?: boolean },
 ): JSONContent {
   return {
     type: "warningAndCautionPara",
     content: buildAttentionParaChildrenFromSchemaRule(
       schema.warningAndCautionPara?.content,
       "warningAndCautionLead",
+      options,
     ),
   };
 }
@@ -664,7 +720,7 @@ function insertAttentionBlockFromSchema(
   if (!node) return false;
   if (!canInsertAttentionNodeIntoEditor(editor, node)) return false;
 
-  const insertPos = resolveAttentionInsertPosForEditor(editor);
+  const insertPos = resolveAttentionInsertPosForEditor(editor, node);
   if (insertPos == null) return false;
 
   const chain = editor.chain().focus();
@@ -706,26 +762,28 @@ function canInsertAttentionBlockFromSchema(
 /** `warning`：`warningAndCautionPara+`（schema 描述类规则） */
 export function buildInsertWarningJson(
   schema: DescriptionSchema,
+  options?: { includeAttentionList?: boolean },
 ): JSONContent | null {
   if (!requireSchemaNode(schema, "warning")) return null;
   if (!contentRuleMentions(schema.warning?.content, "warningAndCautionPara"))
     return null;
   return {
     type: "warning",
-    content: [buildMinimalWarningAndCautionParaJson(schema)],
+    content: [buildMinimalWarningAndCautionParaJson(schema, options)],
   };
 }
 
 /** `caution`：与 `warning` 同形 */
 export function buildInsertCautionJson(
   schema: DescriptionSchema,
+  options?: { includeAttentionList?: boolean },
 ): JSONContent | null {
   if (!requireSchemaNode(schema, "caution")) return null;
   if (!contentRuleMentions(schema.caution?.content, "warningAndCautionPara"))
     return null;
   return {
     type: "caution",
-    content: [buildMinimalWarningAndCautionParaJson(schema)],
+    content: [buildMinimalWarningAndCautionParaJson(schema, options)],
   };
 }
 
@@ -733,36 +791,60 @@ export function canInsertWarningFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  return canInsertAttentionBlockFromSchema(editor, schema, buildInsertWarningJson);
+  const options = resolveAttentionInsertOptionsForDoc(editor.state.doc);
+  return canInsertAttentionBlockFromSchema(
+    editor,
+    schema,
+    (s) => buildInsertWarningJson(s, options),
+  );
 }
 
 export function insertWarningFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  return insertAttentionBlockFromSchema(editor, buildInsertWarningJson, schema);
+  const options = resolveAttentionInsertOptionsForDoc(editor.state.doc);
+  return insertAttentionBlockFromSchema(
+    editor,
+    (s) => buildInsertWarningJson(s, options),
+    schema,
+  );
 }
 
 export function canInsertCautionFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  return canInsertAttentionBlockFromSchema(editor, schema, buildInsertCautionJson);
+  const options = resolveAttentionInsertOptionsForDoc(editor.state.doc);
+  return canInsertAttentionBlockFromSchema(
+    editor,
+    schema,
+    (s) => buildInsertCautionJson(s, options),
+  );
 }
 
 export function insertCautionFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  return insertAttentionBlockFromSchema(editor, buildInsertCautionJson, schema);
+  const options = resolveAttentionInsertOptionsForDoc(editor.state.doc);
+  return insertAttentionBlockFromSchema(
+    editor,
+    (s) => buildInsertCautionJson(s, options),
+    schema,
+  );
 }
 
-function buildMinimalNoteParaJson(schema: DescriptionSchema): JSONContent {
+function buildMinimalNoteParaJson(
+  schema: DescriptionSchema,
+  options?: { includeAttentionList?: boolean },
+): JSONContent {
   return {
     type: "notePara",
     content: buildAttentionParaChildrenFromSchemaRule(
       schema.notePara?.content,
       "noteLead",
+      options,
     ),
   };
 }
@@ -770,12 +852,13 @@ function buildMinimalNoteParaJson(schema: DescriptionSchema): JSONContent {
 /** `note`：`notePara+`（schema 描述类规则） */
 export function buildInsertNoteJson(
   schema: DescriptionSchema,
+  options?: { includeAttentionList?: boolean },
 ): JSONContent | null {
   if (!requireSchemaNode(schema, "note")) return null;
   if (!contentRuleMentions(schema.note?.content, "notePara")) return null;
   return {
     type: "note",
-    content: [buildMinimalNoteParaJson(schema)],
+    content: [buildMinimalNoteParaJson(schema, options)],
   };
 }
 
@@ -783,14 +866,123 @@ export function canInsertNoteFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  return canInsertAttentionBlockFromSchema(editor, schema, buildInsertNoteJson);
+  const options = resolveAttentionInsertOptionsForDoc(editor.state.doc);
+  return canInsertAttentionBlockFromSchema(
+    editor,
+    schema,
+    (s) => buildInsertNoteJson(s, options),
+  );
 }
 
 export function insertNoteFromSchema(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
-  return insertAttentionBlockFromSchema(editor, buildInsertNoteJson, schema);
+  const options = resolveAttentionInsertOptionsForDoc(editor.state.doc);
+  return insertAttentionBlockFromSchema(
+    editor,
+    (s) => buildInsertNoteJson(s, options),
+    schema,
+  );
+}
+
+function selectionInNoteLeadAtBlockPos(
+  doc: PMNode,
+  blockPos: number,
+): TextSelection | null {
+  const block = doc.nodeAt(blockPos);
+  if (!block || block.type.name !== "note") return null;
+
+  let offset = blockPos + 1;
+  for (let i = 0; i < block.childCount; i++) {
+    const child = block.child(i);
+    if (child.type.name !== "notePara") {
+      offset += child.nodeSize;
+      continue;
+    }
+    let paraOffset = offset + 1;
+    for (let j = 0; j < child.childCount; j++) {
+      const grandchild = child.child(j);
+      if (grandchild.type.name === "noteLead") {
+        const caret = Math.min(paraOffset + 1, doc.content.size);
+        if (caret < 0 || caret > doc.content.size) return null;
+        return TextSelection.create(doc, caret);
+      }
+      paraOffset += grandchild.nodeSize;
+    }
+    offset += child.nodeSize;
+  }
+  return null;
+}
+
+function buildDescrCrewZoneJson(
+  schema: DescriptionSchema,
+  zone: DescrCrewZone,
+): JSONContent | null {
+  switch (zone) {
+    case "warning":
+      return buildInsertWarningJson(schema, DESCR_CREW_ATTENTION_INSERT_OPTIONS);
+    case "caution":
+      return buildInsertCautionJson(schema, DESCR_CREW_ATTENTION_INSERT_OPTIONS);
+    case "note":
+      return buildInsertNoteJson(schema, DESCR_CREW_ATTENTION_INSERT_OPTIONS);
+    case "levelledPara":
+      return buildInsertLevelledParaJson(schema);
+  }
+}
+
+function selectionAfterDescrCrewZoneInsert(
+  doc: PMNode,
+  insertPos: number,
+  zone: DescrCrewZone,
+): TextSelection | null {
+  if (zone === "levelledPara") {
+    return selectionInLevelledParaTitle(doc, insertPos);
+  }
+  if (zone === "note") {
+    return selectionInNoteLeadAtBlockPos(doc, insertPos);
+  }
+  const $insert = doc.resolve(Math.min(insertPos + 1, doc.content.size));
+  return selectionInWarningAndCautionLeadFromResolved(doc, $insert);
+}
+
+/**
+ * 在 `descrCrew` 根级指定分区末尾插入块（不依赖当前选区，供顶栏分区「添加」使用）。
+ */
+export function insertDescrCrewZoneFromSchema(
+  editor: Editor,
+  schema: DescriptionSchema,
+  zone: DescrCrewZone,
+): boolean {
+  if (!isDescrCrewCrewDm(editor.state.doc)) return false;
+
+  const host = findDescrCrewHost(editor.state.doc);
+  if (!host) return false;
+
+  const json = buildDescrCrewZoneJson(schema, zone);
+  if (!json) return false;
+
+  const insertJson =
+    zone === "warning" || zone === "caution" || zone === "note"
+      ? stripAttentionRandomListFromAttentionBlock(json)
+      : json;
+
+  const insertPos = resolveDescrCrewZoneInsertPos(host.pos, host.node, zone);
+  if (!editor.can().insertContentAt(insertPos, insertJson)) return false;
+
+  return editor
+    .chain()
+    .focus()
+    .insertContentAt(insertPos, insertJson)
+    .command(({ tr, dispatch }) => {
+      const sel = selectionAfterDescrCrewZoneInsert(tr.doc, insertPos, zone);
+      if (!sel) return true;
+      if (!dispatch) return true;
+      tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
 }
 
 /** 满足 `description.content` 中 `attentionElemGroup` 分支的最小块（warning / caution / note）。 */
@@ -930,12 +1122,34 @@ function hasAttentionBlockExportableStructure(node: JSONContent): boolean {
   return false;
 }
 
+/** 含 `title` / `para` 等骨架的 `levelledPara` 空壳也应导出（如 descrCrew 默认模板）。 */
+function hasLevelledParaExportableStructure(node: JSONContent): boolean {
+  if (node.type !== "levelledPara") return false;
+  return (node.content || []).some((child) => {
+    const type = child.type ?? "";
+    return (
+      type === "title" ||
+      type === "para" ||
+      type === "paragraph" ||
+      type === "levelledPara" ||
+      type === "warning" ||
+      type === "caution" ||
+      type === "note" ||
+      type === "figure" ||
+      type === "multimedia" ||
+      type === "table" ||
+      type === "crewDrill"
+    );
+  });
+}
+
 /**
  * 💡 辅助函数：深度探测节点是否包含“实质性内容”
  * 彻底拦截并销毁 Tiptap 产生的无意义空壳节点（如多敲的回车、空列表项）
  */
 function hasEffectiveContent(node: JSONContent): boolean {
   if (hasAttentionBlockExportableStructure(node)) return true;
+  if (hasLevelledParaExportableStructure(node)) return true;
   if (node.type === "text" && node.text?.trim() !== "") return true;
   if (
     node.type === "image" ||
@@ -958,6 +1172,7 @@ const ignoredExportAttrs = [
   "rawXml",
   "displayLevel",
   "sectionNumber",
+  "crewRefCardTitle",
   "start",
   "sourceXmlAttrKeys",
   "src",
@@ -970,6 +1185,9 @@ const ignoredExportAttrs = [
   /** 故障隔离「是否 / 选择」切换缓存，仅编辑器内使用 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
+  /** 操作类 crewRefCard / descrCrew 切换缓存，仅编辑器内使用 */
+  "cachedCrewRefCardJson",
+  "cachedDescrCrewJson",
   /** 外部引用 Popover 展示编码；导出时写入 `<dmRef data-display-code>` */
   "displayCode",
   /** 宿主跳转 ID；导出时写入 `<dmRef data-ref-target-id>` */
@@ -1019,6 +1237,8 @@ function isParaNode(node: JSONContent): boolean {
 function serializeChildrenWithListsWrappedInPara(node: JSONContent): string {
   const parts: string[] = [];
   const listRun: string[] = [];
+  const preserveEmptyPara =
+    node.type === "levelledPara" || node.type === "proceduralStep";
 
   for (const child of node.content || []) {
     if (isListNode(child)) {
@@ -1028,7 +1248,11 @@ function serializeChildrenWithListsWrappedInPara(node: JSONContent): string {
     }
 
     appendListRunAsPara(parts, listRun);
-    parts.push(serializeNodeToXml(child));
+    if (preserveEmptyPara && isParaNode(child) && !hasEffectiveContent(child)) {
+      parts.push("<para />");
+    } else {
+      parts.push(serializeNodeToXml(child));
+    }
   }
 
   appendListRunAsPara(parts, listRun);
@@ -1558,5 +1782,10 @@ export function clearContent(
   editor: Editor,
   schema: DescriptionSchema,
 ): boolean {
+  if (getDmContentKind(schema) === "crew") {
+    const mode = resolveCrewContentMode(editor.state.doc);
+    const next = buildEmptyCrewDocJsonForMode(schema, mode);
+    return editor.chain().focus().setContent(next).run();
+  }
   return fillEmptyContentFromSchema(editor, schema);
 }

@@ -36,6 +36,8 @@ const BASE_INSPECTABLE_NODE_TYPE_LIST = [
   'choice',
   'yesAnswer',
   'noAnswer',
+  /** 操作类 */
+  'crewDrillStep',
 ] as const
 
 export const INSPECTABLE_NODE_TYPE_LIST = [

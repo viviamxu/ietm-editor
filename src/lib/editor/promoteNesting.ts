@@ -4,14 +4,18 @@ import type { ResolvedPos } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 
 import {
+  CREW_CONDITION_TYPES,
+  CREW_DRILL_STEP,
   LEVELLED_PARA,
   LIST_ITEM,
   LIST_TYPES,
   PROCEDURAL_STEP,
   collectAncestorDepths,
+  getInnermostCrewDrillStepDepth,
   getInnermostLevelledParaDepth,
   getInnermostProceduralStepDepth,
   getListItemDepth,
+  isInCrewDrillStepTitleOrPara,
   isInLevelledParaTitleOrPara,
   isInListNestingContext,
   isInProceduralStepTitleOrPara,
@@ -254,6 +258,13 @@ function selectionInProceduralStepTitle(
   return selectionInHostBlockTitle(doc, proceduralStepPos, PROCEDURAL_STEP);
 }
 
+function selectionInCrewDrillStepTitle(
+  doc: PMNode,
+  crewDrillStepPos: number,
+): TextSelection | null {
+  return selectionInHostBlockTitle(doc, crewDrillStepPos, CREW_DRILL_STEP);
+}
+
 function canLiftHostBlockToParentSibling(
   $from: ResolvedPos,
   hostTypeName: string,
@@ -283,6 +294,29 @@ function canLiftProceduralStepToParentSibling($from: ResolvedPos): boolean {
     getInnermostProceduralStepDepth($from),
     isInProceduralStepTitleOrPara,
   );
+}
+
+const CREW_STEP_LIFT_PARENTS = new Set([
+  CREW_DRILL_STEP,
+  ...CREW_CONDITION_TYPES,
+]);
+
+function canLiftCrewDrillStepToParentSibling($from: ResolvedPos): boolean {
+  if (isInListNestingContext($from)) return false;
+
+  const stepDepth = getInnermostCrewDrillStepDepth($from);
+  if (stepDepth < 1) return false;
+  if (!isInCrewDrillStepTitleOrPara($from)) return false;
+
+  const parentType = $from.node(stepDepth - 1).type.name;
+  if (parentType === "crewDrill") return false;
+  if (!CREW_STEP_LIFT_PARENTS.has(parentType)) return false;
+
+  if (parentType === CREW_DRILL_STEP) {
+    return collectAncestorDepths($from, CREW_DRILL_STEP).length >= 2;
+  }
+
+  return true;
 }
 
 function liftListItemAtTarget(editor: Editor, target: ListLiftTarget): boolean {
@@ -495,10 +529,148 @@ function liftProceduralStepToParentSibling(editor: Editor): boolean {
   );
 }
 
+function findTopLevelCrewDrillStepDepth($from: ResolvedPos): number {
+  for (let d = 1; d <= $from.depth; d++) {
+    if (
+      $from.node(d).type.name === CREW_DRILL_STEP &&
+      $from.node(d - 1).type.name === "crewDrill"
+    ) {
+      return d;
+    }
+  }
+  return -1;
+}
+
+/**
+ * 从 `case` / `if` / `elseIf` 内抽出 `crewDrillStep`，作为 `crewDrill` 下与一级操作卡同级的步骤。
+ */
+function liftCrewDrillStepFromConditionToDrillSibling(editor: Editor): boolean {
+  return editor
+    .chain()
+    .focus()
+    .command(({ state, tr, dispatch }) => {
+      const $from = state.selection.$from;
+      if (!canLiftCrewDrillStepToParentSibling($from)) return false;
+
+      const stepDepth = getInnermostCrewDrillStepDepth($from);
+      const parentDepth = stepDepth - 1;
+      const parentType = $from.node(parentDepth).type.name;
+      if (!CREW_CONDITION_TYPES.has(parentType)) return false;
+
+      const topStepDepth = findTopLevelCrewDrillStepDepth($from);
+      if (topStepDepth < 0) return false;
+
+      const crewDrillDepth = topStepDepth - 1;
+      if ($from.node(crewDrillDepth).type.name !== "crewDrill") return false;
+
+      const childHost = $from.node(stepDepth);
+      const childIndexInCondition = $from.index(parentDepth);
+      const condition = $from.node(parentDepth);
+
+      const conditionChildren: PMNode[] = [];
+      for (let i = 0; i < condition.childCount; i++) {
+        if (i !== childIndexInCondition) {
+          conditionChildren.push(condition.child(i));
+        }
+      }
+
+      let newCondition: PMNode;
+      try {
+        newCondition = condition.type.create(condition.attrs, conditionChildren);
+      } catch {
+        return false;
+      }
+      if (!condition.type.validContent(newCondition.content)) return false;
+
+      const topStep = $from.node(topStepDepth);
+      const conditionIndexInTopStep = $from.index(topStepDepth);
+
+      const topStepChildren: PMNode[] = [];
+      for (let i = 0; i < topStep.childCount; i++) {
+        if (i === conditionIndexInTopStep) {
+          topStepChildren.push(newCondition);
+        } else {
+          topStepChildren.push(topStep.child(i));
+        }
+      }
+
+      let newTopStep: PMNode;
+      try {
+        newTopStep = topStep.type.create(topStep.attrs, topStepChildren);
+      } catch {
+        return false;
+      }
+      if (!topStep.type.validContent(newTopStep.content)) return false;
+
+      const crewDrill = $from.node(crewDrillDepth);
+      const topStepIndexInDrill = $from.index(crewDrillDepth);
+
+      const drillChildren: PMNode[] = [];
+      for (let i = 0; i < crewDrill.childCount; i++) {
+        if (i === topStepIndexInDrill) {
+          drillChildren.push(newTopStep);
+          drillChildren.push(childHost);
+        } else {
+          drillChildren.push(crewDrill.child(i));
+        }
+      }
+
+      let newDrill: PMNode;
+      try {
+        newDrill = crewDrill.type.create(crewDrill.attrs, drillChildren);
+      } catch {
+        return false;
+      }
+      if (!crewDrill.type.validContent(newDrill.content)) return false;
+
+      if (!dispatch) return true;
+
+      const drillFrom = $from.before(crewDrillDepth);
+      tr.replaceWith(drillFrom, drillFrom + crewDrill.nodeSize, newDrill);
+
+      let liftedPos = drillFrom + 1;
+      for (let i = 0; i < topStepIndexInDrill; i++) {
+        liftedPos += crewDrill.child(i).nodeSize;
+      }
+      liftedPos += newTopStep.nodeSize;
+
+      const sel =
+        selectionInCrewDrillStepTitle(tr.doc, liftedPos) ??
+        TextSelection.near(
+          tr.doc.resolve(Math.min(liftedPos + 1, tr.doc.content.size)),
+          1,
+        );
+      tr.setSelection(sel);
+      dispatch(tr);
+      return true;
+    })
+    .run();
+}
+
+function liftCrewDrillStepToParentSibling(editor: Editor): boolean {
+  const $from = editor.state.selection.$from;
+  const stepDepth = getInnermostCrewDrillStepDepth($from);
+  if (
+    stepDepth >= 1 &&
+    CREW_CONDITION_TYPES.has($from.node(stepDepth - 1).type.name) &&
+    findTopLevelCrewDrillStepDepth($from) >= 0
+  ) {
+    if (liftCrewDrillStepFromConditionToDrillSibling(editor)) return true;
+  }
+
+  return liftHostBlockToParentSibling(
+    editor,
+    getInnermostCrewDrillStepDepth,
+    canLiftCrewDrillStepToParentSibling,
+    selectionInCrewDrillStepTitle,
+  );
+}
+
 export function canPromoteNesting(editor: Editor): boolean {
   if (!editor.isEditable) return false;
   const $from = editor.state.selection.$from;
   if (resolveListLiftTarget($from)) return true;
+  if (canLiftCrewDrillStepToParentSibling($from)) return true;
   if (canLiftProceduralStepToParentSibling($from)) return true;
   return canLiftLevelledParaToParentSibling($from);
 }
@@ -511,6 +683,10 @@ export function promoteNesting(editor: Editor): boolean {
 
   if (listTarget) {
     return liftListItemAtTarget(editor, listTarget);
+  }
+
+  if (canLiftCrewDrillStepToParentSibling($from)) {
+    return liftCrewDrillStepToParentSibling(editor);
   }
 
   if (canLiftProceduralStepToParentSibling($from)) {

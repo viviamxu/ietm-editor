@@ -76,8 +76,20 @@ export function LevelledParaNodeView(props: NodeViewProps) {
       {...HTMLAttributes}
       className={[HTMLAttributes?.class, chromeClass].filter(Boolean).join(" ")}
       data-s1000d-node="levelledPara"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={(e: ReactMouseEvent<HTMLElement>) => {
+        const prev = e.relatedTarget;
+        if (prev instanceof globalThis.Node && e.currentTarget.contains(prev)) {
+          return;
+        }
+        setHovered(true);
+      }}
+      onMouseLeave={(e: ReactMouseEvent<HTMLElement>) => {
+        const next = e.relatedTarget;
+        if (next instanceof globalThis.Node && e.currentTarget.contains(next)) {
+          return;
+        }
+        setHovered(false);
+      }}
     >
       <button
         type="button"

@@ -12,7 +12,7 @@
             <warning>
                <warningAndCautionPara>省略...</warningAndCautionPara>
             </warning>
-            <para>省略</para>
+            <para>这里允许插入段落文本</para>
             <para>省略</para>
             <crewDrill>
                <title>操作标题</title>
@@ -71,11 +71,40 @@
                      </tbody>
                      </tgroup>
                   </table>
-                  <if>
-                     <caseCond>如果的条件输入</caseCond>
+                  <!-- <if>
+                     <caseCond>如果的条件输入:当系统压力低于 0.5MPa 时</caseCond>
                      <crewDrillStep><title>如果的操作子步骤标题1</title><para>如果的操作子步骤内容</para></crewDrillStep>
                      <crewDrillStep><title>如果的操作子步骤标题2</title></crewDrillStep>
-                  </if>
+                  </if> -->
+                  <if id="if-demo">
+                     <!-- 必须的开头：判断条件 -->
+                     <caseCond>系统模式切换至应急状态</caseCond>
+                   
+                     <!-- 主体1：普通执行步骤 -->
+                     <crewDrillStep><title>关闭主供电回路</title><para>关闭主供电回路内容</para></crewDrillStep>
+                   
+                     <!-- 主体2：case多分支项 -->
+                     <case>
+                       <caseCond>应急电源电量>80%</caseCond>
+                       <crewDrillStep><title>启动一级应急保障</title></crewDrillStep>
+                     </case>
+                     <case>
+                        <caseCond>应急电源电量>60%</caseCond>
+                        <crewDrillStep><title>启动二级应急保障</title></crewDrillStep>
+                      </case>
+                     <!-- 主体3：嵌套if+elseIf分支 -->
+                     <if>
+                       <caseCond>现场有操作人员值守</caseCond>
+                       <crewDrillStep><title>手动确认设备状态</title></crewDrillStep>
+                     </if>
+                     <elseIf>
+                       <caseCond>现场无人值守</caseCond>
+                       <crewDrillStep><title>触发远程告警</title></crewDrillStep>
+                     </elseIf>
+                   
+                     <!-- 主体4：又一个普通执行步骤（重复出现同类型） -->
+                     <crewDrillStep><title>记录故障日志并上报</title></crewDrillStep>
+                   </if>
                   <elseIf>
                      <caseCond>否则如果的条件输入</caseCond>
                      <crewDrillStep><title>否则如果的操作子步骤标题1</title></crewDrillStep>
@@ -108,7 +137,7 @@
                   <case>
                      <caseCond>如果的条件输入</caseCond>
                      <crewDrillStep><title>省略...</title></crewDrillStep>
-                     <crewDrillStep><title>省略...</title></crewDrillStep>
+                     <crewDrillStep><title>末尾</title><para>sdfds</para></crewDrillStep>
                   </case>
                </crewDrillStep>
             </crewDrill>

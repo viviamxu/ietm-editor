@@ -36,6 +36,31 @@ export function crewDrillStepIndexInParent(
   return index > 0 ? index : 1;
 }
 
+/** `crewDrillStep` 是否含章节 `title`（空 `title` 也算；无 `title` 子节点则不算）。 */
+export function crewDrillStepHasSectionTitle(step: PMNode): boolean {
+  if (step.type.name !== CREW_DRILL_STEP) return false;
+  for (let i = 0; i < step.childCount; i++) {
+    if (step.child(i).type.name === "title") return true;
+  }
+  return false;
+}
+
+/** 仅含 `title` 的 `crewDrillStep` 参与层级章节序号（`1.1.`、`1.2.`）。 */
+export function crewDrillStepTitledIndexInParent(
+  parent: PMNode,
+  childNode: PMNode,
+): number {
+  let index = 0;
+  for (let i = 0; i < parent.childCount; i++) {
+    const child = parent.child(i);
+    if (child.type.name !== CREW_DRILL_STEP) continue;
+    if (!crewDrillStepHasSectionTitle(child)) continue;
+    index++;
+    if (child === childNode) return index;
+  }
+  return index > 0 ? index : 1;
+}
+
 /** 从 `title` 位置向上判断是否在 `if` / `elseIf` / `case` 内。 */
 export function isCrewTitleInsideCondition(doc: PMNode, titlePos: number): boolean {
   try {
@@ -105,7 +130,8 @@ export function computeCrewSectionNumberPath(
       if (name === CREW_DRILL_STEP) {
         const parent = $pos.node(d - 1);
         const stepNode = $pos.node(d);
-        const index = crewDrillStepIndexInParent(parent, stepNode);
+        if (!crewDrillStepHasSectionTitle(stepNode)) continue;
+        const index = crewDrillStepTitledIndexInParent(parent, stepNode);
         if (index > 0) path.push(index);
       }
     }

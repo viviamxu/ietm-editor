@@ -22,6 +22,9 @@ const HIDDEN_ATTR_KEYS = new Set([
   /** 故障隔离：编辑器内分支缓存，不参与 S1000D 导出 */
   "cachedYesNoAnswerJson",
   "cachedListOfChoicesJson",
+  /** 操作类：crewRefCard / descrCrew 切换缓存 */
+  "cachedCrewRefCardJson",
+  "cachedDescrCrewJson",
 ]);
 
 const ATTR_ORDER: Partial<Record<string, string[]>> = {
@@ -66,6 +69,39 @@ const ATTR_ORDER: Partial<Record<string, string[]>> = {
   estimatedTime: ["unitOfMeasure"],
   reqQuantity: ["unitOfMeasure"],
   proceduralStep: ["derivativeClassificationRefId"],
+  if: [
+    "applicRefId",
+    "securityClassification",
+    "caveat",
+    "derivativeClassificationRefId",
+    "reasonForUpdateRefIds",
+  ],
+  elseIf: [
+    "applicRefId",
+    "securityClassification",
+    "caveat",
+    "derivativeClassificationRefId",
+    "reasonForUpdateRefIds",
+  ],
+  case: [
+    "applicRefId",
+    "securityClassification",
+    "caveat",
+    "derivativeClassificationRefId",
+    "reasonForUpdateRefIds",
+  ],
+  crewDrill: [
+    "securityClassification",
+    "caveat",
+    "derivativeClassificationRefId",
+    "reasonForUpdateRefIds",
+  ],
+  crewDrillStep: [
+    "securityClassification",
+    "caveat",
+    "derivativeClassificationRefId",
+    "reasonForUpdateRefIds",
+  ],
 };
 
 /** 属性面板展示名（schema 字段名 → 源 XML 语义） */
@@ -95,6 +131,11 @@ const NODE_TYPE_LABEL: Partial<Record<string, string>> = {
   reqSpares: "备件要求 (reqSpares)",
   reqSafety: "安全要求 (reqSafety)",
   proceduralStep: "程序步骤 (proceduralStep)",
+  crewDrill: "操作演练 (crewDrill)",
+  crewDrillStep: "操作步骤 (crewDrillStep)",
+  if: "如果 (if)",
+  elseIf: "否则如果 (elseIf)",
+  case: "条件 (case)",
   supportEquipDescr: "工装 (supportEquipDescr)",
   supplyDescr: "辅料 (supplyDescr)",
   spareDescr: "备件 (spareDescr)",

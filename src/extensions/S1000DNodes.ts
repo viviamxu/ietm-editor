@@ -52,6 +52,12 @@ import {
 } from "../lib/s1000d/dmRefXml";
 import { useDmMetadataStore } from "../store/dmMetadataStore";
 import { normalizeSectionNumberAttr } from "../lib/s1000d/sectionNumbers";
+import {
+  prepareFigureGraphicsForEditorImport,
+  sanitizeS1000dXmlFiguresForHtmlImport,
+  S1000D_XML_FIGURE_IMPORT_ATTR,
+  S1000D_XML_FIGURE_IMPORT_VALUE,
+} from "../lib/s1000d/bindFigureGraphicsForImport";
 import { propagateEntryAlignToParasInFragment } from "../lib/s1000d/tableEntryAlign";
 
 export type { FigureAttrs, ParaAttrs, S1000DEditorJSON } from "./s1000d/types";
@@ -64,6 +70,12 @@ export { S1000DEmphasis };
  */
 function isS1000DTitleParent(parent: Element | null): boolean {
   if (!parent) return false;
+  if (
+    parent.getAttribute("data-s1000d-xml-figure") === "1" ||
+    parent.getAttribute("data-s1000d-node") === "figure"
+  ) {
+    return true;
+  }
   if (parent.getAttribute("data-s1000d-node") === "levelledPara") return true;
   if (parent.classList.contains("s1000d-levelled-para__content")) return true;
   if (parent.getAttribute("data-s1000d-xml-table") === "1") return true;
@@ -107,6 +119,7 @@ function isS1000DTitleParent(parent: Element | null): boolean {
     ln === "crewdrillstep" ||
     ln === "crewrefcard" ||
     ln === "figure" ||
+    ln === "s1000d-xml-figure" ||
     ln === "table" ||
     ln === "sequentiallist" ||
     ln === "randomlist" ||
@@ -175,6 +188,13 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
     if (titleDepth > 0) {
       const parentType = $pos.node(titleDepth - 1).type.name;
       if (
+        parentType === "crewRefCard" &&
+        levelledParaCount === 0 &&
+        proceduralStepCount === 0
+      ) {
+        return 1;
+      }
+      if (
         parentType === "crewDrill" &&
         levelledParaCount === 0 &&
         proceduralStepCount === 0
@@ -189,6 +209,20 @@ function computeTitleDisplayLevel(doc: PMNode, titleStartPos: number): number {
   } catch {
     return 1;
   }
+}
+
+/** `crewRefCard` 直接子级 `title`（操作卡片主标题，非 crewDrill 内标题）。 */
+function isCrewRefCardRootTitle(doc: PMNode, titleStartPos: number): boolean {
+  try {
+    const $pos = doc.resolve(titleStartPos + 1);
+    for (let d = $pos.depth; d > 0; d--) {
+      if ($pos.node(d).type.name !== "title") continue;
+      return $pos.node(d - 1).type.name === "crewRefCard";
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }
 
 function createS1000dTitleLevelsPlugin() {
@@ -213,14 +247,19 @@ function createS1000dTitleLevelsPlugin() {
         if (node.type.name !== "title") return true;
 
         const next = computeTitleDisplayLevel(newState.doc, pos);
+        const nextCrewRefCardTitle = isCrewRefCardRootTitle(newState.doc, pos);
         const curr = normalizeTitleDisplayLevel(
           (node.attrs as { displayLevel?: number }).displayLevel,
         );
+        const currCrewRefCardTitle = Boolean(
+          (node.attrs as { crewRefCardTitle?: boolean }).crewRefCardTitle,
+        );
 
-        if (curr !== next) {
+        if (curr !== next || currCrewRefCardTitle !== nextCrewRefCardTitle) {
           tr = tr.setNodeMarkup(pos, undefined, {
             ...node.attrs,
             displayLevel: next,
+            crewRefCardTitle: nextCrewRefCardTitle,
           });
           changed = true;
         }
@@ -673,6 +712,20 @@ export const S1000DTitle = Node.create({
           return { "data-s1000d-section-number": num };
         },
       },
+      /** 操作卡片主标题标记；仅编辑区 CSS，不入 S1000D XML。 */
+      crewRefCardTitle: {
+        default: false,
+        rendered: true,
+        parseHTML: (el) =>
+          el instanceof Element &&
+          el.hasAttribute("data-s1000d-crew-ref-card-title"),
+        renderHTML: (attrs) => {
+          if (!(attrs as { crewRefCardTitle?: boolean }).crewRefCardTitle) {
+            return {};
+          }
+          return { "data-s1000d-crew-ref-card-title": "1" };
+        },
+      },
     };
   },
 
@@ -716,12 +769,17 @@ export const S1000DTitle = Node.create({
     const level = normalizeTitleDisplayLevel(
       (node.attrs as { displayLevel?: number }).displayLevel,
     );
+    const isCrewRefCardTitle = Boolean(
+      (node.attrs as { crewRefCardTitle?: boolean }).crewRefCardTitle,
+    );
     return [
       "s1000d-block-title",
       mergeAttributes(HTMLAttributes, {
         "data-s1000d-title": "1",
         "data-s1000d-title-level": String(level),
-        class: "s1000d-title-display",
+        class: isCrewRefCardTitle
+          ? "s1000d-title-display s1000d-crew-ref-card__title"
+          : "s1000d-title-display",
       }),
       0,
     ];
@@ -1268,6 +1326,7 @@ export const S1000DGraphic = Node.create({
     return [
       {
         tag: "graphic",
+        priority: 60,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           const src = resolveFileUrl(readGraphicSrcFromElement(el));
@@ -1283,6 +1342,7 @@ export const S1000DGraphic = Node.create({
       },
       {
         tag: "img",
+        priority: 100,
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
           if (el.getAttribute("data-s1000d-node") !== "graphic") return false;
@@ -1679,30 +1739,51 @@ export const S1000DFigure = Node.create({
   },
 
   parseHTML() {
+    const readFigureAttrs = (el: Element) => ({
+      id: el.getAttribute("id") ?? el.getAttribute("data-s1000d-element-id"),
+      changeType: el.getAttribute("changeType"),
+      changeMark: el.getAttribute("changeMark"),
+      reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
+      authorityName: el.getAttribute("authorityName"),
+      authorityDocument: el.getAttribute("authorityDocument"),
+      securityClassification: el.getAttribute("securityClassification"),
+      commercialClassification: el.getAttribute("commercialClassification"),
+      caveat: el.getAttribute("caveat"),
+      [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
+        el,
+        FIGURE_XML_ATTR_NAMES,
+      ),
+    });
+
     return [
+      {
+        /** 不可用 `tag: 'div[data-…]'`，部分运行时不会把它当成匹配规则（与 table 外壳同理）。 */
+        tag: "div",
+        priority: 70,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          if (
+            el.getAttribute(S1000D_XML_FIGURE_IMPORT_ATTR) !==
+            S1000D_XML_FIGURE_IMPORT_VALUE
+          ) {
+            return false;
+          }
+          return readFigureAttrs(el);
+        },
+      },
+      {
+        tag: "s1000d-xml-figure",
+        priority: 56,
+        getAttrs: (el) => {
+          if (!el || !(el instanceof Element)) return false;
+          return readFigureAttrs(el);
+        },
+      },
       {
         tag: "figure",
         getAttrs: (el) => {
           if (!el || !(el instanceof Element)) return false;
-          return {
-            id:
-              el.getAttribute("id") ??
-              el.getAttribute("data-s1000d-element-id"),
-            changeType: el.getAttribute("changeType"),
-            changeMark: el.getAttribute("changeMark"),
-            reasonForUpdateRefIds: el.getAttribute("reasonForUpdateRefIds"),
-            authorityName: el.getAttribute("authorityName"),
-            authorityDocument: el.getAttribute("authorityDocument"),
-            securityClassification: el.getAttribute("securityClassification"),
-            commercialClassification: el.getAttribute(
-              "commercialClassification",
-            ),
-            caveat: el.getAttribute("caveat"),
-            [SOURCE_XML_ATTR_KEYS]: xmlAttrsPresentOnElement(
-              el,
-              FIGURE_XML_ATTR_NAMES,
-            ),
-          };
+          return readFigureAttrs(el);
         },
       },
     ];
@@ -2295,8 +2376,10 @@ export function preprocessS1000dDescriptionHtmlFragment(
 ): string {
   const stripped = stripHtmlDocumentWrapperTags(fragmentXml.trim());
   const body = sanitizeS1000dXmlTablesForHtmlImport(
-    normalizeS1000dSelfClosingElementsForHtmlImport(
-      renameS1000dTitleTagsForHtmlImport(stripped),
+    sanitizeS1000dXmlFiguresForHtmlImport(
+      normalizeS1000dSelfClosingElementsForHtmlImport(
+        renameS1000dTitleTagsForHtmlImport(stripped),
+      ),
     ),
   );
   return propagateEntryAlignToParasInFragment(body);
@@ -2321,6 +2404,7 @@ export function getDescriptionInnerXmlFromDmXml(
   normalizeWarningAndCautionParasForEditor(description);
   normalizeNoteParasForEditor(description);
   normalizeS1000dListsForEditor(description);
+  prepareFigureGraphicsForEditorImport(description);
 
   const BLOCK_TAGS = [
     "table",
@@ -2389,6 +2473,8 @@ export function getFaultIsolationInnerXmlFromDmXml(
     (c) => c.localName === "faultIsolation",
   );
   if (!faultIsolation) return null;
+
+  prepareFigureGraphicsForEditorImport(faultIsolation);
 
   const serializer = new XMLSerializer();
   const parts: string[] = [];
@@ -2459,6 +2545,7 @@ export function getProcedureInnerXmlFromDmXml(
   if (!procedure) return null;
 
   normalizeProcedureInnerXmlForEditor(procedure);
+  prepareFigureGraphicsForEditorImport(procedure);
 
   const serializer = new XMLSerializer();
   const atomNodes = procedure.querySelectorAll("dmRef");
@@ -2487,6 +2574,8 @@ export function getCrewInnerXmlFromDmXml(xmlString: string): string | null {
     (c) => c.localName === "crew",
   );
   if (!crew) return null;
+
+  prepareFigureGraphicsForEditorImport(crew);
 
   const serializer = new XMLSerializer();
   const parts: string[] = [];
@@ -2526,6 +2615,7 @@ export function getIpdInnerXmlFromDmXml(xmlString: string): string | null {
   if (!ipc) return null;
 
   normalizeIpdInnerXmlForEditor(ipc);
+  prepareFigureGraphicsForEditorImport(ipc);
 
   const serializer = new XMLSerializer();
   const figureParts: string[] = [];

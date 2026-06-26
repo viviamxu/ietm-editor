@@ -6,12 +6,14 @@ function readShapeMarkerLabel(el: Element): string | null {
   const inkscape = el.getAttribute("inkscape:label")?.trim();
   if (inkscape) return inkscape;
   const label = el.getAttribute("label")?.trim();
-  return label || null;
+  if (label) return label;
+  const ariaLabel = el.getAttribute("aria-label")?.trim();
+  return ariaLabel || null;
 }
 
 /**
- * 从 SVG 文本解析热点：带 `inkscape:label` 或 `label` 的 circle / ellipse / rect，
- * 返回其 `id`（作为 `hotspotTitle` / 形状标识）。
+ * 从 SVG 文本解析热点：带 `inkscape:label`、`label` 或 `aria-label` 的
+ * circle / ellipse / rect，返回其 `id`（作为 `hotspotTitle` / 形状标识）。
  */
 export function parseSvgHotspotShapeIds(svgText: string): string[] {
   const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");

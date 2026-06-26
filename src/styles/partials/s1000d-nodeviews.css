@@ -56,12 +56,12 @@
 
 .ietm-editor-surface
   .tiptap
-  .s1000d-levelled-para:hover
-  .s1000d-levelled-para__block-handle,
+  .s1000d-levelled-para:hover:not(:has(.s1000d-levelled-para:hover))
+  > .s1000d-levelled-para__block-handle,
 .ietm-editor-surface
   .tiptap
   .s1000d-levelled-para--chrome
-  .s1000d-levelled-para__block-handle {
+  > .s1000d-levelled-para__block-handle {
   opacity: 1;
   pointer-events: auto;
 }
