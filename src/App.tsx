@@ -32,7 +32,8 @@ function App() {
 
   const instanceRef = useRef<IETMEditorInstance | null>(null);
 
-  const [resolvedTheme, setResolvedTheme] = useState<IETMResolvedTheme>("light");
+  const [resolvedTheme, setResolvedTheme] =
+    useState<IETMResolvedTheme>("light");
 
   const toggleHostTheme = useCallback(() => {
     const next =
@@ -48,14 +49,14 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: crewDmXml,
+      dmXml: procedureDmXml,
 
       dmDocumentName: "操作类.XML",
 
       theme: "auto",
       onThemeChange: setResolvedTheme,
 
-      descriptionSchema: crewSchema as DescriptionSchema,
+      descriptionSchema: procedureSchema as DescriptionSchema,
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {
@@ -99,7 +100,6 @@ function App() {
 
       console.log("[ietm] content rule:", schema.content?.content);
     });
-    
 
     return () => {
       offUpdate();

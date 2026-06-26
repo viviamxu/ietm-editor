@@ -28,6 +28,7 @@ import { procedureTableRowDomProps } from "../../lib/s1000d/procedureTableRowDom
 
 const CATALOG_COLUMNS = [
   "物料名称",
+  "件号",
   "热点ID",
   "每件数量",
   "总数量",
@@ -155,7 +156,7 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
     () => [
       {
         title: CATALOG_COLUMNS[0],
-        width: "18%",
+        width: "16%",
         render: (_: unknown, row: CatalogTableRow) => (
           <Input
             value={row.data.descrForPart}
@@ -171,7 +172,23 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
       },
       {
         title: CATALOG_COLUMNS[1],
-        width: "16%",
+        width: "8%",
+        render: (_: unknown, row: CatalogTableRow) => (
+          <Input
+            value={row.data.item}
+            placeholder="件号"
+            disabled={readOnly}
+            onMouseDown={stopEditorPropagation}
+            onKeyDown={stopEditorKeydown}
+            onChange={(value) =>
+              commitRow(row.rowIndex, { item: String(value) })
+            }
+          />
+        ),
+      },
+      {
+        title: CATALOG_COLUMNS[2],
+        width: "14%",
         render: (_: unknown, row: CatalogTableRow) => (
           <div onMouseDown={stopEditorPropagation}>
             <Select
@@ -195,7 +212,7 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
         ),
       },
       {
-        title: CATALOG_COLUMNS[2],
+        title: CATALOG_COLUMNS[3],
         width: "10%",
         render: (_: unknown, row: CatalogTableRow) => (
           <InputNumber
@@ -217,7 +234,7 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
         ),
       },
       {
-        title: CATALOG_COLUMNS[3],
+        title: CATALOG_COLUMNS[4],
         width: "10%",
         render: (_: unknown, row: CatalogTableRow) => (
           <InputNumber
@@ -238,8 +255,8 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
         ),
       },
       {
-        title: CATALOG_COLUMNS[4],
-        width: "16%",
+        title: CATALOG_COLUMNS[5],
+        width: "14%",
         render: (_: unknown, row: CatalogTableRow) => (
           <Input
             value={row.data.overLengthPartNumber}
@@ -254,8 +271,8 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
         ),
       },
       {
-        title: CATALOG_COLUMNS[5],
-        width: "14%",
+        title: CATALOG_COLUMNS[6],
+        width: "12%",
         render: (_: unknown, row: CatalogTableRow) => (
           <Input
             value={row.data.partKeyword}
@@ -268,7 +285,7 @@ export function CatalogSeqNumberGroupNodeView(props: NodeViewProps) {
         ),
       },
       {
-        title: CATALOG_COLUMNS[6],
+        title: CATALOG_COLUMNS[7],
         width: "8%",
         render: (_: unknown, row: CatalogTableRow) =>
           readOnly ? null : (

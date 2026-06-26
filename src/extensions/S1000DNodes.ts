@@ -2601,6 +2601,19 @@ function normalizeIpdInnerXmlForEditor(ipcRoot: Element) {
   }
 }
 
+/** `prepareFigureGraphicsForEditorImport` 会把 `figure` 换成 `div[data-s1000d-xml-figure]`。 */
+function isIpdIllustratedPartsFmftChild(el: Element): boolean {
+  const ln = el.localName?.toLowerCase();
+  if (ln === "figure" || ln === "multimedia" || ln === "s1000d-xml-figure") {
+    return true;
+  }
+  return (
+    ln === "div" &&
+    el.getAttribute(S1000D_XML_FIGURE_IMPORT_ATTR) ===
+      S1000D_XML_FIGURE_IMPORT_VALUE
+  );
+}
+
 /**
  * 从 DM 中取出 `<content>/<illustratedPartsCatalog>` 的直接子节点 XML 片段。
  * `catalogSeqNumber` 序列包装入编辑器专用 `catalogSeqNumberGroup`。
@@ -2623,7 +2636,7 @@ export function getIpdInnerXmlFromDmXml(xmlString: string): string | null {
 
   for (const child of Array.from(ipc.children)) {
     const ln = child.localName?.toLowerCase();
-    if (ln === "figure" || ln === "multimedia") {
+    if (isIpdIllustratedPartsFmftChild(child)) {
       figureParts.push(serializer.serializeToString(child));
     } else if (ln === "catalogseqnumber") {
       catalogParts.push(serializer.serializeToString(child));

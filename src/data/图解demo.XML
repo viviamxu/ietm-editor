@@ -1,30 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?><!DOCTYPE dmodule  [
-  <!ENTITY ICN-C0419-S1000D0361-001-01 SYSTEM "ICN-C0419-S1000D0361-001-01.CGM" NDATA cgm >
-  <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE dmodule [
+   <!ENTITY ICN-C0419-S1000D0361-001-01 SYSTEM "ICN-C0419-S1000D0361-001-01.CGM" NDATA cgm >
+   <!NOTATION cgm PUBLIC "-//USA-DOD//NOTATION Computer Graphics Metafile//EN" >
 ]>
 <dmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns:dc="http://www.purl.org/dc/elements/1.1/"
-         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:xlink="http://www.w3.org/1999/xlink"
-         xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/ipd.xsd">
+   xmlns:dc="http://www.purl.org/dc/elements/1.1/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xsi:noNamespaceSchemaLocation="http://www.s1000d.org/S1000D_4-2/xml_schema_flat/ipd.xsd">
 
    <identAndStatusSection>
       <dmAddress>
          <dmIdent>
             <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
-                    subSystemCode="0"
-                    subSubSystemCode="0"
-                    assyCode="00"
-                    disassyCode="01"
-                    disassyCodeVariant="AA"
-                    infoCode="941"
-                    infoCodeVariant="A"
-                    itemLocationCode="D"/>
-            <language countryIsoCode="US" languageIsoCode="en"/>
-            <issueInfo issueNumber="008" inWork="00"/>
+               subSystemCode="0"
+               subSubSystemCode="0"
+               assyCode="00"
+               disassyCode="01"
+               disassyCodeVariant="AA"
+               infoCode="941"
+               infoCodeVariant="A"
+               itemLocationCode="D" />
+            <language countryIsoCode="US" languageIsoCode="en" />
+            <issueInfo issueNumber="008" inWork="00" />
          </dmIdent>
          <dmAddressItems>
-            <issueDate day="31" month="12" year="2016"/>
+            <issueDate day="31" month="12" year="2016" />
             <dmTitle>
                <techName>Bicycle</techName>
                <infoName>Illustrated Parts Data - IPD</infoName>
@@ -32,23 +33,22 @@
          </dmAddressItems>
       </dmAddress>
       <dmStatus issueType="changed">
-         <security securityClassification="01" commercialClassification="cc51" caveat="cv51"/>
+         <security securityClassification="01" commercialClassification="cc51" caveat="cv51" />
          <dataRestrictions>
             <restrictionInstructions>
                <dataDistribution>To be made available to all S1000D users.</dataDistribution>
                <exportControl>
                   <exportRegistrationStmt>
-                     <simplePara>Export of this data module to all countries that are the residence of
-                    organizations that are users of S1000D is permitted. Storage of this data module
-                    is to be at the discretion of the organization.</simplePara>
+                     <simplePara>Export of this data module to all countries that are the residence
+                        of organizations that are users of S1000D is permitted. Storage of this data
+                        module is to be at the discretion of the organization.</simplePara>
                   </exportRegistrationStmt>
                </exportControl>
-               <dataHandling>There are no specific handling instructions for this data
-            module.</dataHandling>
-               <dataDestruction>Users may destroy this data module in accordance with their own local
-            procedures.</dataDestruction>
+               <dataHandling>There are no specific handling instructions for this data module.</dataHandling>
+               <dataDestruction>Users may destroy this data module in accordance with their own
+                  local procedures.</dataDestruction>
                <dataDisclosure>There are no dissemination limitations that apply to this data
-            module.</dataDisclosure>
+                  module.</dataDisclosure>
             </restrictionInstructions>
             <restrictionInfo>
                <copyright>
@@ -68,29 +68,29 @@
                   <copyrightPara>
                      <randomList>
                         <listItem>
-                           <para>This material is provided "As is" and neither ASD nor any person who
-                            has contributed to the creation, revision or maintenance of the material
-                            makes any representations or warranties, express or implied, including
-                            but not limited to, warranties of merchantability or fitness for any
-                            particular purpose.</para>
+                           <para>This material is provided "As is" and neither ASD nor any person
+                     who has contributed to the creation, revision or maintenance of the material
+                     makes any representations or warranties, express or implied, including but not
+                     limited to, warranties of merchantability or fitness for any particular
+                     purpose.</para>
                         </listItem>
                         <listItem>
                            <para>Neither ASD nor any person who has contributed to the creation,
-                            revision or maintenance of this material shall be liable for any direct,
-                            indirect, special or consequential damages or any other liability
-                            arising from any use of this material.</para>
+                     revision or maintenance of this material shall be liable for any direct,
+                     indirect, special or consequential damages or any other liability arising from
+                     any use of this material.</para>
                         </listItem>
                         <listItem>
-                           <para>Revisions to this document may occur after its issuance. The user is
-                            responsible for determining if revisions to the material contained in
-                            this document have occurred and are applicable.</para>
+                           <para>Revisions to this document may occur after its issuance. The user
+                     is responsible for determining if revisions to the material contained in this
+                     document have occurred and are applicable.</para>
                         </listItem>
                      </randomList>
                   </copyrightPara>
                </copyright>
                <policyStatement>S1000D-SC-2016-017-002-00 Steering Committee TOR</policyStatement>
-               <dataConds>There are no known conditions that would change the data restrictions for, or
-            security classification of, this data module.</dataConds>
+               <dataConds>There are no known conditions that would change the data restrictions for,
+                  or security classification of, this data module.</dataConds>
             </restrictionInfo>
          </dataRestrictions>
          <responsiblePartnerCompany enterpriseCode="B6865">
@@ -103,14 +103,14 @@
             <dmRef>
                <dmRefIdent>
                   <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
-                          subSystemCode="0"
-                          subSubSystemCode="0"
-                          assyCode="00"
-                          disassyCode="00"
-                          disassyCodeVariant="AA"
-                          infoCode="00W"
-                          infoCodeVariant="A"
-                          itemLocationCode="D"/>
+                     subSystemCode="0"
+                     subSubSystemCode="0"
+                     assyCode="00"
+                     disassyCode="00"
+                     disassyCodeVariant="AA"
+                     infoCode="00W"
+                     infoCodeVariant="A"
+                     itemLocationCode="D" />
                </dmRefIdent>
             </dmRef>
          </applicCrossRefTableRef>
@@ -120,19 +120,19 @@
             </displayText>
             <evaluate andOr="and">
                <assert applicPropertyIdent="type" applicPropertyType="prodattr"
-                       applicPropertyValues="Mountain bicycle"/>
+                  applicPropertyValues="Mountain bicycle" />
                <evaluate andOr="or">
                   <evaluate andOr="and">
                      <assert applicPropertyIdent="model" applicPropertyType="prodattr"
-                             applicPropertyValues="Mountain storm"/>
+                        applicPropertyValues="Mountain storm" />
                      <assert applicPropertyIdent="version" applicPropertyType="prodattr"
-                             applicPropertyValues="Mk1"/>
+                        applicPropertyValues="Mk1" />
                   </evaluate>
                   <evaluate andOr="and">
                      <assert applicPropertyIdent="model" applicPropertyType="prodattr"
-                             applicPropertyValues="Brook trekker"/>
+                        applicPropertyValues="Brook trekker" />
                      <assert applicPropertyIdent="version" applicPropertyType="prodattr"
-                             applicPropertyValues="Mk9"/>
+                        applicPropertyValues="Mk9" />
                   </evaluate>
                </evaluate>
             </evaluate>
@@ -142,26 +142,26 @@
                <authorityInfo>20010131</authorityInfo>
                <techPubBase>Bike book</techPubBase>
             </authorityInfoAndTp>
-            <authorityExceptions/>
-            <authorityNotes/>
+            <authorityExceptions />
+            <authorityNotes />
          </techStandard>
          <brexDmRef>
             <dmRef>
                <dmRefIdent>
                   <dmCode modelIdentCode="S1000DBIKE" systemDiffCode="AAA" systemCode="D00"
-                          subSystemCode="0"
-                          subSubSystemCode="0"
-                          assyCode="00"
-                          disassyCode="00"
-                          disassyCodeVariant="AA"
-                          infoCode="022"
-                          infoCodeVariant="A"
-                          itemLocationCode="D"/>
+                     subSystemCode="0"
+                     subSubSystemCode="0"
+                     assyCode="00"
+                     disassyCode="00"
+                     disassyCodeVariant="AA"
+                     infoCode="022"
+                     infoCodeVariant="A"
+                     itemLocationCode="D" />
                </dmRefIdent>
             </dmRef>
          </brexDmRef>
          <qualityAssurance>
-            <firstVerification verificationType="tabtop"/>
+            <firstVerification verificationType="tabtop" />
          </qualityAssurance>
          <systemBreakdownCode>BY</systemBreakdownCode>
 
@@ -176,9 +176,10 @@
    </identAndStatusSection>
    <content>
       <illustratedPartsCatalog>
-         <figure id="fig-0001">
+         <!-- <figure id="fig-0001">
             <title>Bicycle</title>
-            <!-- <graphic infoEntityIdent="ICN-C0419-S1000D0361-001-01" xlink:href="https://picsum.photos/seed/ietm1/300/200">
+            <graphic infoEntityIdent="ICN-C0419-S1000D0361-001-01"
+               xlink:href="https://picsum.photos/seed/ietm1/300/200">
                <hotspot id="fig-0001-hot-001" hotspotTitle="图中热点的ID">
                </hotspot>
                <hotspot id="fig-0001-hot-001" hotspotTitle="图中热点的ID">
@@ -191,14 +192,26 @@
                <hotspot id="fig-0001-hot-001" hotspotTitle="图中热点的ID">
                </hotspot>
                <hotspot></hotspot>
-            </graphic> -->
+            </graphic>
+         </figure> -->
+         <figure id="fig-ICN-XXX-000004-10004">
+
+            <title> 插图标题 l2-a1-4 </title>
+            <graphic infoEntityIdent="ICN-XXX-000004-10004"
+               xlink:href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22300%22%20height%3D%22200%22%20viewBox%3D%220%200%20300%20200%22%3E%0A%20%20%3Crect%20fill%3D%22hsl(340%2055%25%2092%25)%22%20width%3D%22100%25%22%20height%3D%22100%25%22%2F%3E%0A%20%20%3Crect%20fill%3D%22hsl(340%2048%25%2078%25)%22%20x%3D%2220%22%20y%3D%2220%22%20width%3D%22260%22%20height%3D%22160%22%20rx%3D%228%22%2F%3E%0A%20%20%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22hsl(340%2032%25%2024%25)%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2216%22%3E%E6%BC%94%E7%A4%BA%204%3C%2Ftext%3E%0A%3C%2Fsvg%3E">
+               <hotspot id="fig-0001-hot-001" hotspotTitle="图中热点的ID">
+               </hotspot>
+               <hotspot id="fig-0001-hot-001" hotspotTitle="图中热点的ID">
+               </hotspot>
+               <hotspot></hotspot>
+            </graphic>
          </figure>
-         <catalogSeqNumber id="csn-001" indenture="1" figureNumber="01" item="000">
+         <catalogSeqNumber id="csn-001" indenture="1" figureNumber="01" item="似懂非懂">
             <internalRef internalRefId="热点ID"></internalRef>
             <itemSeqNumber itemSeqNumberValue="00A">
                <quantityPerNextHigherAssy>每件数量</quantityPerNextHigherAssy>
                <totalQuantity>总数量</totalQuantity>
-               <partRef manufacturerCodeValue="" partNumberValue=""/>
+               <partRef manufacturerCodeValue="" partNumberValue="" />
                <partSegment>
                   <itemIdentData>
                      <descrForPart>物料名称</descrForPart>
@@ -208,13 +221,13 @@
                </partSegment>
             </itemSeqNumber>
          </catalogSeqNumber>
-         
+
          <catalogSeqNumber id="csn-001" indenture="1" figureNumber="01" item="000">
             <internalRef internalRefId="热点ID"></internalRef>
             <itemSeqNumber itemSeqNumberValue="00A">
                <quantityPerNextHigherAssy>每件数量</quantityPerNextHigherAssy>
                <totalQuantity>总数量</totalQuantity>
-               <partRef manufacturerCodeValue="" partNumberValue=""/>
+               <partRef manufacturerCodeValue="" partNumberValue="" />
                <partSegment>
                   <itemIdentData>
                      <descrForPart>物料名称</descrForPart>
@@ -224,13 +237,13 @@
                </partSegment>
             </itemSeqNumber>
          </catalogSeqNumber>
-         
+
          <catalogSeqNumber id="csn-001" indenture="1" figureNumber="01" item="000">
             <internalRef internalRefId="热点ID"></internalRef>
             <itemSeqNumber itemSeqNumberValue="00A">
                <quantityPerNextHigherAssy>每件数量</quantityPerNextHigherAssy>
                <totalQuantity>总数量</totalQuantity>
-               <partRef manufacturerCodeValue="" partNumberValue=""/>
+               <partRef manufacturerCodeValue="" partNumberValue="" />
                <partSegment>
                   <itemIdentData>
                      <descrForPart>物料名称</descrForPart>
