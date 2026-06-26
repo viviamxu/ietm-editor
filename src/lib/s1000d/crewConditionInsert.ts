@@ -4,6 +4,7 @@ import { TextSelection } from "@tiptap/pm/state";
 
 import {
   buildMinimalCrewConditionJson,
+  buildMinimalCrewDrillStepJson,
   canInsertCrewStepLevelBlockAtCursor,
   canInsertElseIfAtCursor,
   insertCrewConditionAtCursor,
@@ -150,10 +151,34 @@ function canInsertNodeAtParentIndex(
   return parent.type.validContent(Fragment.from(siblings));
 }
 
-function insertConditionJsonAt(
+function selectionInCrewDrillStepTitle(
+  doc: PMNode,
+  stepPos: number,
+): TextSelection | null {
+  const node = doc.nodeAt(stepPos);
+  if (!node || node.type.name !== "crewDrillStep") return null;
+
+  let offset = stepPos + 1;
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i);
+    if (child.type.name === "title") {
+      const caret = Math.min(offset + 1, doc.content.size);
+      if (caret < 0 || caret > doc.content.size) return null;
+      return TextSelection.create(doc, caret);
+    }
+    offset += child.nodeSize;
+  }
+
+  const fallback = Math.min(stepPos + 2, doc.content.size);
+  if (fallback < 0 || fallback > doc.content.size) return null;
+  return TextSelection.create(doc, fallback);
+}
+
+function insertBlockJsonAt(
   editor: Editor,
   insertPos: number,
   json: JSONContent,
+  selectAtPos: (doc: PMNode, pos: number) => TextSelection | null,
 ): boolean {
   let child: PMNode;
   try {
@@ -170,9 +195,7 @@ function insertConditionJsonAt(
     return false;
   }
 
-  if (
-    !canInsertNodeAtParentIndex($insert.parent, $insert.index(), child)
-  ) {
+  if (!canInsertNodeAtParentIndex($insert.parent, $insert.index(), child)) {
     return false;
   }
 
@@ -182,12 +205,20 @@ function insertConditionJsonAt(
     .command(({ tr, dispatch }) => {
       if (!dispatch) return true;
       tr.insert(insertPos, child);
-      const sel = selectionInCaseCond(tr.doc, insertPos);
+      const sel = selectAtPos(tr.doc, insertPos);
       if (sel) tr.setSelection(sel);
       dispatch(tr);
       return true;
     })
     .run();
+}
+
+function insertConditionJsonAt(
+  editor: Editor,
+  insertPos: number,
+  json: JSONContent,
+): boolean {
+  return insertBlockJsonAt(editor, insertPos, json, selectionInCaseCond);
 }
 
 /** 在 if/elseIf 链末尾插入同级 `elseIf`（显式位置，不依赖光标）。 */
@@ -426,5 +457,56 @@ export function insertSiblingCaseAfterChain(
     editor,
     insertPos,
     buildMinimalCrewConditionJson("case"),
+  );
+}
+
+/** 在条件块（if / elseIf / case）体内末尾插入 `crewDrillStep`。 */
+export function canInsertCrewDrillStepInBlock(
+  editor: Editor,
+  blockPos: number,
+): boolean {
+  const doc = editor.state.doc;
+  const resolved = resolveCrewConditionAtPos(doc, blockPos);
+  if (!resolved) return false;
+  if (!isConditionType(resolved.block.type.name)) return false;
+  if (!editor.schema.nodes.crewDrillStep) return false;
+
+  let child: PMNode;
+  try {
+    child = PMNode.fromJSON(
+      editor.schema,
+      buildMinimalCrewDrillStepJson(),
+    );
+  } catch {
+    return false;
+  }
+
+  const insertPos = resolved.blockPos + resolved.block.nodeSize - 1;
+  try {
+    const $insert = doc.resolve(insertPos);
+    return canInsertNodeAtParentIndex($insert.parent, $insert.index(), child);
+  } catch {
+    return false;
+  }
+}
+
+export function insertCrewDrillStepInBlock(
+  editor: Editor,
+  blockPos: number,
+): boolean {
+  if (!editor.isEditable) return false;
+
+  const doc = editor.state.doc;
+  if (!canInsertCrewDrillStepInBlock(editor, blockPos)) return false;
+
+  const resolved = resolveCrewConditionAtPos(doc, blockPos);
+  if (!resolved) return false;
+
+  const insertPos = resolved.blockPos + resolved.block.nodeSize - 1;
+  return insertBlockJsonAt(
+    editor,
+    insertPos,
+    buildMinimalCrewDrillStepJson(),
+    selectionInCrewDrillStepTitle,
   );
 }

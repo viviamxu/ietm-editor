@@ -549,6 +549,10 @@ export function createIETMEditor(
     onThemeChange: options.onThemeChange,
   });
 
+  if (options.descriptionSchema) {
+    setDescriptionSchema(options.descriptionSchema);
+  }
+
   const initialContent = resolveInitialEditorContent(options);
 
   root.render(

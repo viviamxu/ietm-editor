@@ -48,14 +48,14 @@ function App() {
     const instance = createIETMEditor({
       element: el,
 
-      dmXml: crewDmXml,
+      dmXml: ipdDmXml,
 
       dmDocumentName: "操作类.XML",
 
       theme: "auto",
       onThemeChange: setResolvedTheme,
 
-      descriptionSchema: crewSchema as DescriptionSchema,
+      descriptionSchema: ipdSchema as DescriptionSchema,
       ...(demoApiBaseUrl
         ? { apiBaseUrl: demoApiBaseUrl }
         : {

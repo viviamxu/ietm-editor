@@ -5,7 +5,7 @@ export type CatalogSeqNumberRowData = {
   id: string | null;
   indenture: string | null;
   figureNumber: string | null;
-  item: string | null;
+  item: string;
   itemSeqNumberValue: string | null;
   hotspotRefId: string;
   descrForPart: string;
@@ -48,7 +48,7 @@ export function defaultCatalogSeqNumberRowData(): CatalogSeqNumberRowData {
     id: null,
     indenture: null,
     figureNumber: null,
-    item: null,
+    item: "",
     itemSeqNumberValue: null,
     hotspotRefId: "",
     descrForPart: "",
@@ -72,7 +72,7 @@ export function readCatalogSeqNumberRowData(
     id: (node.attrs.id as string | null) ?? null,
     indenture: (node.attrs.indenture as string | null) ?? null,
     figureNumber: (node.attrs.figureNumber as string | null) ?? null,
-    item: (node.attrs.item as string | null) ?? null,
+    item: String(node.attrs.item ?? ""),
     itemSeqNumberValue:
       (itemSeq?.attrs.itemSeqNumberValue as string | null) ?? null,
     hotspotRefId: String(node.attrs.hotspotRefId ?? "").trim(),
@@ -163,7 +163,7 @@ export function buildCatalogSeqNumberRowNode(
       id: data.id?.trim() || null,
       indenture: data.indenture?.trim() || null,
       figureNumber: data.figureNumber?.trim() || null,
-      item: data.item?.trim() || null,
+      item: data.item.trim() || null,
       hotspotRefId: data.hotspotRefId.trim() || null,
     },
     itemSeq,

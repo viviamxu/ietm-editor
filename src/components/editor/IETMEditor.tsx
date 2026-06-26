@@ -76,6 +76,8 @@ import {
   insertTableFromSchema,
 } from "../../lib/s1000d/descriptionSchemaInsert";
 import { buildEmptyDocJsonFromSchema } from "../../lib/s1000d/dmEmptyContent";
+import { isIpdDm } from "../../lib/s1000d/dmContentKind";
+import { normalizeIpdDocInEditor } from "../../lib/s1000d/normalizeIpdDoc";
 import {
   applyIsolationFlowToEditor,
   type IsolationFlowPayload,
@@ -302,6 +304,7 @@ function normalizeEditorContentInput(
 function runPostHtmlContentNormalize(editor: Editor): void {
   queueMicrotask(() => {
     normalizeImportedTablesInEditor(editor, { focusMainProcedure: true });
+    normalizeIpdDocInEditor(editor);
     dispatchSectionNumbersSync(editor);
   });
 }
@@ -562,7 +565,11 @@ export const IETMEditor = forwardRef<IETMEditorRefValue, IETMEditorProps>(
           if (!editor) return;
           const normalized = normalizeEditorContentInput(content) ?? "";
           editor.commands.setContent(normalized);
-          if (typeof content === "string" && docJsonHasTable(editor.getJSON())) {
+          if (
+            typeof content === "string" &&
+            (docJsonHasTable(editor.getJSON()) ||
+              isIpdDm(getDescriptionSchema()))
+          ) {
             runPostHtmlContentNormalize(editor);
           }
         },

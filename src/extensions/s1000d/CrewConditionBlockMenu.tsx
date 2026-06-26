@@ -24,10 +24,12 @@ import {
 } from "../../lib/s1000d/crewConditionDelete";
 
 import {
+  canInsertCrewDrillStepInBlock,
   canInsertNestedConditionInBlock,
   canInsertSiblingCaseAfterChain,
   canInsertSiblingElseIfAfterChain,
   canInsertSiblingIfAfterChain,
+  insertCrewDrillStepInBlock,
   insertNestedConditionInBlock,
   insertSiblingCaseAfterChain,
   insertSiblingElseIfAfterChain,
@@ -80,6 +82,9 @@ export function CrewConditionBlockMenu(props: {
     blockPos != null &&
     canInsertSiblingCaseAfterChain(editor, blockPos);
 
+  const showCrewDrillStep =
+    blockPos != null && canInsertCrewDrillStepInBlock(editor, blockPos);
+
   const canDelete =
     blockPos != null && canDeleteCrewCondition(editor.state.doc, blockPos);
 
@@ -88,7 +93,8 @@ export function CrewConditionBlockMenu(props: {
     showSiblingIf ||
     showNestedIf ||
     showNestedCase ||
-    showSiblingCase;
+    showSiblingCase ||
+    showCrewDrillStep;
 
   const selectWholeBlock = useCallback((): boolean => {
     if (blockPos == null) return false;
@@ -200,6 +206,23 @@ export function CrewConditionBlockMenu(props: {
       );
     }
 
+    if (showCrewDrillStep) {
+      insertItems.push(
+        <Menu.Item
+          key="crew-drill-step"
+          onMouseDown={(e: ReactMouseEvent) =>
+            runMenuAction(e, () =>
+              blockPos != null
+                ? insertCrewDrillStepInBlock(editor, blockPos)
+                : false,
+            )
+          }
+        >
+          操作卡（crewDrillStep）
+        </Menu.Item>,
+      );
+    }
+
     return (
       <Menu onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}>
         <Menu.Item
@@ -277,6 +300,8 @@ export function CrewConditionBlockMenu(props: {
     showNestedIf,
 
     showSiblingCase,
+
+    showCrewDrillStep,
   ]);
 
   if (blockPos == null) return null;

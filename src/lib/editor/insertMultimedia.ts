@@ -2,10 +2,21 @@ import type { Editor } from "@tiptap/core";
 import type { JSONContent } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
-import { ensureParaAfterHostInsert } from "./insertParaAfterFmftBlock";
-import { insertFmftNodesIntoEditor } from "./resolveProcedureFmftInsertPos";
+
+import type { FmftInsertIntent } from "../../store/insertPublicationModalStore";
 import { resolveFileUrl } from "../ietm/fileUrl";
 import { resolveMultimediaTypeForXml } from "../s1000d/multimediaType";
+import {
+  resolveHostBlockPosFromSelection,
+  ensureParaAfterHostInsert,
+} from "./insertParaAfterFmftBlock";
+import { insertFmftNodesIntoEditor } from "./resolveProcedureFmftInsertPos";
+import { normalizeIpdDocInEditor } from "../s1000d/normalizeIpdDoc";
+import { insertSiblingFmftNodesFromToolbar } from "./siblingFigureInsert";
+
+export type InsertMultimediaOptions = {
+  fmftInsertIntent?: FmftInsertIntent;
+};
 
 export type InsertMultimediaParameterPayload = {
   id: string;
@@ -143,6 +154,29 @@ function buildMultimediaInnerContent(
   return content;
 }
 
+function buildMultimediaBlockNodes(
+  items: InsertMultimediaPayload[],
+): JSONContent[] {
+  const nodes: JSONContent[] = [];
+  for (const item of items) {
+    const ident = item.infoEntityIdent.trim();
+    if (!ident) continue;
+
+    const multimediaContent: JSONContent[] = [];
+
+    if (item.title?.trim()) {
+      multimediaContent.push({
+        type: "title",
+        content: [{ type: "text", text: item.title.trim() }],
+      });
+    }
+
+    multimediaContent.push(buildMultimediaObjectJson(item));
+    nodes.push({ type: "multimedia", content: multimediaContent });
+  }
+  return nodes;
+}
+
 function insertContentIntoMultimedia(
   editor: Editor,
   multimediaPos: number,
@@ -166,8 +200,22 @@ function insertContentIntoMultimedia(
 export function insertMultimediaIntoEditor(
   editor: Editor,
   items: InsertMultimediaPayload[],
+  options?: InsertMultimediaOptions,
 ): boolean {
   if (items.length === 0) return false;
+
+  const intent = options?.fmftInsertIntent ?? "sibling";
+
+  if (intent === "sibling") {
+    const nodes = buildMultimediaBlockNodes(items);
+    if (nodes.length === 0) return false;
+    const ok = insertSiblingFmftNodesFromToolbar(editor, nodes);
+    if (ok) {
+      normalizeIpdDocInEditor(editor);
+      ensureParaAfterHostInsert(editor, resolveHostBlockPosFromSelection(editor));
+    }
+    return ok;
+  }
 
   const { selection } = editor.state;
   if (selection instanceof NodeSelection) {
@@ -184,23 +232,7 @@ export function insertMultimediaIntoEditor(
     }
   }
 
-  const nodes: JSONContent[] = [];
-  for (const item of items) {
-    const ident = item.infoEntityIdent.trim();
-    if (!ident) continue;
-
-    const multimediaContent: JSONContent[] = [];
-
-    if (item.title?.trim()) {
-      multimediaContent.push({
-        type: "title",
-        content: [{ type: "text", text: item.title.trim() }],
-      });
-    }
-
-    multimediaContent.push(buildMultimediaObjectJson(item));
-    nodes.push({ type: "multimedia", content: multimediaContent });
-  }
+  const nodes = buildMultimediaBlockNodes(items);
   if (nodes.length === 0) return false;
 
   const inserted = insertFmftNodesIntoEditor(editor, nodes);

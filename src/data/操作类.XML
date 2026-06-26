@@ -137,7 +137,7 @@
                   <case>
                      <caseCond>如果的条件输入</caseCond>
                      <crewDrillStep><title>省略...</title></crewDrillStep>
-                     <crewDrillStep><title>末尾</title><para>sdfds</para></crewDrillStep>
+                     <crewDrillStep><title>末尾</title><para>末尾内容</para></crewDrillStep>
                   </case>
                </crewDrillStep>
             </crewDrill>

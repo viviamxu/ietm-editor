@@ -323,6 +323,7 @@ function ReferencePublicationDialog(props: { mode: InsertPublicationMode }) {
               row.fileType === "mp4" && row.filePath ? row.filePath : undefined,
             previewImgSrc: row.thPath ?? row.preview,
           })),
+          { fmftInsertIntent },
         );
       } else if (isSymbol) {
         const row = rows[0];

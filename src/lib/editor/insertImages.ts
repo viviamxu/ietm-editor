@@ -12,6 +12,7 @@ import {
   scheduleEnrichGraphicsWithSvgHotspots,
   type InsertedGraphicRef,
 } from "./enrichGraphicHotspotsFromSvg";
+import { normalizeIpdDocInEditor } from "../s1000d/normalizeIpdDoc";
 import {
   resolveSiblingFigureInsertPos,
   resolveTargetForSiblingFigureInsert,
@@ -135,7 +136,10 @@ export function insertImagesIntoEditor(
 
   if (intent === "sibling") {
     const { ok, refs } = insertSiblingFiguresFromToolbar(editor, images);
-    if (ok) scheduleEnrichGraphicsWithSvgHotspots(editor, refs);
+    if (ok) {
+      normalizeIpdDocInEditor(editor);
+      scheduleEnrichGraphicsWithSvgHotspots(editor, refs);
+    }
     return ok;
   }
 
