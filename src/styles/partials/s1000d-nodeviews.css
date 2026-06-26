@@ -142,9 +142,7 @@
   cursor: pointer;
 }
 
-.ietm-editor-surface
-  .tiptap
-  .s1000d-figure__delete:hover:not(:disabled) {
+.ietm-editor-surface .tiptap .s1000d-figure__delete:hover:not(:disabled) {
   background: #fff1f0;
   border-color: #ffccc7;
 }
@@ -170,7 +168,10 @@
   outline: none;
 }
 
-.ietm-editor-surface .tiptap .s1000d-figure__content--pick-image .s1000d-graphic-node {
+.ietm-editor-surface
+  .tiptap
+  .s1000d-figure__content--pick-image
+  .s1000d-graphic-node {
   display: none;
 }
 
@@ -229,7 +230,10 @@
   outline-offset: 2px;
 }
 
-.ietm-editor-surface .tiptap .s1000d-multimedia__content--pick-media .s1000d-multimedia-object-node {
+.ietm-editor-surface
+  .tiptap
+  .s1000d-multimedia__content--pick-media
+  .s1000d-multimedia-object-node {
   display: none;
 }
 
@@ -436,16 +440,22 @@
   line-height: 0;
 }
 
-.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn:hover:not(:disabled) {
+.ietm-editor-surface
+  .tiptap
+  .s1000d-attention-block__default-icon-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--s1000d-attn-accent) 12%, transparent);
 }
 
-.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn:disabled {
+.ietm-editor-surface
+  .tiptap
+  .s1000d-attention-block__default-icon-btn:disabled {
   cursor: default;
   opacity: 0.65;
 }
 
-.ietm-editor-surface .tiptap .s1000d-attention-block__default-icon-btn:focus-visible {
+.ietm-editor-surface
+  .tiptap
+  .s1000d-attention-block__default-icon-btn:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
@@ -598,4 +608,3 @@
   margin: 0;
   line-height: 1.55;
 }
-
